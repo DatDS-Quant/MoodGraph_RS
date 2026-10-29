@@ -33,9 +33,9 @@ Phân loại trạng thái:
 | :--- | :--- | :--- | :--- |
 | **Phase 1: Data Acquisition & Initial Audit** | Tải MovieLens 25M, kiểm tra MD5, giải nén và rà soát schema, encoding UTF-8, cấu hình `.gitignore`. | **[VERIFIED]** | - MD5 tải về trùng khớp 100% với GroupLens: `6b51fb2759a8657d3bfcbfc42b592ada`.<br>- 6 tệp CSV đặt tại `data/raw/ml-25m/`.<br>- Đã cung cấp script tự động 1 lệnh `scripts/setup_data.py` cho đồng đội.<br>- `git status` xác nhận sạch, dataset được `.gitignore` bảo vệ hoàn toàn. |
 | **Phase 2: Spark Setup & EDA** | Kiểm tra môi trường PySpark trên Windows 11; thực hiện EDA toàn diện trên 25M ratings; đo đạc độ thưa ma trận, phân bố điểm, đuôi dài, độ phủ Genome. | **[VERIFIED]** | - Script `recommender/eda.py` chạy thành công bằng Spark trong 66 giây.<br>- Báo cáo đầy đủ tại `docs/data_eda.md`.<br>- Độ thưa: 99.74%. Phim có Genome (13,816 phim) chiếm tới 98.70% tổng lượng ratings. |
-| **Phase 3: Evaluation Protocol** | Thiết kế giao thức phân chia Train/Val/Test, ranh giới chống rò rỉ dữ liệu, quy tắc đánh giá Full-Catalog Top-N và cơ chế xử lý cold-start. | **[PROPOSED / PENDING]** | - Tài liệu `docs/evaluation_protocol.md` đã cập nhật đầy đủ theo góp ý của Technical Mentor, đang chờ phê duyệt chính thức. |
-| **Phase 4: Data Splitting Pipeline** | Thực thi phân chia dữ liệu bằng PySpark thành các tập Train, Validation, Test lưu định dạng tối ưu. | **[PENDING]** | Chưa triển khai (Chờ Phase 3 được duyệt). |
-| **Phase 5: Baselines & ALS Training** | Huấn luyện Popularity, Item-Based CF, và Spark MLlib ALS; chọn siêu tham số trên Validation. | **[PENDING]** | Chưa triển khai. |
+| **Phase 3: Evaluation Protocol** | Thiết kế giao thức phân chia Train/Val/Test, ranh giới chống rò rỉ dữ liệu, quy tắc đánh giá Full-Catalog Top-N và cơ chế xử lý cold-start. | **[VERIFIED]** | - Tài liệu `docs/evaluation_protocol.md` đã phê duyệt và làm căn cứ kỹ thuật chính xác cho pipeline Phase 4.<br>- Giao thức User-wise Leave-1-Last (timestamp ASC, movieId ASC) được thực thi nhất quán. |
+| **Phase 4: Data Splitting Pipeline & Validation** | Xây dựng pipeline tiền xử lý và chia tập chuẩn hóa, chống rò rỉ hai lớp, kiểm định tự động 8 bộ test chất lượng dữ liệu mở rộng. | **[PROPOSED / READY FOR MENTOR REVIEW]** | - Pipeline `recommender/preprocess.py` hoàn thành trong 69.04 giây.<br>- Bộ kiểm định `recommender/validate_data.py` (8/8 automated tests) đạt PASSED 100% trong 85.34 giây.<br>- Khớp chính xác 100% expected counts: Train = 24,675,013; Val = 162,541; Test = 162,541.<br>- Đối chiếu hai chiều Spark: 0 missing, 0 extra, 0 attribute diffs trên 25M ratings.<br>- Triệt tiêu rò rỉ: Overlap tags_train với Val/Test = 0 (1,074,090 dòng).<br>- 10 dataset Parquet chuẩn hóa tại `data/processed/` đạt 205.51 MB (giảm 82.2% so với 1,156.66 MB CSV gốc).<br>- Minh chứng đầy đủ tại `docs/data_quality_report.md`, `docs/preprocessing_report.md`, `docs/data_dictionary.md`, `data/processed/manifest.json`. |
+| **Phase 5: Baselines & ALS Training** | Huấn luyện Popularity, Item-Based CF, và Spark MLlib ALS; chọn siêu tham số trên Validation. | **[PENDING]** | Sẵn sàng triển khai khi có lệnh (dữ liệu train/val/test đã sẵn sàng tại `data/processed/splits/`). |
 | **Phase 6: Knowledge Graph Construction** | Cài đặt Neo4j Community, nạp đồ thị tri thức từ dữ liệu MovieLens 25M, triển khai thuật toán Path-based Scoring. | **[PENDING]** | Chưa triển khai. |
 | **Phase 7: Hybrid Fusion & Top-N Evaluation** | Kết hợp điểm ALS và KG theo cơ chế Candidate Union; đánh giá Top-N theo giao thức quy định. | **[PENDING]** | Chưa triển khai. |
 | **Phase 8: Serving & Interface** | Xây dựng API và giao diện demo trực quan hóa gợi ý. | **[PENDING]** | Chưa triển khai. |
@@ -70,12 +70,19 @@ Phân loại trạng thái:
      os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
      ```
    - Phải chỉ định `spark.driver.host = "127.0.0.1"` và `spark.driver.bindAddress = "127.0.0.1"` để ngăn lỗi `SocketTimeoutException` trong giao tiếp worker trên Windows.
+   - Khi ghi tệp Parquet trên Windows, bắt buộc cấu hình `HADOOP_HOME` trỏ tới thư mục chứa `winutils.exe` (ví dụ `C:\hadoop`).
    - Khi đọc dữ liệu lớn (như 25M ratings), luôn khai báo trước `StructType` schema để tránh chi phí quét `inferSchema`.
-2. **Đặc thù Dữ liệu MovieLens 25M:**
-   - Có chính xác 16 bản ghi trong `tags.csv` chứa chuỗi ký tự `"NA"` (không phải giá trị rỗng). Cần lưu ý khi đọc dữ liệu để tránh bị parser tự động đổi thành `NaN`.
-   - Có 107 phim trong `links.csv` thiếu `tmdbId`.
-   - Có 5,062 phim mang nhãn `(no genres listed)`.
-   - Toàn bộ 25,000,095 ratings không có bản ghi nào bị trùng lặp cặp `(userId, movieId)`.
+   - Phân đoạn `spark.sql.shuffle.partitions = 16` tối ưu cho chip 6 nhân 12 luồng (Ryzen 5 7530U), giúp hoàn thành window ranking 25M dòng chỉ trong 29 giây.
+2. **Đặc thù Dữ liệu MovieLens 25M & Kết quả Tiền xử lý (Phase 4):**
+   - Có chính xác 16 bản ghi trong `tags.csv` chứa chuỗi ký tự thuần túy `"NA"` (không phải giá trị rỗng). Đã bảo toàn thành công không bị chuyển thành `null`.
+   - Phát hiện 2 dòng trong `tags.csv` chứa triple quotes (`"""..."""`) lồng dấu phẩy, đã xử lý dứt điểm bằng `.option("quote", "\"").option("escape", "\"")` để 100% không có timestamp nào bị null.
+   - Có 107 phim trong `links.csv` thiếu `tmdbId` (được giữ dạng `null` hợp lệ).
+   - Có 5,062 phim mang nhãn `(no genres listed)`, được biểu diễn thành danh sách rỗng `[]`, không xóa phim.
+   - Toàn bộ 25,000,095 ratings không có bản ghi nào bị trùng lặp cặp `(userId, movieId)` và 0 bản ghi vi phạm khóa ngoại (100% referential integrity).
+   - `imdbId` được giữ nguyên kiểu String 7 chữ số (ví dụ `"0114709"`), không mất leading zeros.
+   - Sai lệch dấu phẩy động Float32 trên relevance đạt `2.956e-08`, an toàn dưới dung sai chuẩn 1e-7.
+   - Nén Columnar Parquet Snappy giảm dung lượng từ 1,156.66 MB CSV xuống còn 205.51 MB Parquet (tỷ lệ nén 82.2%), sẵn sàng cho Colab/Drive/local mà không sợ quá tải mạng.
+   - Rào chắn rò rỉ hai lớp (Dual Leakage Guard): Đã tạo `features/tags_train/` (1,074,090 bản ghi) với điều kiện nghiêm ngặt `tag_timestamp < user_val_rating_timestamp` kết hợp `left_anti join` trên `(userId, movieId)` của Validation và Test items, triệt tiêu 100% rò rỉ tương tác (overlap = 0).
 
 ---
 
