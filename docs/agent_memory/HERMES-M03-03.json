@@ -1,0 +1,23 @@
+{
+  "record_id": "HERMES-M03-03",
+  "module": "M03",
+  "component": "PopularityBaseline",
+  "topic": "Catalog Coverage Floor and Unobserved Movie Cold-Start Limitations",
+  "category": "KNOWN_LIMITATION",
+  "problem_statement": "What are the structural bounds of unpersonalized popularity baselines in MoodGraph?",
+  "root_cause": "Unpersonalized models suggest nearly identical items to all users, ignoring individual preferences and long-tail items.",
+  "solution_or_decision": "Document verified limitation: POPULARITY_COUNT achieves only 0.50% catalog coverage at K=10 (recommending 310 movies out of 62,423), ignoring 99.5% of the catalog. Furthermore, 3,491 catalog movies without Train ratings are unscorable by popularity baselines.",
+  "files_involved": [
+    "recommender/als/popularity.py",
+    "artifacts/m03_popularity_results.json",
+    "docs/3a/M03_popularity_report.md"
+  ],
+  "relevant_tests": [
+    "tests/als/test_popularity.py::test_08_movie_with_zero_ratings_behavior",
+    "tests/als/test_popularity.py::test_16_integration_with_m02_evaluator"
+  ],
+  "evidence": "Artifact m03_popularity_results.json records catalog_coverage_full = 0.004966 (310 unique recommended movies across 109,779 users).",
+  "code_version": "5aa02aa",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31"
+}

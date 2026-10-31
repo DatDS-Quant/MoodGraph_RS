@@ -180,7 +180,7 @@ python -m pytest tests/als/ -v
 ```
 *Kết quả kỳ vọng:* 62/62 tests PASS trong ~35 giây.
 
-### Bước 4: Chạy thử nghiệm Popularity trên một người dùng mẫu
+### Bước 4: Demo Synthetic – Chạy thử nghiệm trên dữ liệu nhỏ (6 phim) kiểm tra lọc phim đã xem
 ```powershell
 python -c "
 import sys; sys.path.insert(0, '.')
@@ -196,7 +196,7 @@ for r in top3:
 ```
 *Kết quả kỳ vọng:* Hệ thống tự động bỏ qua phim 318 và 296, gợi ý chính xác [356, 593, 2571].
 
-### Bước 5: Kiểm tra kết quả thực nghiệm toàn diện trên 109,779 users
+### Bước 5: Demo Thực tế – Đọc kết quả thực nghiệm đo đạc trên toàn bộ 109,779 users Validation
 ```powershell
 python -c "
 import json
@@ -218,3 +218,4 @@ print(f'Weighted Baseline : NDCG@10 = {w10[\"ndcg\"]:.4f} | HitRate@10 = {w10[\"
 python scripts/hermes_memory.py search "Popularity"
 ```
 *Kết quả kỳ vọng:* Hiển thị bài học kiểm chứng `[HERMES-M03-01]` chứng minh Count vượt trội hơn Bayesian Weighted Average.
+

@@ -2,10 +2,11 @@
   "record_id": "HERMES-M03-01",
   "module": "M03",
   "component": "PopularityBaseline",
-  "topic": "Empirical Superiority of Rating Count over Bayesian Weighted Average in Top-N",
+  "topic": "Empirical Superiority of Rating Count over Bayesian Weighted Average (m=10) in Top-N",
   "category": "VERIFIED_FACT",
-  "problem_statement": "Should unpersonalized popularity baseline rank movies by pure interaction count or by Bayesian/IMDb weighted average rating?",
-  "solution_or_decision": "Select POPULARITY_COUNT as the primary baseline for MoodGraph. On 109,779 positive validation targets, POPULARITY_COUNT achieves NDCG@10 = 0.02789 and HR@10 = 5.519%, dramatically outperforming POPULARITY_WEIGHTED (NDCG@10 = 0.00771, HR@10 = 1.969%).",
+  "problem_statement": "Compare empirical performance of unpersonalized POPULARITY_COUNT against POPULARITY_WEIGHTED (m=10.0) under full-catalog Leave-1-Last evaluation.",
+  "root_cause": null,
+  "solution_or_decision": "Evaluation on all 109,779 positive validation targets shows POPULARITY_COUNT achieves NDCG@10 = 0.02789 and HitRate@10 = 5.519%, outperforming POPULARITY_WEIGHTED at m=10.0 (NDCG@10 = 0.00771, HitRate@10 = 1.969%) by a factor of 3.62x in NDCG@10 and 2.80x in HitRate@10. This is an observed empirical measurement for m=10.0 and does not imply Count exceeds every possible m parameter.",
   "files_involved": [
     "recommender/als/popularity.py",
     "scripts/run_m03_popularity.py",
@@ -15,9 +16,8 @@
     "tests/als/test_popularity.py::test_04_count_ranking_order",
     "tests/als/test_popularity.py::test_16_integration_with_m02_evaluator"
   ],
-  "evidence": "Real evaluation of all 109,779 positive validation users: Count HR@10=5.52% vs Weighted HR@10=1.97% (nearly 3x higher). NDCG@10=0.0279 vs 0.0077 (3.6x higher).",
-  "code_version": "6a7057f",
+  "evidence": "Observed on 109,779 positive validation targets: Count HR@10=0.05519 vs Weighted(m=10) HR@10=0.01969 (ratio 2.80x). Count NDCG@10=0.02789 vs Weighted(m=10) NDCG@10=0.00771 (ratio 3.62x).",
+  "code_version": "5aa02aa",
   "verification_status": "VERIFIED",
-  "date": "2026-10-31",
-  "root_cause": "MovieLens has severe popularity bias. High-average niche movies (v ~ 1,000, R ~ 4.48) outscore blockbusters in Bayesian average but only appeal to a tiny fraction (< 1%) of users, causing low HitRate and NDCG across the general population."
+  "date": "2026-10-31"
 }

@@ -1,0 +1,22 @@
+{
+  "record_id": "HERMES-M03-02",
+  "module": "M03",
+  "component": "PopularityBaseline",
+  "topic": "Causal Hypothesis for Count Outperforming Weighted Average at m=10",
+  "category": "HYPOTHESIS",
+  "problem_statement": "Why does pure interaction count outperform Bayesian weighted average rating by 2.80x in HitRate@10 on MovieLens 25M?",
+  "root_cause": null,
+  "solution_or_decision": "Hypothesis: MovieLens 25M has extreme community popularity bias where blockbusters (70k-80k ratings) have widespread viewership across diverse user tastes. Weighted Average (m=10) ranks niche movies with high sample means (e.g., R=4.48, v=1,082) above blockbusters, but these appeal only to narrow audiences. This hypothesis requires further ablation in future tuning.",
+  "files_involved": [
+    "recommender/als/popularity.py",
+    "docs/3a/M03_popularity_report.md"
+  ],
+  "relevant_tests": [
+    "tests/als/test_popularity.py::test_07_single_rating_movie_behavior",
+    "tests/als/test_popularity.py::test_22_parameter_m_limiting_behavior"
+  ],
+  "evidence": "Observed top-5 list of Weighted (m=10) features niche movies with v ~ 1,000-1,600 rather than blockbusters with v ~ 70,000-80,000.",
+  "code_version": "5aa02aa",
+  "verification_status": "HYPOTHESIS",
+  "date": "2026-10-31"
+}

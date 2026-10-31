@@ -9,11 +9,36 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sqlite3
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+VALID_CATEGORIES = {
+    "VERIFIED_FACT",
+    "ENGINEERING_DECISION",
+    "HYPOTHESIS",
+    "KNOWN_LIMITATION",
+    "OBSOLETE_INFO",
+}
+
+VALID_STATUSES = {
+    "VERIFIED",
+    "PROPOSED",
+    "HYPOTHESIS",
+    "OBSOLETE",
+}
+
+FORBIDDEN_KEYWORDS = [
+    "api_key",
+    "secret_key",
+    "password",
+    "bearer ",
+    "access_token",
+    "private_key",
+]
 
 
 def get_repo_root() -> Path:
@@ -34,7 +59,7 @@ class KnowledgeRecord:
     relevant_tests: List[str]
     evidence: str
     code_version: str
-    verification_status: str  # VERIFIED, PROPOSED, HYPOTHESIS
+    verification_status: str  # VERIFIED, PROPOSED, HYPOTHESIS, OBSOLETE
     date: str
     root_cause: Optional[str] = None
 
@@ -44,6 +69,47 @@ class KnowledgeRecord:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> KnowledgeRecord:
         return cls(**data)
+
+
+def validate_record_data(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
+    """Validate knowledge record schema and integrity constraints."""
+    errors: List[str] = []
+    required_fields = [
+        "record_id",
+        "module",
+        "component",
+        "topic",
+        "category",
+        "problem_statement",
+        "solution_or_decision",
+        "files_involved",
+        "relevant_tests",
+        "evidence",
+        "code_version",
+        "verification_status",
+        "date",
+    ]
+
+    for field in required_fields:
+        if field not in data or data[field] is None:
+            errors.append(f"Missing required field: {field}")
+
+    if errors:
+        return False, errors
+
+    if data["category"] not in VALID_CATEGORIES:
+        errors.append(f"Invalid category '{data['category']}'. Must be one of {sorted(list(VALID_CATEGORIES))}")
+
+    if data["verification_status"] not in VALID_STATUSES:
+        errors.append(f"Invalid verification_status '{data['verification_status']}'. Must be one of {sorted(list(VALID_STATUSES))}")
+
+    # Security & Leakage check
+    str_content = json.dumps(data).lower()
+    for kw in FORBIDDEN_KEYWORDS:
+        if kw in str_content:
+            errors.append(f"Forbidden sensitive keyword detected: '{kw}'")
+
+    return len(errors) == 0, errors
 
 
 class HermesMemory:
@@ -100,15 +166,25 @@ class HermesMemory:
             con.commit()
 
     def add_or_update_record(self, record: KnowledgeRecord) -> Path:
-        """Save record to JSON and sync to SQLite index."""
+        """Validate, save record to JSON, and sync to SQLite index."""
+        rec_dict = record.to_dict()
+        is_valid, errors = validate_record_data(rec_dict)
+        if not is_valid:
+            raise ValueError(f"Knowledge record validation failed: {'; '.join(errors)}")
+
         # Save JSON file (Source of truth)
         file_path = self.memory_dir / f"{record.record_id}.json"
         with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(record.to_dict(), f, indent=2, ensure_ascii=False)
+            json.dump(rec_dict, f, indent=2, ensure_ascii=False)
 
         # Index into SQLite
+        self._sync_record_to_db(record)
+        return file_path
+
+    def _sync_record_to_db(self, record: KnowledgeRecord) -> None:
+        """Sync a single validated record to SQLite."""
         with self._get_connection() as con:
-            # Delete old FTS entry if exists
+            # Delete old entry if exists to ensure deduplication
             con.execute("DELETE FROM knowledge_records WHERE record_id = ?", (record.record_id,))
             con.execute("DELETE FROM knowledge_fts WHERE record_id = ?", (record.record_id,))
 
@@ -158,10 +234,8 @@ class HermesMemory:
             )
             con.commit()
 
-        return file_path
-
     def rebuild_index(self) -> int:
-        """Rebuild SQLite index from all JSON files in docs/agent_memory/."""
+        """Rebuild SQLite index from all valid JSON files in memory_dir."""
         count = 0
         with self._get_connection() as con:
             con.execute("DELETE FROM knowledge_records")
@@ -173,13 +247,48 @@ class HermesMemory:
             try:
                 with open(jf, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                is_valid, errors = validate_record_data(data)
+                if not is_valid:
+                    print(f"Skipping invalid record {jf.name}: {errors}")
+                    continue
                 rec = KnowledgeRecord.from_dict(data)
-                self.add_or_update_record(rec)
+                self._sync_record_to_db(rec)
                 count += 1
             except Exception as e:
                 print(f"Warning: Failed to load {jf.name}: {e}")
 
         return count
+
+    def verify_all_records(self) -> Dict[str, Any]:
+        """Audit all records on disk and return detailed validation report."""
+        json_files = list(self.memory_dir.glob("*.json"))
+        valid_records: List[str] = []
+        invalid_records: Dict[str, List[str]] = {}
+        obsolete_records: List[str] = []
+
+        for jf in json_files:
+            try:
+                with open(jf, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                is_valid, errors = validate_record_data(data)
+                if is_valid:
+                    valid_records.append(data["record_id"])
+                    if data["category"] == "OBSOLETE_INFO" or data["verification_status"] == "OBSOLETE":
+                        obsolete_records.append(data["record_id"])
+                else:
+                    invalid_records[jf.name] = errors
+            except Exception as e:
+                invalid_records[jf.name] = [str(e)]
+
+        return {
+            "total_files": len(json_files),
+            "valid_count": len(valid_records),
+            "invalid_count": len(invalid_records),
+            "obsolete_count": len(obsolete_records),
+            "valid_records": valid_records,
+            "invalid_records": invalid_records,
+            "obsolete_records": obsolete_records,
+        }
 
     def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Search knowledge records using FTS5 or LIKE fallback."""
@@ -248,6 +357,9 @@ def main():
     # List
     subparsers.add_parser("list", help="List all records")
 
+    # Verify
+    subparsers.add_parser("verify", help="Audit all records on disk")
+
     args = parser.parse_args()
     memory = HermesMemory()
 
@@ -268,6 +380,13 @@ def main():
         print(f"Total {len(records)} records in HERMES memory:")
         for r in records:
             print(f" - [{r['record_id']}] {r['module']}: {r['topic']} ({r['verification_status']})")
+    elif args.command == "verify":
+        rep = memory.verify_all_records()
+        print(f"Audit Summary: {rep['valid_count']} valid, {rep['invalid_count']} invalid, {rep['obsolete_count']} obsolete out of {rep['total_files']} files.")
+        if rep['invalid_records']:
+            print("Errors detected:")
+            for k, errs in rep['invalid_records'].items():
+                print(f"  - {k}: {errs}")
     else:
         parser.print_help()
 

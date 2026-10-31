@@ -137,7 +137,7 @@ Thực nghiệm được thực thi tự động qua script [`scripts/run_m03_po
    - Đây là bằng chứng thực nghiệm rõ ràng nhất cho thấy sự nghèo nàn về mặt đa dạng danh mục của các mô hình gợi ý theo độ phổ biến.
 2. **Khả Năng Xử Lý Cold-Start**:
    - Đối với **User Cold-Start** (người dùng mới chưa có lịch sử Train): Mô hình Popularity hoạt động hoàn hảo như một cơ chế cứu cánh (fallback), trả về ngay 10 phim phổ biến nhất danh mục.
-   - Đối với **Movie Cold-Start** (3,491 phim trong catalog chưa từng có lượt đánh giá nào trong Train): Mô hình Popularity hoàn toàn bất lực và không thể xếp hạng các phim này. Đây là động lực bắt buộc phải có nhánh Đồ thị Tri thức (Task 3B - Knowledge Graph) dựa trên đạo diễn, thể loại và diễn viên để giải cứu phim cold-start.
+   - Đối với **Movie Cold-Start** (3,491 phim trong catalog chưa từng có lượt đánh giá nào trong Train): Mô hình Popularity hoàn toàn bất lực và không thể xếp hạng các phim này. Đây là động lực bắt buộc phải có nhánh Đồ thị Tri thức (Task 3B - Knowledge Graph) dựa trên thể loại chuẩn (genres), user tags và tag genome (genome_scores) từ metadata sẵn có của MovieLens 25M để giải cứu phim cold-start.
 
 ---
 
@@ -187,3 +187,4 @@ Toàn bộ **62/62 tests** của dự án đã vượt qua 100% trong **35.35 gi
 - Module M03 đã hoàn thành xuất sắc toàn bộ các yêu cầu khắt khe của Autonomous Engineering Quality Protocol.
 - Trạng thái nghiệm thu: **`M03_ENGINEERING_PASS`** (Có đầy đủ bằng chứng kiểm thử tự động, kết quả thực nghiệm 24.6M ratings và Defense Map chỉ rõ từng dòng code).
 - Sẵn sàng bàn giao cho Mentor và chủ dự án trước khi chuyển tiếp sang **Module M04: Toy ALS Implementation & Verification**.
+
