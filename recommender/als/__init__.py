@@ -15,6 +15,16 @@ from .data_audit import (
     audit_movie_cold_start,
     run_full_m01_audit,
 )
+from .evaluator import (
+    HeldOutTarget,
+    SingleUserMetricResult,
+    EvaluationSummary,
+    compute_single_user_metrics,
+    sort_and_rank_candidates,
+    filter_seen_items,
+    validate_candidate_pool,
+    TopNEvaluator,
+)
 
 __all__ = [
     "get_spark_session",
@@ -26,4 +36,12 @@ __all__ = [
     "audit_als_input_distribution",
     "audit_movie_cold_start",
     "run_full_m01_audit",
+    "HeldOutTarget",
+    "SingleUserMetricResult",
+    "EvaluationSummary",
+    "compute_single_user_metrics",
+    "sort_and_rank_candidates",
+    "filter_seen_items",
+    "validate_candidate_pool",
+    "TopNEvaluator",
 ]
