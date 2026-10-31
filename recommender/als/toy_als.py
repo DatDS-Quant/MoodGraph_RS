@@ -524,3 +524,4 @@ def verify_euclidean_vs_dot_product_counterexample() -> Dict[str, Any]:
             "not Euclidean distance."
         ),
     }
+

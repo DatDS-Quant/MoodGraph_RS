@@ -265,3 +265,4 @@ def test_13_cold_entities_present_in_toy_catalog():
 
     assert 6 not in train_users
     assert 107 not in train_movies
+

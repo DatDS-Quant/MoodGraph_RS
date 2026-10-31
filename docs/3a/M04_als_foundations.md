@@ -213,3 +213,4 @@ Ta chứng minh bằng phản ví dụ xây dựng tại `recommender/als/toy_al
   - Tích vô hướng điểm số: `p_u^T * q_2 = (2.0 * 5.0) + 0 = 10.00` (Điểm ưa thích cao gấp hơn 2.3 lần!).
 - **Kết luận:**
   Xếp hạng gợi ý trong ALS phụ thuộc vào độ lớn của tích vô hướng `p_u^T * q_i`, vốn bị chi phối mạnh mẽ bởi độ dài chuẩn (norm) của vector phim. Một bộ phim kinh điển chất lượng cao thường có chuẩn vector lớn. Để tìm kiếm nhanh các ứng viên có tích vô hướng cao nhất, phải sử dụng thuật toán Tìm kiếm Tích vô hướng Cực đại (**Maximum Inner Product Search - MIPS**) chứ không thể dùng thuật toán tìm láng giềng khoảng cách Euclidean thông thường.
+

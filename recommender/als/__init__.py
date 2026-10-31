@@ -52,6 +52,11 @@ from .toy_als import (
     demonstrate_cold_start_difference,
     verify_euclidean_vs_dot_product_counterexample,
 )
+from .trainer import (
+    ALSConfig,
+    FactorMatrixAuditResult,
+    ALSTrainer,
+)
 
 __all__ = [
     "get_spark_session",
@@ -94,4 +99,7 @@ __all__ = [
     "verify_spark_vs_manual_dot",
     "demonstrate_cold_start_difference",
     "verify_euclidean_vs_dot_product_counterexample",
+    "ALSConfig",
+    "FactorMatrixAuditResult",
+    "ALSTrainer",
 ]

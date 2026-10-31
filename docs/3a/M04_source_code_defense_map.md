@@ -84,3 +84,4 @@ python -m pytest tests/als/test_toy_als.py -v
 ### Bước 3: Mở file mã nguồn và giải thích trực tiếp (120 giây)
 - Mở file: `code -g recommender/als/toy_als.py:263`
 - Giải thích đoạn code `verify_golden_example_step`: Cho hội đồng thấy công thức chia tích vô hướng với bình phương vector chuẩn, chứng minh sinh viên tự tay cài đặt thuật toán chứ không chỉ gọi thư viện đen.
+
