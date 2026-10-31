@@ -35,6 +35,23 @@ from .popularity import (
     generate_batch_top_k,
     PopularityRecommender,
 )
+from .toy_als import (
+    TOY_USERS,
+    TOY_MOVIES,
+    TOY_TRAIN_RATINGS,
+    compute_dot_product,
+    compute_als_loss,
+    als_update_user_factors,
+    als_update_item_factors,
+    run_toy_als_reference,
+    verify_golden_example_step,
+    create_toy_spark_dataframe,
+    fit_spark_toy_als,
+    extract_factors,
+    verify_spark_vs_manual_dot,
+    demonstrate_cold_start_difference,
+    verify_euclidean_vs_dot_product_counterexample,
+)
 
 __all__ = [
     "get_spark_session",
@@ -62,4 +79,19 @@ __all__ = [
     "generate_user_top_k",
     "generate_batch_top_k",
     "PopularityRecommender",
+    "TOY_USERS",
+    "TOY_MOVIES",
+    "TOY_TRAIN_RATINGS",
+    "compute_dot_product",
+    "compute_als_loss",
+    "als_update_user_factors",
+    "als_update_item_factors",
+    "run_toy_als_reference",
+    "verify_golden_example_step",
+    "create_toy_spark_dataframe",
+    "fit_spark_toy_als",
+    "extract_factors",
+    "verify_spark_vs_manual_dot",
+    "demonstrate_cold_start_difference",
+    "verify_euclidean_vs_dot_product_counterexample",
 ]

@@ -353,3 +353,4 @@ def test_09_detect_obsolete_info(temp_hermes: HermesMemory):
     assert report["valid_count"] == 1
     assert report["obsolete_count"] == 1
     assert "OBS-01" in report["obsolete_records"]
+

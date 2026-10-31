@@ -1,0 +1,24 @@
+{
+  "record_id": "HERMES-M04-01",
+  "module": "M04",
+  "component": "ToyALS",
+  "topic": "Exact Mathematical Convergence and Dot Product Equivalence in Explicit ALS",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Verify that Spark MLlib ALS explicit feedback factor matrices satisfy r_hat = p_u^T q_i and that alternating least squares solves ridge regression updates monotonically reducing loss.",
+  "root_cause": null,
+  "solution_or_decision": "PySpark ALS fit with implicitPrefs=False, rank=2, regParam=0.05 on toy dataset produces factors whose manual dot product matches model.transform() predictions within 2.4e-7 max absolute difference (strictly <= 1e-4 tolerance). Pure Python reference ALS solver demonstrates 99.04% monotonic loss reduction from 213.78 to 2.05 across 15 iterations. Golden Example step-by-step verification confirms p_An=2.0, p_Binh=1.0, q_C=1.5, and predicted rating on unobserved movie C equals 3.00.",
+  "files_involved": [
+    "recommender/als/toy_als.py",
+    "scripts/run_m04_toy_als.py",
+    "artifacts/m04_toy_als_results.json"
+  ],
+  "relevant_tests": [
+    "tests/als/test_toy_als.py::test_04_golden_example_step_by_step",
+    "tests/als/test_toy_als.py::test_05_reference_als_solver_monotonic_loss_decrease",
+    "tests/als/test_toy_als.py::test_07_spark_prediction_vs_manual_dot_product"
+  ],
+  "evidence": "Manual dot product vs Spark transform max error: 0.00000024. Golden example exact match: p_An=2.0000, p_Binh=1.0000, pred=3.0000.",
+  "code_version": "M04",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31"
+}
