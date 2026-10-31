@@ -2,7 +2,7 @@
 
 > **Dự án:** MoodGraph - Personalized Movie Recommendation with Knowledge Graphs and Apache Spark  
 > **Module:** M05 – Full Spark ALS Training  
-> **Branch:** `feature/als-3a` | **Commit:** `38c5c4f` | **Môi trường:** Python 3.12, PySpark 4.2.0, Windows 11  
+> **Branch:** `feature/als-3a` | **Commit:** `2e16fd6` (Training Base: `38c5c4f`) | **Môi trường:** Python 3.12, PySpark 4.2.0, Windows 11  
 > **Cam kết:** 100% số dòng và đường dẫn đã được kiểm tra thực tế trên workspace `D:\PROJECT BIG DATA\MoodGraph`.
 
 ---
@@ -123,3 +123,4 @@ python -m pytest tests/als/test_als_trainer.py -v
 
 ### Bước 4: Mở báo cáo thực nghiệm và tóm tắt kết quả (60 giây)
 Mở tệp [M05_training_report.md](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/docs/3a/M05_training_report.md) và chỉ rõ cho hội đồng thấy thời gian huấn luyện 85.96 giây, các chỉ số kiểm toán vector và hợp đồng sẵn sàng cho Module M06.
+

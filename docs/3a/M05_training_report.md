@@ -3,8 +3,8 @@
 > **Dự án:** MoodGraph - Personalized Movie Recommendation with Knowledge Graphs and Apache Spark  
 > **Chuyên đề:** Task 3A – Khối Gợi Ý Lọc Cộng Tác Phân Tán (Spark ALS Collaborative Filtering)  
 > **Module:** M05 – Full Spark ALS Training  
-> **Branch:** `feature/als-3a` | **Git Commit:** `38c5c4f` | **Môi trường:** Python 3.12, PySpark 4.2.0, Windows 11  
-> **Trạng thái:** **`M05_ENGINEERING_PASS`**
+> **Branch:** `feature/als-3a` | **Packaging Commit:** `2e16fd6` (Base commit lúc train: `38c5c4f`) | **Môi trường:** Python 3.12, PySpark 4.2.0, Windows 11  
+> **Trạng thái:** **`M05_ACCEPTANCE_PASS`** (Đã qua kiểm toán kỹ thuật & nghiệm thu khoa học)
 
 ---
 
@@ -38,7 +38,7 @@ Cấu hình huấn luyện được đóng gói chặt chẽ trong lớp `ALSCon
 | `regParam` | 0.1 | Hệ số phạt chuẩn Frobenius (lambda) giúp co ép vector và ngăn ngừa Overfitting. |
 | `implicitPrefs` | False | Chế độ Explicit Feedback: ô trống là chưa quan sát (unobserved), tuyệt đối không coi là điểm 0. |
 | `coldStartStrategy` | "nan" | Giữ nguyên các hàng không tính được để bộ đo Top-N bảo toàn đúng mẫu số đánh giá. |
-| `seed` | 42 | Khóa hạt giống ngẫu nhiên nhằm đảm bảo tính tái lập 100% qua mọi lần chạy. |
+| `seed` | 42 | Khóa hạt giống ngẫu nhiên khởi tạo vector nhân tố. Lưu ý khoa học: Trên cụm phân tán hoặc các kiến trúc CPU khác nhau, thứ tự cộng dồn floating-point không giao hoán (BLAS reduction non-associativity) có thể tạo ra chênh lệch bit nhỏ ở bậc thập phân sâu. |
 | `userCol` / `itemCol` / `ratingCol` | userId / movieId / rating | Định danh các cột tương tác theo hợp đồng dữ liệu M00/M01. |
 | `storageLevels` | MEMORY_AND_DISK | Cơ chế lưu trữ đệm phân tán an toàn trên máy tính cá nhân 16 GB RAM. |
 
@@ -76,7 +76,7 @@ KẾT QUẢ KIỂM TOÁN NHÂN TỐ ẨN (FACTOR MATRICES AUDIT)
 
 ### Nhận xét phân phối:
 - Chuẩn vector người dùng tập trung quanh mức 2.36 với độ lệch chuẩn nhỏ (0.24), cho thấy các vector phân bố đồng đều trong không gian 16 chiều, không xảy ra hiện tượng bùng nổ số (exploding factors) hay triệt tiêu vector (vanishing factors).
-- Chuẩn vector bộ phim có mức độ phân tán rộng hơn (std = 0.35, min = 0.15 đến max = 3.57). Những bộ phim kinh điển được hàng chục ngàn người xem đánh giá cao có chuẩn lớn, trong khi các phim ít tương tác bị hệ số phạt regParam co ép về gần 0.
+- Chuẩn vector bộ phim có mức độ phân tán rộng hơn (std = 0.35, min = 0.15 đến max = 3.57). Giả thuyết định tính đặt ra là các bộ phim kinh điển được nhiều tương tác có xu hướng mang độ dài chuẩn lớn hơn, trong khi phim ít tương tác bị hệ số phạt regParam co ép về gần 0; tuy nhiên đây là quan sát hành vi mang tính giả thuyết trực giác chứ không phải định lý chứng minh toán học trong M05. Kiểm định định lượng tương quan giữa chuẩn vector và tần suất xuất hiện sẽ được thực hiện khi phân tích sâu ở các module tiếp theo.
 
 ---
 
@@ -125,11 +125,11 @@ Trên tập mẫu 50.000 tương tác Train:
 - **Diagnostic Train MAE:** `0.6013`
 
 > [!CAUTION] CẢNH BÁO KHOA HỌC QUAN TRỌNG:
-> Điểm số RMSE/MAE trên tập Train là thước đo chẩn đoán kỹ thuật nội bộ (Internal Diagnostic Check) nhằm xác nhận mô hình đang hội tụ và học được quy luật phân tích ma trận.
+> Điểm số RMSE = 0.7698 và MAE = 0.6013 trên tập Train chỉ là thước đo chẩn đoán kỹ thuật nội bộ (In-Sample Optimization Diagnostic Check) nhằm xác nhận quá trình luân phiên bình phương tối thiểu đang giảm dần hàm tổn thất trên các cặp quan sát được.
 > **TUYỆT ĐỐI KHÔNG ĐƯỢC:**
-> 1. Dùng Train RMSE thấp để tuyên bố mô hình ALS có khả năng tổng quát hóa tốt.
+> 1. Dùng Train RMSE thấp để tuyên bố mô hình ALS có khả năng tổng quát hóa tốt hay đã hội tụ toàn cục tối ưu.
 > 2. Dùng Train RMSE để kết luận ALS vượt trội hơn mô hình Popularity Baseline.
-> 3. Đánh giá chất lượng gợi ý thực tế bằng RMSE. Việc đánh giá khả năng gợi ý bắt buộc phải thông qua độ đo Top-N Ranking (NDCG@K, HitRate@K) trên tập Validation được triển khai ở Module M06.
+> 3. Đánh giá chất lượng gợi ý thực tế bằng RMSE. Việc đánh giá khả năng gợi ý bắt buộc phải thông qua độ đo xếp hạng Top-N (NDCG@K, HitRate@K) trên tập Validation được triển khai độc lập ở Module M06.
 
 ---
 
@@ -140,5 +140,6 @@ Mô hình M05 bàn giao nguyên vẹn artifact cho Module M06 (Full-Catalog Cand
 - **Tập nhân tố người dùng:** 162.541 users
 - **Tập nhân tố bộ phim:** 58.932 movies
 - **Số chiều latent:** 16 dimensions
-- **Mã định danh Git Commit:** `38c5c4f`
-- **Tình trạng:** Sẵn sàng tái sử dụng mà không cần huấn luyện lại.
+- **Mã định danh Git Provenance:** Base training execution tại commit `38c5c4f`; đóng gói module tại commit `2e16fd6`.
+- **Tình trạng:** Sẵn sàng tái sử dụng trực tiếp qua `ALSTrainer.load_model()` mà không cần huấn luyện lại.
+
