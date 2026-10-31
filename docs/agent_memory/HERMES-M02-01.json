@@ -1,0 +1,22 @@
+{
+  "record_id": "HERMES-M02-01",
+  "module": "M02",
+  "component": "TopNEvaluator",
+  "topic": "Positive-Target Cohort and Denominator Preservation in Leave-1-Last",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "If users with target rating < 3.5 are included in Recall or NDCG, denominator is zero or artificially diluted. If users with positive targets receive no recommendations and are dropped, metrics are artificially inflated.",
+  "solution_or_decision": "Primary evaluation is strictly averaged over positive cohort (109,779 users in ML-25M). Users with empty/missing recommendations receive 0.0 across all metrics and are preserved in positive denominator.",
+  "files_involved": [
+    "recommender/als/evaluator.py",
+    "tests/als/test_evaluator.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_evaluator.py::test_08_user_with_empty_recommendations",
+    "tests/als/test_evaluator.py::test_19_denominator_distinction_positive_vs_all"
+  ],
+  "evidence": "21/21 hand-calculated tests PASS. Pilot check on 500 users confirmed exact separation: 356 positive, 144 non-positive.",
+  "code_version": "6a7057f",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31",
+  "root_cause": "Binary relevance thresholding requires non-positive targets to be segregated. Model failures must be counted as misses (0.0), not dropped."
+}

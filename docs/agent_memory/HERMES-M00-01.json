@@ -1,0 +1,21 @@
+{
+  "record_id": "HERMES-M00-01",
+  "module": "M00",
+  "component": "Environment",
+  "topic": "Windows PySpark and Hadoop Winutils Configuration",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "PySpark fails on Windows with UnsatisfiedLinkError NativeIO$Windows.access0 or Winutils missing.",
+  "solution_or_decision": "Explicitly set os.environ['HADOOP_HOME'] = r'C:\\hadoop' and os.environ['PATH'] = r'C:\\hadoop\\bin;' + os.environ.get('PATH', '') at top-level before pyspark import.",
+  "files_involved": [
+    "recommender/als/data_loader.py",
+    "tests/als/test_m00_environment.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_m00_environment.py::test_03_spark_session_and_schema_contract"
+  ],
+  "evidence": "SparkSession creates and reads Parquet in under 3 seconds without NativeIO errors.",
+  "code_version": "6a7057f",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31",
+  "root_cause": "Windows requires winutils.exe and hadoop.dll in PATH before JVM and PySpark initialize. os.environ.setdefault does not override existing PATH."
+}

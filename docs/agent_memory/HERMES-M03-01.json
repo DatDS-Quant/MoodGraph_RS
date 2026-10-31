@@ -1,0 +1,23 @@
+{
+  "record_id": "HERMES-M03-01",
+  "module": "M03",
+  "component": "PopularityBaseline",
+  "topic": "Empirical Superiority of Rating Count over Bayesian Weighted Average in Top-N",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Should unpersonalized popularity baseline rank movies by pure interaction count or by Bayesian/IMDb weighted average rating?",
+  "solution_or_decision": "Select POPULARITY_COUNT as the primary baseline for MoodGraph. On 109,779 positive validation targets, POPULARITY_COUNT achieves NDCG@10 = 0.02789 and HR@10 = 5.519%, dramatically outperforming POPULARITY_WEIGHTED (NDCG@10 = 0.00771, HR@10 = 1.969%).",
+  "files_involved": [
+    "recommender/als/popularity.py",
+    "scripts/run_m03_popularity.py",
+    "artifacts/m03_popularity_results.json"
+  ],
+  "relevant_tests": [
+    "tests/als/test_popularity.py::test_04_count_ranking_order",
+    "tests/als/test_popularity.py::test_16_integration_with_m02_evaluator"
+  ],
+  "evidence": "Real evaluation of all 109,779 positive validation users: Count HR@10=5.52% vs Weighted HR@10=1.97% (nearly 3x higher). NDCG@10=0.0279 vs 0.0077 (3.6x higher).",
+  "code_version": "6a7057f",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31",
+  "root_cause": "MovieLens has severe popularity bias. High-average niche movies (v ~ 1,000, R ~ 4.48) outscore blockbusters in Bayesian average but only appeal to a tiny fraction (< 1%) of users, causing low HitRate and NDCG across the general population."
+}

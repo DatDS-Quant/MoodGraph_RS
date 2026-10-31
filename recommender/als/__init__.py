@@ -25,6 +25,16 @@ from .evaluator import (
     validate_candidate_pool,
     TopNEvaluator,
 )
+from .popularity import (
+    PopularityMovieRecord,
+    PopularityRecommendation,
+    compute_weighted_score,
+    rank_movies_by_count,
+    rank_movies_by_weighted_average,
+    generate_user_top_k,
+    generate_batch_top_k,
+    PopularityRecommender,
+)
 
 __all__ = [
     "get_spark_session",
@@ -44,4 +54,12 @@ __all__ = [
     "filter_seen_items",
     "validate_candidate_pool",
     "TopNEvaluator",
+    "PopularityMovieRecord",
+    "PopularityRecommendation",
+    "compute_weighted_score",
+    "rank_movies_by_count",
+    "rank_movies_by_weighted_average",
+    "generate_user_top_k",
+    "generate_batch_top_k",
+    "PopularityRecommender",
 ]
