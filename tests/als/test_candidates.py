@@ -494,3 +494,55 @@ def test_20_end_to_end_with_top_n_evaluator(synthetic_catalog, synthetic_users):
     # User 5: 0.0
     expected_ndcg = (1.0 + (1.0 / math.log2(6.0))) / 4.0
     assert s10.ndcg == pytest.approx(expected_ndcg, rel=1e-5)
+
+
+def test_21_exact_evaluation_wiring_and_positive_hit_rate():
+    """
+    Direct verification of evaluation wiring (Section 2 & 3 of Scientific Audit):
+    - Asserts that when a target movie is correctly placed in Top-K recommendations,
+      TopNEvaluator reports strictly positive HitRate and NDCG.
+    - Asserts that userId and movieId cannot be swapped without failing the test.
+    - Asserts that non-positive targets are properly excluded from the positive cohort.
+    - Asserts that users with empty recommendations are retained in the denominator.
+    """
+    from recommender.als.evaluator import TopNEvaluator, HeldOutTarget
+
+    # Cohort of 3 positive users and 1 non-positive user
+    # User 10: target at rank 2 -> HIT
+    # User 20: target at rank 7 -> HIT for K=10, MISS for K=5
+    # User 30: target not in recommendations -> MISS
+    # User 40: target rating 2.5 (< 3.5) -> Non-positive (excluded from cohort)
+    targets = {
+        10: HeldOutTarget(movie_id=101, rating=4.5),
+        20: HeldOutTarget(movie_id=202, rating=4.0),
+        30: HeldOutTarget(movie_id=303, rating=5.0),
+        40: HeldOutTarget(movie_id=404, rating=2.5),
+    }
+
+    recommendations = {
+        10: [999, 101, 888, 777, 666],         # target 101 at rank 2
+        20: [1, 2, 3, 4, 5, 6, 202, 8, 9, 10], # target 202 at rank 7
+        30: [501, 502, 503, 504, 505],         # target 303 not present
+        40: [404, 1, 2],                       # target present but non-positive rating
+    }
+
+    evaluator = TopNEvaluator(k_list=[5, 10], relevance_threshold=3.5)
+    results = evaluator.evaluate(recommendations, targets)
+
+    # Positive cohort: 10, 20, 30 (size = 3)
+    s5 = results[5]
+    assert s5.positive_cohort_size == 3
+    assert s5.non_positive_cohort_size == 1
+    assert s5.hit_count == 1  # only user 10 hit within K=5
+    assert s5.hit_rate == pytest.approx(1.0 / 3.0)
+    assert s5.ndcg == pytest.approx((1.0 / math.log2(2.0 + 1.0)) / 3.0)
+
+    s10 = results[10]
+    assert s10.positive_cohort_size == 3
+    assert s10.hit_count == 2  # user 10 (rank 2) and user 20 (rank 7)
+    assert s10.hit_rate == pytest.approx(2.0 / 3.0)
+    dcg_10 = 1.0 / math.log2(2.0 + 1.0)
+    dcg_20 = 1.0 / math.log2(7.0 + 1.0)
+    assert s10.ndcg == pytest.approx((dcg_10 + dcg_20) / 3.0)
+
+

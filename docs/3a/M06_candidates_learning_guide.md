@@ -26,13 +26,13 @@ Trong hệ thống gợi ý ma trận nhân tử (Matrix Factorization), việc 
 Mục tiêu của Module M06 là thực thi quá trình **suy luận (inference)**: biến các vector tiềm ẩn này thành danh sách Top-K bộ phim tốt nhất cho từng người dùng, tuân thủ nghiêm ngặt 3 nguyên lý kỹ thuật:
 1. **Lọc triệt để phim đã xem trong Train (Seen-Item Filtering):** Người dùng không muốn được gợi ý lại những phim họ đã đánh giá trong lịch sử huấn luyện.
 2. **Thuật toán Top-K chính xác (Exact Top-K):** Không dùng xấp xỉ lấy mẫu (sampling) gây thiếu hụt hay sai lệch ứng viên; áp dụng thuật toán phân vùng `argpartition` kết hợp sắp xếp cục bộ với độ phức tạp tuyến tính O(M).
-3. **Phá vỡ thế hòa điểm tất định (Deterministic Tie-breaking):** Khi hai bộ phim có điểm số dự đoán bằng nhau, quy tắc `als_score DESC, sau đó movieId ASC` đảm bảo kết quả luôn tái lập 100% qua mọi lần chạy.
+3. **Phá vỡ thế hòa điểm tất định (Deterministic Tie-breaking):** Khi hai bộ phim có điểm số dự đoán bằng nhau, quy tắc `als_score DESC, sau đó movieId ASC` đảm bảo kết quả luôn tái lập trên cùng môi trường runtime.
 
 ---
 
 ## 2. END-TO-END TOY EXAMPLE: TÍNH TOÁN TAY TỪNG BƯỚC
 
-Để hiểu thấu đáo luồng dữ liệu, chúng ta cùng xem xét một kịch bản nhỏ gồm 1 người dùng (User 1) và catalog 6 bộ phim với số chiều ẩn d = 2.
+Để hiểu thấu đáo luồng dữ liệu, chúng ta cùng xem xét một kịch bản gồm 1 người dùng (User 1) và catalog 6 bộ phim với số chiều ẩn d = 2, tuân thủ đúng giao thức Leave-Two-Last-Out (trong đó tập Validation có đúng 1 mục tiêu giữ lại).
 
 ### Bước 1: Trạng thái Vector ban đầu
 - Vector người dùng: `p_u = [1.2, 0.8]`
@@ -94,21 +94,26 @@ Cần chọn Top-3 phim chưa xem có điểm cao nhất:
   - Rank 3: `movieId = 105`, `score = 2.00`
   *(Phim 101 và 103 có điểm thô cao nhưng đã xem nên bị loại triệt để).*
 
-### Bước 6: Đánh giá trên tập Validation
-Giả sử trên tập Validation, User 1 có tương tác tích cực (rating >= 3.5) với danh sách:
-- `Validation_Positives(User 1) = {104, 107}`
+### Bước 6: Đánh giá trên tập Validation (Chuẩn Giao thức Leave-1-Last)
+Theo đúng giao thức đánh giá M00/M01, trên tập Validation, User 1 có duy nhất **một** tương tác tích cực tại thời điểm T - 1:
+- `Target(User 1) = (movieId = 104, rating = 4.0)`
 
-Đánh giá danh sách gợi ý `[102, 104, 105]`:
-- Phim 102: Không có trong Validation Positives -> Miss.
-- Phim 104: Nằm trong Validation Positives tại Rank 2 -> **HIT**!
-- Phim 105: Không có trong Validation Positives -> Miss.
+Vì `rating = 4.0 >= 3.5`, User 1 thuộc nhóm positive cohort (`positive_cohort_size = 1`).
 
-Tính toán chỉ số tại K = 3:
-- `HitRate@3 = 1` (vì có ít nhất 1 hit trong Top-3).
-- `DCG@3 = 1 / log2(rank + 1) = 1 / log2(2 + 1) = 1 / log2(3) = 1 / 1.58496 = 0.63093`
-- `IDCG@3`: Vị trí lý tưởng nhất nếu Phim 104 ở Rank 1:
-  - `IDCG@3 = 1 / log2(1 + 1) = 1 / log2(2) = 1.00000`
-- `NDCG@3 = DCG@3 / IDCG@3 = 0.63093 / 1.00000 = 0.63093`
+Đánh giá danh sách gợi ý Top-3 `[102, 104, 105]`:
+- Phim 102: Miss.
+- Phim 104: Trúng tại **Rank 2** -> **HIT**!
+- Phim 105: Miss.
+
+Tính toán các chỉ số Top-N tại K = 3:
+- `HitRate@3 = 1.0` (1 hit / 1 positive user).
+- `Recall@3 = 1.0` (1 observed target retrieved / 1 observed target total).
+- `Precision@3 = 1.0 / 3 = 0.33333` (1 hit / 3 recommended slots).
+- `DCG@3 = 1.0 / log2(rank + 1) = 1.0 / log2(2 + 1) = 1.0 / log2(3) = 1.0 / 1.58496 = 0.63093`.
+- `IDCG@3`: Vị trí lý tưởng nhất nếu Phim 104 xuất hiện ở Rank 1:
+  - `IDCG@3 = 1.0 / log2(1 + 1) = 1.0 / log2(2) = 1.00000`.
+- `NDCG@3 = DCG@3 / IDCG@3 = 0.63093 / 1.00000 = 0.63093`.
+- `MRR@3 = 1.0 / rank = 1.0 / 2 = 0.50000`.
 
 ---
 
@@ -120,25 +125,24 @@ Suy luận Top-N là quá trình tìm kiếm tập hợp con `S_u` gồm K phầ
 Đây là bài toán cực đại hóa điểm số tiềm ẩn trên không gian vật phẩm còn lại của từng cá nhân.
 
 ### Câu 2: Tại sao r_hat_ui = p_u^T * q_i lại đại diện cho điểm dự đoán?
-Mỗi chiều `k` trong không gian nhân tử biểu diễn một thuộc tính tiềm ẩn (ví dụ: yếu tố hành động, kỹ xảo, triết lý nghệ thuật, đạo diễn). Giá trị `p_uk` thể hiện mức độ ưa chuộng của người dùng với yếu tố `k`, còn `q_ik` thể hiện mức độ sở hữu yếu tố `k` của bộ phim `i`. Phép nhân vô hướng tổng hợp mức độ tương thích trên tất cả `d` chiều thành một đại lượng vô hướng dự báo mức độ yêu thích.
+Mỗi chiều `k` trong không gian nhân tử biểu diễn một thuộc tính tiềm ẩn (ví dụ: xu hướng hành động, kịch tính, nhịp điệu phim). Giá trị `p_uk` thể hiện mức độ ưa chuộng của người dùng với yếu tố `k`, còn `q_ik` thể hiện mức độ sở hữu yếu tố `k` của bộ phim `i`. Phép nhân vô hướng tổng hợp mức độ tương thích trên tất cả `d` chiều thành một đại lượng vô hướng dự báo mức độ yêu thích.
 
 ### Câu 3: Tại sao trong gợi ý thực tế phải lọc bỏ những phim user đã tương tác trong Train?
-Gợi ý những bộ phim người dùng đã xem và đánh giá không mang lại giá trị khám phá mới (novelty/discovery) và không giúp người dùng đưa ra quyết định tiêu dùng mới. Trong giao thức đánh giá khoa học, nếu không lọc phim đã xem, mô hình sẽ có xu hướng gợi ý lại đúng những phim Train đạt 5 sao, gây hiện tượng rò rỉ và làm sai lệch chỉ số đánh giá khả năng tổng quát hóa trên tập Validation.
+Gợi ý những bộ phim người dùng đã xem và đánh giá không mang lại giá trị khám phá mới (novelty/discovery) và không giúp người dùng đưa ra quyết định tiêu dùng mới. Trong giao thức đánh giá khoa học, nếu không lọc phim đã xem, mô hình sẽ có xu hướng gợi ý lại đúng những phim Train đạt 5 sao, gây hiện tượng rò rỉ dữ liệu và làm sai lệch chỉ số đánh giá khả năng tổng quát hóa trên tập Validation.
 
 ### Câu 4: Tại sao gán r_hat = -infinity trước khi Top-K lại ưu việt hơn lọc sau Top-K?
-- Nếu lọc sau Top-K: Khi lấy Top-K từ toàn bộ catalog, nếu người dùng đã xem 8 phim trong Top-10 thì sau khi lọc chỉ còn lại 2 phim. Danh sách gợi ý bị thiếu hụt nghiêm trọng (không đủ K phần tử). Nếu lấy K' lớn hơn (oversampling) thì vẫn có nguy cơ thiếu với những người dùng có hàng nghìn lượt xem (như heavy user có 32,200 đánh giá).
+- Nếu lọc sau Top-K: Khi lấy Top-K từ toàn bộ catalog, nếu người dùng đã xem 8 phim trong Top-10 thì sau khi lọc chỉ còn lại 2 phim. Danh sách gợi ý bị thiếu hụt nghiêm trọng (không đủ K phần tử). Nếu lấy K' lớn hơn (oversampling) thì vẫn có nguy cơ thiếu với những người dùng có hàng nghìn lượt xem (như heavy user có 32.200 đánh giá).
 - Khi gán `-infinity` trước Top-K: Các phim đã xem bị đẩy xuống đáy của thang đo. Bất kỳ thuật toán tìm Top-K nào cũng đảm bảo chọn ra đúng K ứng viên chưa xem có điểm cao nhất trong một lượt duy nhất mà không tốn thêm bộ nhớ.
 
-### Câu 5: Khi nào xảy ra hiện tượng tie-breaking và tại sao tie-breaking ngẫu nhiên là tối kỵ?
-Hiện tượng hòa điểm (tie) xảy ra khi nhiều vật phẩm có cùng điểm số dự đoán chính xác đến từng bit hoặc khi nhiều vật phẩm chưa từng xuất hiện có vector mặc định giống nhau. Nếu tie-breaking ngẫu nhiên:
-- Kết quả gợi ý sẽ thay đổi sau mỗi lần chạy code, vi phạm tính tái lập khoa học.
-- Đánh giá benchmark trên Validation sẽ trồi sụt ngẫu nhiên, không thể so sánh công bằng giữa các thuật toán.
-Quy tắc chuẩn mực là sắp xếp theo điểm giảm dần, sau đó sắp xếp theo `movieId` tăng dần.
+### Câu 5: Khi nào xảy ra hiện tượng tie-breaking và tính tất định được bảo đảm ra sao?
+Hiện tượng hòa điểm (tie) xảy ra khi nhiều vật phẩm có cùng điểm số dự đoán chính xác đến từng bit hoặc khi nhiều vật phẩm chưa từng xuất hiện có vector mặc định giống nhau.
+- Quy tắc tie-breaking (`als_score DESC, movieId ASC`) đảm bảo tính tất định hoàn toàn trên cùng một môi trường runtime (cùng kiến trúc CPU, cùng bản build NumPy/BLAS).
+- Tuy nhiên, giữa các môi trường phần cứng và thư viện BLAS khác nhau (ví dụ: Intel MKL trên x86 so với OpenBLAS trên ARM), các sai số làm tròn số thực dấu phẩy động cực nhỏ (khoảng 1e-7) trong phép nhân ma trận có thể làm thay đổi thứ tự của các điểm số rất sát nhau. Do đó, để tái lập 100% số liệu, cần cố định môi trường runtime.
 
 ### Câu 6: Thuật toán Top-K exact nào tối ưu khi catalog M = 58,932?
-- **Full Sort:** Sắp xếp toàn bộ mảng `M` phần tử tốn độ phức tạp `O(M log M)`. Với M = 58,932, phép tính tốn khoảng 930,000 phép so sánh cho mỗi user.
-- **Min-Heap:** Duy trì heap kích thước K tốn `O(M log K)`. Với K = 20, tốn khoảng 260,000 phép toán nhưng chi phí overhead con trỏ trong Python rất lớn.
-- **Quickselect / Argpartition:** Hàm `np.argpartition` đưa K phần tử lớn nhất về đầu mảng chỉ tốn thời gian tuyến tính trung bình `O(M)` (khoảng 60,000 phép toán), sau đó chỉ sắp xếp đúng K phần tử đó tốn `O(K log K)`. Đây là giải pháp nhanh nhất và tối ưu bộ nhớ nhất trong NumPy.
+- **Full Sort:** Sắp xếp toàn bộ mảng `M` phần tử tốn độ phức tạp `O(M log M)`. Với M = 58.932, phép tính tốn khoảng 930.000 phép so sánh cho mỗi user.
+- **Min-Heap:** Duy trì heap kích thước K tốn `O(M log K)`. Với K = 20, tốn khoảng 260.000 phép toán nhưng chi phí overhead con trỏ trong Python rất lớn.
+- **Quickselect / Argpartition:** Hàm `np.argpartition` đưa K phần tử lớn nhất về đầu mảng chỉ tốn thời gian tuyến tính trung bình `O(M)` (khoảng 60.000 phép toán), sau đó chỉ sắp xếp đúng K phần tử đó tốn `O(K log K)`. Đây là giải pháp nhanh nhất và tối ưu bộ nhớ nhất trong NumPy.
 
 ### Câu 7: Tại sao batching theo user (P_batch @ Q.T) nhanh hơn tính từng user hàng chục lần?
 Khi tính từng user, CPU phải thực hiện phép nhân ma trận - vector (GEMV - BLAS Level 2) với tỷ lệ tái sử dụng cache rất thấp. Ma trận Q kích thước `58,932 x 16` liên tục bị nạp và đẩy ra khỏi CPU cache.
@@ -150,28 +154,28 @@ GEMM (General Matrix Multiply) chia nhỏ hai ma trận `P_batch` (B x d) và `Q
 ### Câu 9: Tại sao oversampling có thể sinh ra kết quả sai hoặc thiếu K ứng viên?
 Nếu dùng chiến lược oversampling với hệ số `alpha` cố định (ví dụ lấy `K' = alpha * K = 100` ứng viên rồi lọc phim đã xem):
 - Đối với người dùng thông thường có 20 phim đã xem, 100 ứng viên đủ để lọc ra 20 phim.
-- Nhưng đối với người dùng cuồng nhiệt (heavy user có 32,200 phim đã xem), toàn bộ 100 ứng viên ban đầu có thể đều nằm trong danh sách đã xem! Sau khi lọc, danh sách gợi ý sẽ trả về 0 phần tử. Điều này chứng minh về mặt toán học rằng oversampling không thể đảm bảo tính đầy đủ của Top-K.
+- Nhưng đối với người dùng cuồng nhiệt (heavy user có 32.200 phim đã xem), toàn bộ 100 ứng viên ban đầu có thể đều nằm trong danh sách đã xem! Sau khi lọc, danh sách gợi ý sẽ trả về 0 phần tử. Điều này chứng minh về mặt toán học rằng oversampling không thể đảm bảo tính đầy đủ của Top-K.
 
-### Câu 10: Tại sao catalog chỉ có 58,932 phim trong khi MovieLens 25M có 62,423 phim? 3,491 phim đi đâu?
-Tập MovieLens 25M gốc chứa 62,423 phim trong file `movies.csv`. Tuy nhiên, 3,491 phim này chưa từng nhận được bất kỳ lượt đánh giá nào trong toàn bộ lịch sử phân vùng hoặc chỉ xuất hiện ở các tập khác mà không có trong tập Train 24.67M ratings. Do ALS chỉ tạo nhân tử tiềm ẩn cho các vật phẩm có ít nhất một quan sát trong tập Train, ma trận `itemFactors` chỉ có đúng 58,932 hàng.
+### Câu 10: Tại sao catalog chỉ có 58,932 phim có factor trong khi MovieLens 25M có 62,423 phim? 3,491 phim đi đâu?
+Tập MovieLens 25M gốc chứa 62.423 phim trong file `movies.csv`. Tuy nhiên, 3.491 phim này chưa từng nhận được bất kỳ lượt đánh giá nào trong tập Train 24.67M ratings (chúng chỉ xuất hiện trong catalog hoặc các phân vùng khác). Do ALS chỉ tạo nhân tử tiềm ẩn cho các vật phẩm có ít nhất một quan sát trong tập Train, ma trận `itemFactors` chỉ có đúng 58.932 hàng.
 
-### Câu 11: 3,491 phim ngoài catalog ảnh hưởng thế nào đến tính công bằng khi đánh giá Validation?
-Trong tập Validation, có 30 người dùng có tương tác tích cực rơi vào nhóm 3,491 phim không có vector ALS này.
-Do mô hình ALS thuần túy không thể cho điểm những phim này, trần lý thuyết (theoretical ceiling) của HitRate đối với ALS trên tập Validation không thể đạt 100% mà bị giới hạn ở mức `(109,779 - 30) / 109,779 = 99.9727%`. Việc giữ nguyên mẫu số 109,779 người dùng là bắt buộc để đảm bảo tính trung thực khoa học, không gọt tỉa mẫu số để làm đẹp số liệu.
+### Câu 11: 3,491 phim không có Train item factor ảnh hưởng thế nào đến tính công bằng khi đánh giá Validation?
+Trong tập Validation, có 30 người dùng có tương tác tích cực rơi vào nhóm 3.491 phim không có vector ALS này.
+Do mô hình ALS thuần túy không thể cho điểm những phim này, trần lý thuyết (theoretical ceiling) của HitRate đối với ALS trên tập Validation không thể đạt 100% mà bị giới hạn ở mức `(109,779 - 30) / 109,779 = 99.9727%`. Việc giữ nguyên mẫu số 109.779 người dùng là bắt buộc để đảm bảo tính trung thực khoa học, không gọt tỉa mẫu số để làm đẹp số liệu.
 
 ### Câu 12: HitRate@K và NDCG@K đo lường hai khía cạnh chất lượng gợi ý khác nhau như thế nào?
 - **HitRate@K:** Đo lường tỷ lệ người dùng nhận được ít nhất một gợi ý chính xác trong danh sách Top-K (thước đo dạng nhị phân 0 hoặc 1). Nó phản ánh khả năng "bao phủ nhu cầu" của hệ thống.
 - **NDCG@K (Normalized Discounted Cumulative Gain):** Không chỉ quan tâm có trúng hay không mà còn thưởng điểm rất cao nếu bộ phim trúng nằm ở các vị trí đầu tiên (Rank 1, 2) và phạt nặng nếu phim trúng nằm ở cuối danh sách (Rank K) nhờ hàm suy giảm logarit `1 / log2(rank + 1)`.
 
 ### Câu 13: Tại sao NDCG@K cần chuẩn hóa bằng IDCG@K và trường hợp IDCG = 0 được xử lý ra sao?
-Mỗi người dùng có số lượng phim yêu thích trong tập Validation khác nhau (người có 1 phim, người có 10 phim). Nếu chỉ dùng DCG thô, người có nhiều phim trúng sẽ có điểm cao hơn bất kể thuật toán xếp hạng tốt hay xấu. IDCG@K (Ideal DCG) là điểm DCG tối đa có thể đạt được nếu tất cả các phim đúng được đưa lên đầu.
+Mỗi người dùng có số lượng phim yêu thích trong tập Validation khác nhau. Nếu chỉ dùng DCG thô, người có nhiều phim trúng sẽ có điểm cao hơn bất kể thuật toán xếp hạng tốt hay xấu. IDCG@K (Ideal DCG) là điểm DCG tối đa có thể đạt được nếu tất cả các phim đúng được đưa lên đầu.
 Khi người dùng không có bất kỳ tương tác tích cực nào trong tập Validation, `IDCG = 0`, theo quy ước chuẩn của RecSys, `NDCG` được gán bằng `0.0`.
 
-### Câu 14: Phân tích hiện tượng Fluke Bias: tại sao mô hình ALS explicit mặc định lại đẩy các phim 1-rating 5-sao lên top?
-Trong bài toán ALS Explicit với hàm mục tiêu bình phương tối thiểu có chính quy hóa L2:
-- Những bộ phim kinh điển (như *Pulp Fiction*, *The Shawshank Redemption*) có hàng chục nghìn lượt đánh giá với điểm trung bình từ 4.2 đến 4.4. Vector tiềm ẩn của chúng bị ràng buộc bởi hàng vạn người dùng khác nhau, khiến điểm tích vô hướng hiếm khi vượt quá 4.5.
-- Ngược lại, có 10,324 bộ phim trong tập Train chỉ có duy nhất 1 lượt đánh giá và lượt đánh giá đó tình cờ là 5.0 sao. Khi giải hệ phương trình ALS với tham số chính quy hóa mặc định `regParam = 0.1`, vector của những bộ phim này tự do xoay theo vector của người đánh giá duy nhất đó, khiến điểm dự đoán của chúng đạt từ 5.0 đến 5.3!
-Hậu quả là danh sách Top-20 của hầu hết người dùng bị chiếm trọn bởi các bộ phim vô danh này (Fluke Bias), đẩy các bộ phim hay thực sự xuống thứ hạng hàng nghìn.
+### Câu 14: Phân tích thực chứng hiện tượng Fluke Bias: dữ liệu thực tế cho thấy điều gì?
+Kiểm toán độc lập trên 3.250.820 vị trí gợi ý Top-20 và 24.67M ratings Train đã phát hiện:
+- Có 10.324 bộ phim trong Train chỉ có duy nhất 1 lượt đánh giá (chiếm 17,52% catalog). Trong đó có 820 phim đạt 5.0 sao.
+- Khi huấn luyện Explicit ALS với tham số chính quy hóa mặc định `regParam = 0.1`, vector của các phim này tự do xoay hướng theo vector của người đánh giá duy nhất đó, khiến điểm dự đoán của chúng đạt từ 5.0 đến 9.66.
+- Kết quả kiểm chứng: **63,80% vị trí gợi ý Top-20** trên toàn bộ 162.541 người dùng bị chiếm trọn bởi các phim 1 rating; **95,89% vị trí** bị chiếm bởi phim có <= 5 ratings. Các phim nổi tiếng có hàng nghìn đánh giá (điểm trung bình 4.2 - 4.4) bị đẩy lùi xuống vị trí trung vị 3.990.
 
 ### Câu 15: Tại sao ALS explicit có thể cho kết quả Top-N kém hơn Popularity Count baseline trên tập dữ liệu thưa?
 Do hiện tượng Fluke Bias nói trên, mô hình ALS explicit chưa được tinh chỉnh siêu tham số sẽ tối ưu điểm RMSE trên tập Train nhưng lại phá hỏng thứ tự xếp hạng tương đối (ranking order) trên tập Validation. Trong khi đó, Popularity Count baseline gợi ý các bộ phim có số lượt xem nhiều nhất toàn hệ thống - vốn là những phim có xác suất được xem lại ở tập Validation rất cao. Đây là minh chứng kinh điển cho thấy RMSE thấp không đồng nghĩa với Top-N Ranking tốt.
@@ -188,7 +192,7 @@ Khi catalog tăng từ hàng vạn lên hàng chục triệu phim (như YouTube,
 ### Câu 18: Trong hệ thống hybrid tiếp theo (Knowledge Graph + ALS), Top-N của ALS sẽ đóng vai trò gì?
 Trong kiến trúc gợi ý đa tầng (Multi-Stage Recommender System):
 1. **Tầng sinh ứng viên (Candidate Generation / Retrieval):** ALS đóng vai trò tạo ra một danh sách ứng viên phong phú (ví dụ Top-100 hoặc Top-200) dựa trên hành vi cộng tác tiềm ẩn (collaborative signals).
-2. **Tầng xếp hạng lại (Re-ranking / Hybridization):** Đồ thị tri thức (Knowledge Graph) sẽ trích xuất các thuộc tính ngữ nghĩa (đạo diễn, diễn viên, thể loại, tâm trạng mood) và kết hợp với điểm số của ALS để loại bỏ Fluke Bias, đẩy các bộ phim thực sự phù hợp với ngữ cảnh của người dùng lên vị trí cao nhất.
+2. **Tầng xếp hạng lại (Re-ranking / Hybridization):** Đồ thị tri thức (Knowledge Graph) liên kết các thực thể phim với các quan hệ thể loại (genres), thẻ đánh giá (tags do người dùng gán) và các liên kết tri thức bên ngoài để kết hợp với điểm số của ALS, loại bỏ Fluke Bias, đẩy các bộ phim thực sự phù hợp với ngữ cảnh của người dùng lên vị trí cao nhất.
 
 ---
 
@@ -196,48 +200,50 @@ Trong kiến trúc gợi ý đa tầng (Multi-Stage Recommender System):
 
 | Khái niệm / Nhiệm vụ Kỹ thuật | Cơ sở Toán học / Thuật toán | File Mã Nguồn | Lớp / Hàm Xử lý | Dòng Tham Chiếu |
 | :--- | :--- | :--- | :--- | :--- |
-| **Cấu hình & Giới hạn Bộ nhớ** | Bounded batch memory `B * M * 4 bytes` | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`ALSCandidateConfig`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L35) | L35-L67 |
-| **Catalog Điểm số Đủ điều kiện** | Ánh xạ ID phim sang index mảng `[0, M-1]` | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`ScoreableCatalog`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L70) | L70-L105 |
+| **Cấu hình & Giới hạn Bộ nhớ** | Bounded batch memory `B * M * 4 bytes` | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`ALSCandidateConfig`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L35) | L35-L68 |
+| **Catalog Điểm số Đủ điều kiện** | Ánh xạ ID phim sang index mảng `[0, M-1]` | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`ScoreableCatalog`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L70) | L70-L106 |
 | **Bộ chứa Vector Tiềm ẩn** | Nạp Parquet Spark sang contiguous NumPy | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`UserFactorsContainer`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L108) | L108-L150 |
 | **Oracle Tham chiếu Độc lập** | Python pure unoptimized ground-truth | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`exact_top_k_oracle`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L153) | L153-L195 |
-| **Top-K Tuyến tính Nhanh & Tie-break** | `argpartition` O(M) + lexsort tất định | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`fast_exact_top_k_from_scores`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L198) | L198-L248 |
-| **Nhân Ma trận Khối Bounded GEMM** | `P_batch @ Q.T` BLAS Level-3 | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`ALSCandidateGenerator._score_batch`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L320) | L320-L335 |
-| **Lọc Phim Đã Xem Tiền Xử lý** | Gán `-np.inf` cho `seen_indices` | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`ALSCandidateGenerator._mask_seen`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L338) | L338-L352 |
+| **Top-K Tuyến tính Nhanh & Tie-break** | `argpartition` O(M) + lexsort tất định | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`fast_exact_top_k_from_scores`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L198) | L198-L237 |
+| **Nhân Ma trận Khối Bounded GEMM** | `P_batch @ Q.T` BLAS Level-3 | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`ALSCandidateGenerator._score_batch`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L323) | L323-L336 |
+| **Lọc Phim Đã Xem Tiền Xử lý** | Gán `-np.inf` cho `seen_indices` | [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py) | [`ALSCandidateGenerator._mask_seen`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L338) | L338-L353 |
 | **Kiểm toán Catalog & Trần Lý thuyết** | Audit 62,423 vs 58,932 & Ceiling 99.97% | [`scripts/run_m06_als_topn.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/scripts/run_m06_als_topn.py) | [`audit_catalog_eligibility`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/scripts/run_m06_als_topn.py#L85) | L85-L135 |
 | **Đánh giá Đa mức K (5, 10, 20)** | Gọi `TopNEvaluator` bảo toàn mẫu số 109,779 | [`scripts/run_m06_als_topn.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/scripts/run_m06_als_topn.py) | [`run_evaluation_pipeline`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/scripts/run_m06_als_topn.py#L220) | L220-L280 |
+| **Kiểm thử Tích hợp Đánh giá Dương** | Xác nhận pipeline ghi nhận HitRate dương | [`tests/als/test_candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/tests/als/test_candidates.py) | [`test_21_exact_evaluation_wiring_and_positive_hit_rate`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/tests/als/test_candidates.py#L499) | L499-L545 |
 
 ---
 
 ## 5. 10 CÂU HỎI VẤN ĐÁP BẢO VỆ ĐỒ ÁN (ORAL DEFENSE Q&A)
 
 ### Q1: Tại sao em không dùng hàm `recommendForAllUsers(20)` có sẵn của Spark MLlib mà lại tự viết `ALSCandidateGenerator`?
-**Trả lời:** Hàm `recommendForAllUsers` của Spark MLlib tính toán trên toàn bộ catalog và **không hỗ trợ lọc bỏ các phim người dùng đã xem trong tập Train**. Hơn nữa, việc chuyển đổi kết quả từ DataFrame phân tán của Spark để đánh giá trên tập Validation ngoại tuyến tốn rất nhiều thời gian shuffle và dễ gây lỗi tràn bộ nhớ (OOM). Module tự viết tận dụng phép nhân ma trận GEMM trong NumPy, hỗ trợ lọc `-infinity` tại chỗ, đảm bảo quy tắc tie-breaking tất định và hoàn thành cho toàn bộ 162,541 người dùng chỉ trong hơn 3 phút trên một máy trạm đơn lẻ.
+**Trả lời:** Hàm `recommendForAllUsers` của Spark MLlib tính toán trên toàn bộ catalog và **không hỗ trợ lọc bỏ các phim người dùng đã xem trong tập Train**. Hơn nữa, việc chuyển đổi kết quả từ DataFrame phân tán của Spark để đánh giá trên tập Validation ngoại tuyến tốn rất nhiều thời gian shuffle và dễ gây lỗi tràn bộ nhớ (OOM). Module tự viết tận dụng phép nhân ma trận GEMM trong NumPy, hỗ trợ lọc `-infinity` tại chỗ, đảm bảo quy tắc tie-breaking tất định và hoàn thành cho toàn bộ 162.541 người dùng chỉ trong hơn 3 phút trên một máy trạm đơn lẻ.
 
 ### Q2: Tại sao kết quả HitRate@10 của ALS rank 16 trên tập Validation lại là 0.00000 trong khi Popularity Count đạt 0.05519? Mô hình của em có bị lỗi code không?
-**Trả lời:** Code hoàn toàn không có lỗi, đã được chứng minh qua 20/20 unit test và đối chiếu khớp 100% với Oracle toán học độc lập. Đây là hiện tượng khoa học có tên gọi **Fluke Bias** (thiên kiến vật phẩm hiếm):
-- Trong tập Train có hơn 10,000 bộ phim chỉ có đúng 1 lượt đánh giá và đạt 5 sao. Mô hình ALS explicit với siêu tham số mặc định (`regParam = 0.1`) bị overfitting cục bộ vào các phim này, đẩy điểm số dự đoán của chúng lên mức 5.0 - 5.3.
-- Kết quả là danh sách Top-20 bị chiếm trọn bởi các phim hiếm này. Trên thực tế tập Validation, người dùng hầu như không xem các phim này mà xem các phim phổ biến.
-- Kết quả trung thực này phản ánh đúng bản chất của explicit ALS chưa tinh chỉnh và là cơ sở khoa học để chúng em bước vào Module M07 (Hyperparameter Tuning) và Module Knowledge Graph tiếp theo.
+**Trả lời:** Code hoàn toàn không có lỗi, đã được chứng minh qua 21/21 unit tests và đối chiếu khớp 100% với Oracle toán học độc lập. Đây là hiện tượng khoa học có tên gọi **Fluke Bias** (thiên kiến vật phẩm hiếm) đã được nhóm kiểm toán độc lập xác minh từ dữ liệu thực:
+- Trong tập Train có 10.324 bộ phim chỉ có đúng 1 lượt đánh giá. Khi huấn luyện với `regParam = 0.1`, vector của các phim này tự do xoay hướng theo người đánh giá duy nhất đó, khiến điểm dự đoán của chúng đạt từ 5.0 đến 9.66.
+- Kết quả kiểm chứng thực nghiệm cho thấy: **63,80% vị trí Top-20** bị chiếm bởi phim 1 rating; **95,89%** bị chiếm bởi phim có <= 5 ratings.
+- Ngược lại, trên tập Validation, người dùng hầu như chỉ đánh giá các phim đại chúng nổi tiếng (như *Pulp Fiction*, *The Departed*). Điểm số của các phim này chỉ đạt khoảng 3.7 - 4.2 nên bị đẩy xuống vị trí trung vị 3.990.
+- Kết quả trung thực này phản ánh đúng bản chất của explicit ALS chưa tinh chỉnh và là cơ sở khoa học để chúng em bước vào Module M07 (Hyperparameter Tuning).
 
 ### Q3: Nếu giảng viên nghi ngờ hàm `fast_exact_top_k_from_scores` dùng `argpartition` có thể chọn nhầm phần tử khi có hòa điểm, em giải thích thế nào?
-**Trả lời:** Em đã thiết kế hàm phát hiện ranh giới hòa điểm (straddling tie detection) tại dòng 230-245 trong [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L230). Nếu giá trị phần tử thứ `K-1` bằng với phần tử thứ `K` (tức là có các phần tử bằng điểm nhau nằm vắt ngang ranh giới chọn), thuật toán sẽ tự động mở rộng vùng phân vùng để lấy toàn bộ các ứng viên bằng điểm đó, sau đó áp dụng quy tắc sắp xếp từ điển `(-score, movieId)` để chọn ra đúng phần tử có `movieId` nhỏ nhất. Trường hợp này đã được kiểm thử nghiêm ngặt trong test case `test_04_tie_breaking_identical_scores`.
+**Trả lời:** Em đã thiết kế hàm phát hiện ranh giới hòa điểm (straddling tie detection) tại dòng 219-231 trong [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L219). Nếu giá trị phần tử thứ `K-1` bằng với phần tử thứ `K` (tức là có các phần tử bằng điểm nhau nằm vắt ngang ranh giới chọn), thuật toán sẽ tự động mở rộng vùng phân vùng để lấy toàn bộ các ứng viên bằng điểm đó, sau đó áp dụng quy tắc sắp xếp từ điển `(-score, movieId)` để chọn ra đúng phần tử có `movieId` nhỏ nhất. Trường hợp này đã được kiểm thử nghiêm ngặt trong test case `test_08_straddling_tie_break_movie_id_asc`.
 
-### Q4: Bộ nhớ của thuật toán có bị tràn khi nhân ma trận 162,541 users với 58,932 items không?
-**Trả lời:** Hoàn toàn không. Thay vì tạo ra ma trận toàn cục kích thước `162,541 x 58,932` kiểu `float32` tốn tới **38.3 Gigabytes RAM**, em áp dụng chiến lược phân khối (chunking/batching) với kích thước `batch_size = 2,048`. Mỗi batch chỉ tiêu tốn:
+### Q4: Bộ nhớ của thuật toán có bị tràn khi nhân ma trận 162.541 users với 58.932 items không?
+**Trả lời:** Hoàn toàn không. Thay vì tạo ra ma trận toàn cục kích thước `162.541 x 58.932` kiểu `float32` tốn tới **38.3 Gigabytes RAM**, em áp dụng chiến lược phân khối (chunking/batching) với kích thước `batch_size = 2,048`. Mỗi batch chỉ tiêu tốn:
 `2,048 * 58,932 * 4 bytes = 482.7 Megabytes RAM`.
 Bộ nhớ này được giải phóng ngay sau khi chọn Top-20 của batch đó, giúp chương trình chạy ổn định trên các máy tính cá nhân thông thường có từ 8GB đến 16GB RAM.
 
 ### Q5: Em xử lý trường hợp người dùng đã xem rất nhiều phim trong tập Train như thế nào?
-**Trả lời:** Trong mã nguồn tại [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L338), các phim đã xem được chuyển đổi thành chỉ số mảng cột và gán giá trị `-np.inf`. Em đã viết riêng một adversarial test case `test_07_heavy_user_with_many_seen_items` mô phỏng người dùng đã xem 32,200 phim (tương đương người dùng tích cực nhất trong MovieLens 25M). Thuật toán vẫn chọn ra chính xác 20 phim chưa xem hàng đầu mà không bị sót hay giảm số lượng ứng viên.
+**Trả lời:** Trong mã nguồn tại [`recommender/als/candidates.py`](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/candidates.py#L338), các phim đã xem được chuyển đổi thành chỉ số mảng cột và gán giá trị `-np.inf`. Em đã viết riêng một adversarial test case `test_07_heavy_user_seen_filtering` mô phỏng người dùng đã xem 32.200 phim (tương đương người dùng tích cực nhất trong MovieLens 25M). Thuật toán vẫn chọn ra chính xác 20 phim chưa xem hàng đầu mà không bị sót hay giảm số lượng ứng viên.
 
-### Q6: Tại sao em không gạt bỏ 30 người dùng có phim Validation nằm ngoài catalog 58,932 phim để tăng chỉ số HitRate?
-**Trả lời:** Trong nghiên cứu khoa học hệ thống gợi ý, việc loại bỏ người dùng khó hoặc người dùng không trúng để làm đẹp số liệu là hành vi vi phạm đạo đức nghiên cứu (data tampering). Giao thức đánh giá chuẩn tại `docs/evaluation_protocol.md` quy định mẫu số đánh giá phải được cố định tuyệt đối ở 109,779 người dùng có tương tác tích cực trong tập Validation. Trần lý thuyết đạt được là 99.9727%, và việc giữ nguyên mẫu số phản ánh sự minh bạch và khách quan của đồ án.
+### Q6: Tại sao em không gạt bỏ 30 người dùng có phim Validation không có Train item factor để tăng chỉ số HitRate?
+**Trả lời:** Trong nghiên cứu khoa học hệ thống gợi ý, việc loại bỏ người dùng khó hoặc người dùng không trúng để làm đẹp số liệu là hành vi vi phạm đạo đức nghiên cứu (data tampering). Giao thức đánh giá chuẩn tại `docs/evaluation_protocol.md` quy định mẫu số đánh giá phải được cố định tuyệt đối ở 109.779 người dùng có tương tác tích cực trong tập Validation. Trần lý thuyết đạt được là 99.9727%, và việc giữ nguyên mẫu số phản ánh sự minh bạch và khách quan của đồ án.
 
 ### Q7: Tại sao hàm đánh giá lại sử dụng thang đo nhị phân (Binary Relevance) với ngưỡng rating >= 3.5?
 **Trả lời:** Theo quy ước chuẩn của MovieLens và thang điểm 5 sao, mức đánh giá từ 3.5 trở lên đại diện cho việc người dùng thực sự thích và tán thành nội dung bộ phim. Các mức đánh giá từ 3.0 trở xuống (đặc biệt là 0.5 - 2.5) thể hiện sự thất vọng hoặc không thích; nếu hệ thống gợi ý một bộ phim mà người dùng xem xong đánh giá 1 sao thì đó là một gợi ý thất bại chứ không thể tính là một "Hit".
 
-### Q8: So sánh chi phí tính toán giữa việc sinh Top-20 cho toàn bộ 162,541 users so với việc chỉ tính cho 109,779 users trong tập Validation?
-**Trả lời:** Trong đồ án, em đã tạo đầy đủ Top-20 cho toàn bộ 162,541 người dùng xuất hiện trong tập Train (tổng cộng 3,250,820 dòng gợi ý) mất 198 giây. Điều này chứng minh hệ thống có năng lực phục vụ thực tế (serving capacity) ở quy mô sản phẩm hoàn chỉnh. Khi đánh giá, bộ đánh giá `TopNEvaluator` thực hiện phép nối nội (inner join) với danh sách người dùng Validation để tính toán chỉ số một cách khách quan.
+### Q8: So sánh chi phí tính toán giữa việc sinh Top-20 cho toàn bộ 162.541 users so với việc chỉ tính cho 109.779 users trong tập Validation?
+**Trả lời:** Trong đồ án, em đã tạo đầy đủ Top-20 cho toàn bộ 162.541 người dùng xuất hiện trong tập Train (tổng cộng 3.250.820 dòng gợi ý) mất 198 giây. Điều này chứng minh hệ thống có năng lực phục vụ thực tế (serving capacity) ở quy mô sản phẩm hoàn chỉnh. Khi đánh giá, bộ đánh giá `TopNEvaluator` thực hiện phép nối nội (inner join) với danh sách người dùng Validation để tính toán chỉ số một cách khách quan.
 
 ### Q9: File Parquet lưu kết quả Top-20 có cấu trúc như thế nào và kích thước bao nhiêu?
 **Trả lời:** File lưu tại `artifacts/als/m06/m06_als_top20_recommendations.parquet` có kích thước **19.38 MB** (được nén bằng chuẩn Snappy). Cấu trúc bảng gồm 4 cột tuân thủ đúng hợp đồng M00:
@@ -248,5 +254,5 @@ Bộ nhớ này được giải phóng ngay sau khi chọn Top-20 của batch đ
 
 ### Q10: Nếu có thêm thời gian, em sẽ cải tiến điều gì ở Module M06?
 **Trả lời:** Em sẽ thực hiện 2 cải tiến:
-1. **Tích hợp chỉ mục vector bán cầu (Hemisphere/MIPS Indexing) bằng FAISS hoặc ScaNN:** Thay thế phép quét toàn bộ bằng tìm kiếm láng giềng gần nhất để giảm thời gian suy luận từ 198 giây xuống dưới 10 giây cho toàn bộ 162,541 người dùng.
+1. **Tích hợp chỉ mục vector bán cầu (Hemisphere/MIPS Indexing) bằng FAISS hoặc ScaNN:** Thay thế phép quét toàn bộ bằng tìm kiếm láng giềng gần nhất để giảm thời gian suy luận từ 198 giây xuống dưới 10 giây cho toàn bộ 162.541 người dùng.
 2. **Áp dụng bộ lọc ngưỡng tần suất (Frequency Damping / Item Popularity Regularization):** Kết hợp một trọng số phạt nhẹ dựa trên số lượng đánh giá của vật phẩm để ngăn chặn triệt để hiện tượng Fluke Bias ngay tại tầng trích xuất ứng viên.

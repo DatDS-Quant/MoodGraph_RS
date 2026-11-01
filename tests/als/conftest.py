@@ -33,3 +33,4 @@ def spark_session() -> SparkSession:
     )
     yield spark
     spark.stop()
+
