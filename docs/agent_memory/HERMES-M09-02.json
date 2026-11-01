@@ -1,0 +1,26 @@
+{
+  "record_id": "HERMES-M09-02",
+  "module": "M09",
+  "component": "PerformanceBenchmarkRunner",
+  "topic": "Spark DataFrame, PyArrow, and NumPy BLAS Memory and Latency Benchmarks",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Evaluate isolated runtime performance and driver memory usage across PySpark DataFrame partition scans, PyArrow columnar Parquet deserialization, and NumPy/BLAS batch matrix scoring on MovieLens 25M (24.67M ratings, 162,541 users, 58,932 items).",
+  "root_cause": "Recommender systems require high-throughput Top-K scoring while operating within bounded driver RAM (16 GB machine, < 1.2 GB process budget). Spark ALS scoring without batching can cause OOM errors.",
+  "solution_or_decision": "Designed isolated performance benchmarks. PyArrow achieved 38.2M rows/s (0.65s for 24.67M ratings, RSS 382.0 MB). NumPy BLAS matrix multiplication achieved 8,863.9 users/s at batch size 2,500 (282.04 ms latency, RSS 724.6 MB, safely within the 1.2 GB budget). PySpark DataFrame executed full partition scan count in 3.98s and groupBy aggregate in 1.82s.",
+  "files_involved": [
+    "recommender/als/diagnostics.py",
+    "scripts/run_m09_diagnostics.py",
+    "artifacts/als/m09/performance_benchmarks.csv",
+    "artifacts/als/m09/runtime_environment.json",
+    "artifacts/als/m09/m09_release_checklist.json"
+  ],
+  "relevant_tests": [
+    "tests/als/test_diagnostics.py::test_04_synthetic_factor_dot_product_oracle",
+    "tests/als/test_diagnostics.py::test_05_synthetic_throughput_oracle",
+    "tests/als/test_diagnostics.py::test_11_score_distribution_summary"
+  ],
+  "evidence": "PyArrow columnar read 24.67M ratings in 0.65s (38.25M rows/s, isolated RSS 382.0 MB). NumPy BLAS matrix multiplication achieved 8,863.9 users/s at batch size 2,500 (282.04 ms latency, isolated RSS 724.6 MB < 1,200 MB budget). PySpark DataFrame count completed in 3.98s and groupBy aggregate in 1.82s.",
+  "code_version": "feature/als-3a@M09",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-02"
+}

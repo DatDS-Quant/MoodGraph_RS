@@ -1,0 +1,32 @@
+{
+  "record_id": "HERMES-M09-01",
+  "module": "M09",
+  "component": "ItemSupportAnalyzer & FactorReliabilityAnalyzer",
+  "topic": "Item Support Distribution, Cold-Start Breakdown, and Factor Norm Diagnostics",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Diagnose the catalog support distribution and latent factor geometry of the frozen Spark ALS model (ALS_R8_REG0.3_ITER10) to explain why ALS was dominated by Popularity on the Test benchmark.",
+  "root_cause": "Severe long-tail sparsity in MovieLens 25M: 51.78% of the 62,423 catalog items have <= 5 ratings in Train (3,491 have 0 ratings; 28,834 have 1-5 ratings). Pure ALS without popularity or frequency constraints suffers from Long-Tail Fluke Bias, causing low-support items with 1 rating of 5.0 to have inflated factor norms (up to 4.13) and unconstrained predicted scores (up to 10.84), completely dominating Top-K recommendations (100% of Top-10 recommendations for 5,000 cohort users comprise 1-rating items).",
+  "solution_or_decision": "Documented exact empirical item support distribution across 5 disjoint bins with verified catalog conservation (3,491 + 28,834 + 6,838 + 10,234 + 13,026 = 62,423). Proved statistically significant positive correlation between log1p(support) and item factor norm (Pearson r = +0.1574, p < 1e-300). Recommended hybrid blending and minimum support thresholding for downstream Task 3B / Hybrid recommender.",
+  "files_involved": [
+    "recommender/als/diagnostics.py",
+    "scripts/run_m09_diagnostics.py",
+    "artifacts/als/m09/cold_start_summary.json",
+    "artifacts/als/m09/item_support_distribution.csv",
+    "artifacts/als/m09/factor_reliability_diagnostics.csv",
+    "artifacts/als/m09/score_distribution_diagnostics.json",
+    "docs/3a/M09_diagnostics_report.md"
+  ],
+  "relevant_tests": [
+    "tests/als/test_diagnostics.py::test_01_synthetic_item_support_oracle",
+    "tests/als/test_diagnostics.py::test_06_item_support_analyzer_basic",
+    "tests/als/test_diagnostics.py::test_08_factor_reliability_norms",
+    "tests/als/test_diagnostics.py::test_09_factor_reliability_correlation",
+    "tests/als/test_diagnostics.py::test_13_real_catalog_and_train_support_conservation",
+    "tests/als/test_diagnostics.py::test_14_real_frozen_als_factors_and_norms",
+    "tests/als/test_diagnostics.py::test_15_real_factor_norm_support_correlation"
+  ],
+  "evidence": "Total catalog 62,423 movies: Bin 0 (0 ratings) = 3,491 (5.5925%); Bin 1-5 = 28,834 (46.1913%); Bin 6-10 = 6,838 (10.9543%); Bin 11-50 = 10,234 (16.3946%); Bin >50 = 13,026 (20.8673%). Combined <= 5 ratings = 32,325 (51.78%). Factor norm Pearson corr r = 0.1574 (p < 1e-300). Top-10 recs for 5,000 cohort users consist of 100% support=1 items; Top-20 recs consist of 95.81% support=1 items and 100% support<=5 items.",
+  "code_version": "feature/als-3a@M09",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-02"
+}
