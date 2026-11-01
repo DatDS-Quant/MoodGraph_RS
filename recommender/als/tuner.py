@@ -536,6 +536,17 @@ class ALSTuner:
 
         # Evaluate on screening cohort
         eval_recs = {uid: [mid for mid, _ in rlist] for uid, rlist in screening_recs.items()}
+        screening_targets = {
+            uid: val_targets_dict[uid]
+            for uid in screening_uids
+            if uid in val_targets_dict
+        }
+        assert len(screening_targets) == len(screening_uids), (
+            f"Screening targets cohort mismatch: expected {len(screening_uids)} targets, got {len(screening_targets)}"
+        )
+        assert set(eval_recs.keys()) == set(screening_targets.keys()), (
+            f"Screening recs cohort mismatch: {len(eval_recs)} recs vs {len(screening_targets)} targets"
+        )
         evaluator = TopNEvaluator(
             k_list=[5, 10, 20],
             relevance_threshold=3.5,
@@ -543,7 +554,7 @@ class ALSTuner:
             scorable_catalog_size=gen.catalog.num_movies if gen.catalog else 58932,
         )
         t_eval0 = time.time()
-        eval_res = evaluator.evaluate(eval_recs, val_targets_dict)
+        eval_res = evaluator.evaluate(eval_recs, screening_targets)
         eval_time = time.time() - t_eval0
 
         s5 = eval_res[5]
@@ -679,6 +690,17 @@ class ALSTuner:
 
             # 3. Evaluate Screening Cohort
             eval_recs = {uid: [mid for mid, _ in rlist] for uid, rlist in recs.items()}
+            screening_targets = {
+                uid: val_targets_dict[uid]
+                for uid in screening_uids
+                if uid in val_targets_dict
+            }
+            assert len(screening_targets) == len(screening_uids), (
+                f"Screening targets cohort mismatch: expected {len(screening_uids)} targets, got {len(screening_targets)}"
+            )
+            assert set(eval_recs.keys()) == set(screening_targets.keys()), (
+                f"Screening recs cohort mismatch: {len(eval_recs)} recs vs {len(screening_targets)} targets"
+            )
             evaluator = TopNEvaluator(
                 k_list=[5, 10, 20],
                 relevance_threshold=3.5,
@@ -686,7 +708,7 @@ class ALSTuner:
                 scorable_catalog_size=gen.catalog.num_movies if gen.catalog else 58932,
             )
             t_eval0 = time.time()
-            eval_res = evaluator.evaluate(eval_recs, val_targets_dict)
+            eval_res = evaluator.evaluate(eval_recs, screening_targets)
             eval_time = time.time() - t_eval0
 
             s5 = eval_res[5]
@@ -784,6 +806,17 @@ class ALSTuner:
 
         # Evaluate on full cohort
         eval_recs = {uid: [mid for mid, _ in rlist] for uid, rlist in recs.items()}
+        full_val_targets = {
+            uid: val_targets_dict[uid]
+            for uid in all_validation_uids
+            if uid in val_targets_dict
+        }
+        assert len(full_val_targets) == len(all_validation_uids), (
+            f"Full validation targets mismatch: expected {len(all_validation_uids)}, got {len(full_val_targets)}"
+        )
+        assert set(eval_recs.keys()) == set(full_val_targets.keys()), (
+            f"Full validation recs mismatch: {len(eval_recs)} recs vs {len(full_val_targets)} targets"
+        )
         evaluator = TopNEvaluator(
             k_list=[5, 10, 20],
             relevance_threshold=3.5,
@@ -791,7 +824,7 @@ class ALSTuner:
             scorable_catalog_size=gen.catalog.num_movies if gen.catalog else 58932,
         )
         t_eval0 = time.time()
-        eval_res = evaluator.evaluate(eval_recs, val_targets_dict)
+        eval_res = evaluator.evaluate(eval_recs, full_val_targets)
         eval_time = time.time() - t_eval0
 
         s5 = eval_res[5]

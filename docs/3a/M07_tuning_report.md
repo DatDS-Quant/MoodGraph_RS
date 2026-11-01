@@ -114,7 +114,26 @@ Phương trình trở thành:
 
 ---
 
-## 5. HẠ CẤP VÀ CHUẨN HÓA CÁC TUYÊN BỐ KHOA HỌC (SCIENTIFIC CLAIMS REVIEW)
+## 5. KIỂM TOÁN PHẠM VI TẬP NGƯỜI DÙNG VÀ NGUỒN GỐC TỶ LỆ FLUKE BIAS (DIAGNOSTICS SCOPE & PROVENANCE AUDIT)
+
+Kiểm toán đã làm rõ ranh giới nguồn gốc (provenance) của các con số tỷ lệ phơi nhiễm phim 1-rating giữa các module:
+1. **Kết quả toàn dân tại M06 (All-Users Full Catalog Result):**
+   - M06 sinh Top-20 cho toàn bộ **162.541 người dùng Validation** (tổng cộng 3.250.820 slots).
+   - Có **2.074.146 slots** thuộc về các phim chỉ có đúng 1 lượt đánh giá Train -> Tỷ lệ chính xác: `2.074.146 / 3.250.820 = 63.80%`.
+   - Đây là số liệu đo lường trên toàn bộ 162.541 người dùng, không phải mẫu 10.000 người dùng.
+2. **Kết quả nhóm tầm soát tại M07 (Screening Cohort Result):**
+   - M07 đo trên đúng **5.000 người dùng Screening tích cực** (tổng cộng 100.000 slots).
+   - Mô hình M05 baseline ghi nhận **65.57%** slots thuộc về phim 1-rating.
+   - Thử nghiệm `ALS_R16_REG0.3_ITER10` ghi nhận **95.66%** slots thuộc về phim 1-rating.
+   - Thử nghiệm `ALS_R8_REG0.3_ITER10` ghi nhận **95.74%** slots thuộc về phim 1-rating.
+3. **Kết quả toàn tập tích cực tại M07 (Full Positive Cohort Result):**
+   - Mô hình finalist `ALS_R8_REG0.3_ITER10` được đánh giá trên toàn bộ **109.779 người dùng tích cực** (2.195.580 slots).
+   - Ghi nhận **95.76%** slots thuộc về phim 1-rating.
+- **Quy tắc khoa học:** Tuyệt đối không so sánh trực tiếp các tỷ lệ từ các tập người dùng khác nhau (162.541 all users vs 5.000 screening users vs 109.779 positive users) như thể chúng cùng một mẫu thử nghiệm.
+
+---
+
+## 6. HẠ CẤP VÀ CHUẨN HÓA CÁC TUYÊN BỐ KHOA HỌC (SCIENTIFIC CLAIMS REVIEW)
 
 1. **Về hiện tượng Fluke Bias:**
    - Không tuyên bố Fluke Bias là "giới hạn toán học bất khả kháng của mọi mô hình Matrix Factorization".
@@ -125,7 +144,7 @@ Phương trình trở thành:
 
 ---
 
-## 6. KẾT LUẬN NGHIỆM THU
+## 7. KẾT LUẬN NGHIỆM THU
 
 - **Đánh giá Kỹ thuật (Engineering Verdict):** **M07_ACCEPTANCE_PASS**.
   - Pipeline tinh chỉnh hai tầng vận hành ổn định, bảo vệ dữ liệu Test tuyệt đối, ghi nhận đầy đủ 130 tests kiểm thử tự động đạt 100% PASS.

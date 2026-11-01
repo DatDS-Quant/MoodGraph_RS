@@ -391,3 +391,39 @@ def test_screening_vs_full_validation_metric_provenance():
     assert manifest["full_metrics"]["positive_cohort_size"] == 109779
 
 
+def test_screening_and_full_validation_denominator_isolation():
+    """Verify that screening evaluation strictly isolates the 5,000 positive denominator from 109,779 full denominator."""
+    registry_path = Path("artifacts/als/m07/experiment_registry.json")
+    if not registry_path.exists():
+        pytest.skip("experiment_registry.json not found")
+
+    with open(registry_path, "r", encoding="utf-8") as f:
+        reg = json.load(f)
+
+    # All screening metrics must have positive_cohort_size == 5000 exactly
+    for tid, t in reg["trials"].items():
+        sm = t.get("screening_metrics")
+        assert sm is not None, f"Trial {tid} missing screening metrics"
+        assert sm["positive_cohort_size"] == 5000, (
+            f"Trial {tid} screening denominator must be exactly 5,000, got {sm['positive_cohort_size']}"
+        )
+        assert pytest.approx(sm["hit_rate_10"], abs=1e-7) == sm["hit_count_10"] / 5000.0
+
+    # Diagnostic min_ratings=20 hit rate on 5,000 screening users must be exact
+    diag_20 = reg["trials"]["ALS_DIAGNOSTIC_MIN_RATINGS_20"]["screening_metrics"]
+    assert diag_20["hit_count_5"] == 20
+    assert diag_20["hit_count_10"] == 24
+    assert diag_20["hit_count_20"] == 43
+    assert pytest.approx(diag_20["hit_rate_5"], abs=1e-5) == 20 / 5000.0  # 0.00400
+    assert pytest.approx(diag_20["hit_rate_10"], abs=1e-5) == 24 / 5000.0 # 0.00480
+    assert pytest.approx(diag_20["hit_rate_20"], abs=1e-5) == 43 / 5000.0 # 0.00860
+
+    # Selected finalist full metrics must have positive_cohort_size == 109779 exactly
+    best_id = reg.get("selected_trial_id")
+    assert best_id is not None
+    best_trial = reg["trials"][best_id]
+    assert best_trial["full_metrics"] is not None
+    assert best_trial["full_metrics"]["positive_cohort_size"] == 109779
+
+
+

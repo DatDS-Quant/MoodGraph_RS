@@ -478,14 +478,14 @@ NEXT MODULE: chỉ được gợi ý, không tự thực hiện
 
 | Module | Engineering evidence không thể thiếu | Kiến thức cần bảo vệ | Trạng thái ban đầu |
 |---|---|---|---|
-| M00 | paths/schema/env/branch checked, contract documented | Data/model contracts | PASS (commit 98dc71f) |
-| M01 | loader + real counts + synthetic validation | Sparsity, train/item coverage | PASS (commit f065510) |
-| M02 | hand-calculated metric tests pass | HR/NDCG/MRR/denominators | PASS (commit c2fb860) |
-| M03 | Popularity Top-N + Val report | Baseline, bias, seen filter | PASS (commit 957b15a) |
-| M04 | toy ALS fit + dot-product parity | MF, latent factors, ALS objective | PASS (commit 38c5c4f) |
-| M05 | real ALS trained + persisted + load parity | Train, Spark local, factor tables | PASS (commit 2e16fd6) |
-| M06 | Top-N real, no-seen, deterministic | Prediction vs ranking | PASS (commit 54b4ebb) |
-| M07 | multi-config Val-only tuning, champion frozen | Generalization, regularization | PASS (commit pending) |
+| M00 | paths/schema/env/branch checked, contract documented | Data/model contracts | NOT_STARTED |
+| M01 | loader + real counts + synthetic validation | Sparsity, train/item coverage | NOT_STARTED |
+| M02 | hand-calculated metric tests pass | HR/NDCG/MRR/denominators | NOT_STARTED |
+| M03 | Popularity Top-N + Val report | Baseline, bias, seen filter | NOT_STARTED |
+| M04 | toy ALS fit + dot-product parity | MF, latent factors, ALS objective | NOT_STARTED |
+| M05 | real ALS trained + persisted + load parity | Train, Spark local, factor tables | NOT_STARTED |
+| M06 | Top-N real, no-seen, deterministic | Prediction vs ranking | NOT_STARTED |
+| M07 | multi-config Val-only tuning, champion frozen | Generalization, regularization | NOT_STARTED |
 | M08 | frozen-test benchmark vs Popularity | Fair eval, test leakage | NOT_STARTED |
 | M09 | cold-start counts + Spark performance | Cold-start, long-tail, scaling | NOT_STARTED |
 | M10 | integration contract + PR review materials | Artifacts, Hybrid interface | NOT_STARTED |
