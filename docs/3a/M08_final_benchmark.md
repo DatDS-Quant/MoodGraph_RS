@@ -99,9 +99,15 @@ Bảng so sánh tính nhất quán giữa giai đoạn Validation và Test tại
 2. **Tính Tương đồng của Popularity Weighted:**
    - HitRate@10 đạt `0.01884` (so với `0.01969` ở Val).
    - Tỷ lệ chênh lệch giữa Count và Weighted tiếp tục được duy trì ở mức **2.84 lần** trên Test (so với 2.80 lần trên Validation).
-3. **Hiện tượng của Explicit ALS:**
+3. **Hiện tượng của Explicit ALS và Kiểm toán Độc lập Ca Hit:**
    - Tại Validation, ALS đạt 0 hits / 109.779 users.
-   - Tại Test, ALS đạt **1 hit / 111.211 users** (User ID: 151515, đề xuất trúng phim mục tiêu tại vị trí rank 4).
+   - Tại Test, ALS đạt **1 hit duy nhất / 111.211 users** tại **vị trí rank 2** (chính xác: `rank_found = 2`).
+   - **Xác thực toán học:**
+     * `HitRate@10 = 1 / 111.211 ≈ 8.991916e-6`
+     * `MRR@10 = 1 / (2 × 111.211) ≈ 4.495958e-6` (chứng minh mục tiêu nằm chính xác ở vị trí thứ 2, vì nếu ở rank 4 thì MRR phải bằng `1 / (4 × 111.211) = 2.247979e-6`)
+     * `NDCG@10 = 1 / (log2(3) × 111.211) ≈ 5.673268e-6` (với hệ số chiết khấu vị trí thứ 2 là `1 / log2(2 + 1) = 0.63093`)
+   - **Giải thích vì sao bảng tóm tắt ghi NDCG@10 = 0.00001:**
+     * Bảng hiển thị sử dụng định dạng 5 chữ số thập phân (`:.5f`). Giá trị `5.673268e-6 = 0.00000567...` khi làm tròn ở chữ số thứ 5 sau dấu phẩy hiển thị thành `0.00001`. Tương tự, `8.991916e-6` hiển thị thành `0.00001`, và `4.495958e-6` hiển thị thành `0.00000`. Cả hai tệp artifact gốc `m08_test_benchmark_results.json` và `m08_test_comparison_table.csv` đều bảo toàn chính xác giá trị float thô này.
    - Độ phủ danh mục Top-10 giữ nguyên ở mức cực thấp: 34 bộ phim độc lập (0.054%), khẳng định hiện tượng hội tụ Top-N vào các bộ phim đuôi dài hiếm (Fluke Bias) vẫn hoàn toàn chi phối mô hình Explicit ALS thuần túy.
 
 ---

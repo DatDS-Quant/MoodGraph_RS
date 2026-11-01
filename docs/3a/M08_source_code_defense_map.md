@@ -45,7 +45,9 @@ Tài liệu này cung cấp ánh xạ chính xác vị trí tập tin, lớp, h�
 | `test_06_fairness_identical_cohort_and_catalog` | Dòng 176–199 | Chứng minh các mô hình đánh giá trên cùng mẫu số người dùng và cùng danh mục |
 | `test_07_m08_artifacts_presence_and_schema` | Dòng 202–215 | Kiểm tra sự hiện diện đầy đủ của đúng 6 file artifact tại `artifacts/als/m08/` |
 | `test_08_m08_results_verification` | Dòng 218–248 | Xác minh độc lập các con số thực nghiệm: 111.211 users, Count HR@10=0.05357, ALS HR@10=0.00001 |
-| `test_09_m08_unscoreable_targets_audit` | Dòng 251–266 | Kiểm toán 29 mục tiêu unscoreable của tập Test |
+| `test_09_m08_unscoreable_targets_audit` | Dòng 251–265 | Kiểm toán 29 mục tiêu unscoreable của tập Test |
+| `test_10_single_positive_hit_rank_4_synthetic_precision` | Dòng 268–290 | Kiểm tra tổng hợp độc lập cho ca hit giả định ở rank 4: NDCG@10 = 3.872608e-6, MRR@10 = 2.247979e-6 |
+| `test_11_empirical_als_hit_rank_2_and_rounding_verification` | Dòng 293–333 | Xác thực ca hit thực tế của ALS ở rank 2: NDCG@10 = 5.673268e-6 và làm tròn thành 0.00001 |
 
 ---
 

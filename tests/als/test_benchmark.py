@@ -264,3 +264,70 @@ def test_09_m08_unscoreable_targets_audit():
     assert cdata["non_positive_cohort_size"] == 51330
     assert cdata["seen_filtering_policy"] == "Train_u ∪ Validation_u"
 
+
+def test_10_single_positive_hit_rank_4_synthetic_precision():
+    """
+    Independent synthetic test: Single hit at rank 4 across 111,211 positive users.
+    Verifies exact mathematical formulas:
+    - HR@10 = 1 / 111,211 ≈ 8.991916e-6
+    - NDCG@10 = 1 / (log2(5) * 111,211) ≈ 3.872608e-6
+    - MRR@10 = 1 / (4 * 111,211) ≈ 2.247979e-6
+    """
+    evaluator = TopNEvaluator(k_list=[5, 10, 20], relevance_threshold=3.5)
+    cohort_size = 111211
+    targets = {i: HeldOutTarget(movie_id=1000 + i, rating=4.0) for i in range(1, cohort_size + 1)}
+
+    # User 1 target is 1001, place at rank 4 (0-based index 3)
+    recs = {1: [9991, 9992, 9993, 1001, 9995]}
+
+    results = evaluator.evaluate(recs, targets)[10].to_dict()
+    exp_hr = 1.0 / cohort_size
+    exp_ndcg = 1.0 / (math.log2(5.0) * cohort_size)
+    exp_mrr = 1.0 / (4.0 * cohort_size)
+
+    assert pytest.approx(results["hit_rate"], rel=1e-7) == exp_hr
+    assert pytest.approx(results["ndcg"], rel=1e-7) == exp_ndcg
+    assert pytest.approx(results["mrr"], rel=1e-7) == exp_mrr
+
+
+def test_11_empirical_als_hit_rank_2_and_rounding_verification():
+    """
+    Verify that the empirical ALS hit in M08 occurred at rank 2 (not rank 4)
+    and that NDCG=0.00001 is the standard 5-decimal rounding of 5.673268e-6.
+    """
+    import json
+    bench_path = Path("artifacts/als/m08/m08_test_benchmark_results.json")
+    if not bench_path.exists():
+        pytest.skip("m08_test_benchmark_results.json not found")
+
+    with open(bench_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    als_m = data["models"]["ALS_R8_REG0.3_ITER10"]["metrics"]["10"]
+    cohort_size = data["metadata"]["positive_cohort_size"]
+    assert cohort_size == 111211
+    assert als_m["hit_count"] == 1
+
+    # Exact raw floats stored in JSON
+    raw_hr = als_m["hit_rate"]
+    raw_ndcg = als_m["ndcg"]
+    raw_mrr = als_m["mrr"]
+
+    # In rank 2:
+    exp_hr = 1.0 / cohort_size                       # 8.991916e-6
+    exp_mrr = 1.0 / (2.0 * cohort_size)              # 4.495958e-6
+    exp_ndcg = 1.0 / (math.log2(3.0) * cohort_size)  # 5.673268e-6
+
+    assert pytest.approx(raw_hr, rel=1e-7) == exp_hr
+    assert pytest.approx(raw_mrr, rel=1e-7) == exp_mrr
+    assert pytest.approx(raw_ndcg, rel=1e-7) == exp_ndcg
+
+    # Decimal rounding:
+    # 5.673268e-6 formatted with :.5f rounds to 0.00001
+    assert f"{raw_ndcg:.5f}" == "0.00001"
+    # 8.991916e-6 formatted with :.5f rounds to 0.00001
+    assert f"{raw_hr:.5f}" == "0.00001"
+    # 4.495958e-6 formatted with :.5f rounds to 0.00000
+    assert f"{raw_mrr:.5f}" == "0.00000"
+
+
