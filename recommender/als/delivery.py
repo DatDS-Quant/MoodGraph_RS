@@ -42,7 +42,8 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _DEFAULT_FROZEN_MODEL_DIR = _REPO_ROOT / "artifacts" / "models" / "als" / "m07_tuning" / "ALS_R8_REG0.3_ITER10"
 _DEFAULT_MOVIES_PATH = _REPO_ROOT / "data" / "processed" / "core" / "movies"
 _DEFAULT_TRAIN_PATH = _REPO_ROOT / "data" / "processed" / "splits" / "train"
-_DEFAULT_VAL_PATH = _REPO_ROOT / "data" / "processed" / "splits" / "val"
+_DEFAULT_VAL_PATH = _REPO_ROOT / "data" / "processed" / "splits" / "validation"
+_DEFAULT_TRAIN_CSR_PATH = _REPO_ROOT / "artifacts" / "als" / "m10" / "train_seen_csr.npz"
 
 
 @dataclass(frozen=True)
@@ -164,6 +165,7 @@ class ALSDeliveryService:
         movies_parquet_path: Optional[Union[str, Path]] = None,
         train_parquet_path: Optional[Union[str, Path]] = None,
         val_parquet_path: Optional[Union[str, Path]] = None,
+        train_csr_path: Optional[Union[str, Path]] = None,
         batch_size: int = 2500,
         model_version: str = "ALS_R8_REG0.3_ITER10",
     ) -> None:
@@ -171,6 +173,7 @@ class ALSDeliveryService:
         self.movies_path = Path(movies_parquet_path) if movies_parquet_path else _DEFAULT_MOVIES_PATH
         self.train_path = Path(train_parquet_path) if train_parquet_path else _DEFAULT_TRAIN_PATH
         self.val_path = Path(val_parquet_path) if val_parquet_path else _DEFAULT_VAL_PATH
+        self.train_csr_path = Path(train_csr_path) if train_csr_path else _DEFAULT_TRAIN_CSR_PATH
         self.batch_size = batch_size
         self.model_version = model_version
 
@@ -183,7 +186,9 @@ class ALSDeliveryService:
             movies_parquet_path=self.movies_path if self.movies_path.exists() else None,
         )
 
-        # 2. Lazy Seen History Caches
+        # 2. Fast CSR and Lazy Seen History Caches
+        self._csr_offsets: Optional[np.ndarray] = None
+        self._csr_mids: Optional[np.ndarray] = None
         self._train_seen_cache: Optional[Dict[int, Set[int]]] = None
         self._test_seen_cache: Optional[Dict[int, Set[int]]] = None
 
@@ -199,12 +204,51 @@ class ALSDeliveryService:
     def num_known_users(self) -> int:
         return self.generator.user_factors.num_users
 
+    def _load_csr_if_available(self) -> bool:
+        """Load pre-materialized CSR seen index if available."""
+        if self._csr_offsets is not None and self._csr_mids is not None:
+            return True
+        if self.train_csr_path.exists():
+            data = np.load(self.train_csr_path)
+            self._csr_offsets = data["offsets"]
+            self._csr_mids = data["movie_ids"]
+            return True
+        return False
+
+    def get_train_seen_for_user(self, user_id: int) -> Set[int]:
+        """Retrieve full Train-seen items for a single user in microseconds."""
+        if self._load_csr_if_available():
+            if self._csr_offsets is not None and self._csr_mids is not None:
+                if 1 <= user_id < len(self._csr_offsets):
+                    start = self._csr_offsets[user_id]
+                    end = self._csr_offsets[user_id + 1]
+                    return set(self._csr_mids[start:end].tolist())
+                return set()
+        return self._get_train_seen().get(user_id, set())
+
     def _get_train_seen(self) -> Dict[int, Set[int]]:
-        """Lazy load train-seen items."""
+        """
+        Lazy load full Train-seen items from CSR or Parquet splits.
+        Never falls back to partial sample fixtures.
+        """
         if self._train_seen_cache is None:
+            if self._load_csr_if_available():
+                if self._csr_offsets is not None and self._csr_mids is not None:
+                    histories: Dict[int, Set[int]] = {}
+                    num_users = len(self._csr_offsets) - 1
+                    for u in range(1, num_users):
+                        start = self._csr_offsets[u]
+                        end = self._csr_offsets[u + 1]
+                        if end > start:
+                            histories[u] = set(self._csr_mids[start:end].tolist())
+                    self._train_seen_cache = histories
+                    return self._train_seen_cache
+
             if not self.train_path.exists():
-                self._train_seen_cache = {}
-                return self._train_seen_cache
+                raise FileNotFoundError(
+                    f"Full Train split data not found at {self.train_path} or {self.train_csr_path}. "
+                    "Refusing to fall back to partial sample fixtures in production serving."
+                )
             tbl = pq.read_table(self.train_path, columns=["userId", "movieId"])
             uids = tbl["userId"].to_numpy()
             mids = tbl["movieId"].to_numpy()
@@ -247,12 +291,24 @@ class ALSDeliveryService:
             return {uid: custom_histories.get(uid, set()) for uid in user_ids}
 
         if stage in ("production", "validation"):
+            if self._load_csr_if_available() and self._csr_offsets is not None and self._csr_mids is not None:
+                res: Dict[int, Set[int]] = {}
+                num_offsets = len(self._csr_offsets)
+                for uid in user_ids:
+                    if 1 <= uid < num_offsets:
+                        start = self._csr_offsets[uid]
+                        end = self._csr_offsets[uid + 1]
+                        res[uid] = set(self._csr_mids[start:end].tolist())
+                    else:
+                        res[uid] = set()
+                return res
             train_seen = self._get_train_seen()
             return {uid: train_seen.get(uid, set()) for uid in user_ids}
         elif stage == "test":
             test_seen = self._get_test_stage_seen()
             return {uid: test_seen.get(uid, set()) for uid in user_ids}
         else:
+            raise ValueError(f"Unknown stage: {stage}")
             raise ValueError(f"Unknown stage '{stage}'. Must be one of ['production', 'validation', 'test']")
 
     def recommend(
@@ -366,6 +422,8 @@ def get_delivery_service(
 def recommend_als(
     user_id: int,
     top_n: int = 20,
+    k: Optional[int] = None,
+    filter_seen: bool = True,
     stage: str = "production",
     model_version: Optional[str] = None,
     service: Optional[ALSDeliveryService] = None,
@@ -373,14 +431,21 @@ def recommend_als(
 ) -> List[Dict[str, Any]]:
     """
     Public Function Interface: Generate ALS Top-N recommendations for a single user.
+    Supports 'top_n' and 'k' interchangeably. If filter_seen=False, skips seen suppression.
     """
+    effective_top_n = k if k is not None else top_n
     svc = service or get_delivery_service()
-    return svc.recommend(user_id=user_id, top_n=top_n, stage=stage, custom_seen=custom_seen)
+    effective_custom_seen = custom_seen if filter_seen else set()
+    return svc.recommend(
+        user_id=user_id, top_n=effective_top_n, stage=stage, custom_seen=effective_custom_seen
+    )
 
 
 def recommend_als_batch(
     user_ids: Sequence[int],
     top_n: int = 20,
+    k: Optional[int] = None,
+    filter_seen: bool = True,
     stage: str = "production",
     model_version: Optional[str] = None,
     service: Optional[ALSDeliveryService] = None,
@@ -388,10 +453,18 @@ def recommend_als_batch(
 ) -> Dict[int, List[Dict[str, Any]]]:
     """
     Public Function Interface: Generate ALS Top-N recommendations for a batch of users.
+    Supports 'top_n' and 'k' interchangeably. If filter_seen=False, skips seen suppression.
     """
+    effective_top_n = k if k is not None else top_n
     svc = service or get_delivery_service()
+    effective_histories = (
+        custom_user_histories if filter_seen else {u: set() for u in user_ids}
+    )
     return svc.recommend_batch(
-        user_ids=user_ids, top_n=top_n, stage=stage, custom_user_histories=custom_user_histories
+        user_ids=user_ids,
+        top_n=effective_top_n,
+        stage=stage,
+        custom_user_histories=effective_histories,
     )
 
 

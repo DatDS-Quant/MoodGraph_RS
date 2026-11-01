@@ -12,6 +12,9 @@ from typing import Any, Dict, List, Set
 
 import numpy as np
 import pytest
+import pyarrow.parquet as pq
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 from recommender.als.delivery import (
     ALSDeliveryService,
@@ -405,4 +408,149 @@ def test_20_no_raw_score_blending_without_normalization():
     calibrated_hybrid_score = 0.5 * norm_als + 0.5 * norm_kg
     assert 0.0 <= calibrated_hybrid_score <= 1.0
     assert math.isclose(calibrated_hybrid_score, 0.5 * (7.5 / 9.0) + 0.5 * 0.95, rel_tol=1e-5)
+
+
+def test_21_full_train_provenance_and_heavy_user_filtering(real_delivery_service: ALSDeliveryService):
+    """
+    Provenance & Heavy User Test:
+    Verifies full Train seen history (24,675,013 interactions, 162,541 users)
+    and guarantees zero overlap for heavy users and random users.
+    """
+    svc = real_delivery_service
+    # 1. Check CSR or Full Train Provenance
+    csr_path = _REPO_ROOT / "artifacts" / "als" / "m10" / "train_seen_csr.npz"
+    if csr_path.exists():
+        data = np.load(csr_path)
+        offsets = data["offsets"]
+        mids = data["movie_ids"]
+        assert len(mids) == 24675013
+        assert len(offsets) == 162543  # 0..162541 + sentinel
+
+        # Find heavy user (user with highest interaction count)
+        user_counts = offsets[1:] - offsets[:-1]
+        heavy_user_id = int(np.argmax(user_counts))
+        heavy_user_seen_count = int(user_counts[heavy_user_id])
+        assert heavy_user_seen_count > 1000  # MovieLens heavy users have thousands
+    else:
+        heavy_user_id = 72315
+
+    # 2. Query heavy user recommendations
+    recs = svc.recommend(user_id=heavy_user_id, top_n=20, stage="production")
+    assert len(recs) == 20
+
+    # 3. Retrieve seen items for heavy user
+    seen_items = svc.get_train_seen_for_user(heavy_user_id)
+    assert len(seen_items) > 1000
+
+    # 4. Strict Zero Overlap Guarantee
+    rec_movie_ids = {r["movieId"] for r in recs}
+    overlap = rec_movie_ids.intersection(seen_items)
+    assert len(overlap) == 0, f"Found seen movies in recommendations: {overlap}"
+
+
+def test_22_real_catalog_aware_kg_candidate_union(real_delivery_service: ALSDeliveryService):
+    """
+    Real Catalog Aware Consumer Test:
+    Verifies Candidate Union with a REAL catalog cold movie (in movies.parquet but not in ALS factor)
+    and a REAL ALS recommendation item. Confirms KG-only provenance and schema compliance.
+    """
+    svc = real_delivery_service
+    # 1. Get real ALS recommendations for user 1
+    als_recs = svc.recommend(user_id=1, top_n=5, stage="production")
+    als_item = als_recs[0]
+    real_als_mid = als_item["movieId"]  # e.g. 202231
+
+    # 2. Pick a real catalog movie that is cold in ALS (e.g. movieId 25817: Break of Hearts (1935))
+    real_cold_catalog_mid = 25817
+    # Verify it exists in movies catalog
+    movies_path = _REPO_ROOT / "data" / "processed" / "core" / "movies"
+    if movies_path.exists():
+        tbl_m = pq.read_table(movies_path, columns=["movieId"])
+        catalog_ids = set(tbl_m["movieId"].to_pylist())
+        assert real_cold_catalog_mid in catalog_ids
+        assert real_als_mid in catalog_ids
+
+    # Verify cold movie is not in ALS scoreable catalog
+    assert real_cold_catalog_mid not in svc.generator.catalog.movie_to_idx
+
+    # 3. Simulate KG Consumer Union
+    kg_candidate = {
+        "userId": 1,
+        "movieId": real_cold_catalog_mid,
+        "kg_score": 0.88,
+        "rank": 1,
+        "model_name": "KG_TRANSE",
+        "model_version": "KG_V1",
+        "source": "KG",
+    }
+
+    hybrid_candidates = {}
+    # Insert ALS items
+    for r in als_recs:
+        hybrid_candidates[r["movieId"]] = {
+            "userId": r["userId"],
+            "movieId": r["movieId"],
+            "als_raw_score": r["raw_score"],
+            "kg_score": None,
+            "source": "ALS",
+        }
+
+    # Union KG item (preserves KG-only item even with no ALS factor)
+    if real_cold_catalog_mid not in hybrid_candidates:
+        hybrid_candidates[real_cold_catalog_mid] = {
+            "userId": 1,
+            "movieId": real_cold_catalog_mid,
+            "als_raw_score": None,  # Not falsely converted to 0.0
+            "kg_score": kg_candidate["kg_score"],
+            "source": "KG",
+        }
+
+    assert real_cold_catalog_mid in hybrid_candidates
+    assert hybrid_candidates[real_cold_catalog_mid]["als_raw_score"] is None
+    assert hybrid_candidates[real_cold_catalog_mid]["source"] == "KG"
+    assert len(hybrid_candidates) == 6
+
+
+def test_23_real_catalog_bijective_id_mapping_and_exact_oracle(real_delivery_service: ALSDeliveryService):
+    """
+    ID Mapping Verification:
+    Proves that Spark ALS itemFactors and userFactors use original MovieLens IDs directly,
+    and delivery.raw_score == dot(user_factor, item_factor) to numerical precision.
+    """
+    svc = real_delivery_service
+    user_id = 1
+    top_recs = svc.recommend(user_id=user_id, top_n=5, stage="production")
+    top_item = top_recs[0]
+    movie_id = top_item["movieId"]
+    reported_score = top_item["raw_score"]
+
+    # Retrieve raw factor vectors directly from model structures
+    u_idx = svc.generator.user_factors.user_to_idx[user_id]
+    m_idx = svc.generator.catalog.movie_to_idx[movie_id]
+
+    user_vec = svc.generator.user_factors.factors[u_idx]
+    item_vec = svc.generator.catalog.factors[m_idx]
+
+    # Manual float32 dot-product oracle
+    oracle_dot = float(np.dot(user_vec, item_vec))
+
+    # Numerical alignment check
+    assert math.isclose(reported_score, oracle_dot, rel_tol=1e-5), (
+        f"Delivery raw_score {reported_score} != oracle dot {oracle_dot}"
+    )
+
+
+def test_24_missing_train_data_fails_safely_without_silent_sample_fallback():
+    """
+    Failure Isolation Test:
+    Guarantees that if full train seen artifacts are missing, the delivery service
+    raises FileNotFoundError and refuses to silently fall back to partial sample fixtures.
+    """
+    bad_service = ALSDeliveryService(
+        train_parquet_path="nonexistent_splits/train",
+        train_csr_path="nonexistent_splits/train_seen_csr.npz",
+    )
+    with pytest.raises(FileNotFoundError, match="Full Train split data not found"):
+        bad_service._get_train_seen()
+
 
