@@ -98,3 +98,4 @@
 > *"Tóm lại, M09 đã khẳng định 100% code M05-M08 hoạt động hoàn hảo, đồng thời làm sáng tỏ bài học kinh điển: Collaborative Filtering đơn độc sẽ bất lực trước bài toán Cold-Start và Long-Tail.  
 > Kết luận này chính là động lực khoa học vững chắc nhất để nhóm phát triển tiếp Khối 3B: sử dụng Đồ thị tri thức (Knowledge Graph) và phương pháp lai ghép (Hybrid Blending) nhằm truyền dẫn tri thức thể loại, đạo diễn và tâm trạng mood, giải cứu các bộ phim ít đánh giá khỏi thiên lệch Fluke Bias.  
 > Em xin trân trọng cảm ơn quý Thầy Cô trong Hội đồng!"*
+

@@ -30,15 +30,18 @@ User 2 (thích phim hành động): P_2 = [1.8, 0.2]
 
 Phim A (Head - Phổ biến, có 10.000 ratings): Q_A = [1.5, 0.1]
 -> Điểm dự đoán User 2 xem Phim A: 
-   Score = 1.8 * 1.5 + 0.2 * 0.1 = 2.70 + 0.02 = 2.72 (Hợp lý)
+   Score = 1.8 * 1.5 + 0.2 * 0.1 = 2.70 + 0.02 = 2.72 (Mức điểm vừa phải)
 
-Phim B (Tail - Vô danh, chỉ 1 rating 5.0 sao từ User 1):
-Do khớp hoàn hảo với User 1, Q_B bị kéo về hướng: Q_B = [2.4, 0.0]
--> Điểm dự đoán User 2 xem Phim B:
+Phim B (Tail - Vô danh, chỉ có 1 rating quan sát = 5.0 sao từ User 1):
+Do chỉ có 1 ràng buộc, Q_B chủ yếu xoay theo vector P_1.
+Dưới điều chuẩn L2 (lambda = 0.1), vector Q_B bị co nhẹ về gốc tọa độ:
+   Q_B = [2.4, 0.0]
+-> Điểm dự đoán cho User 1: P_1 . Q_B = 2.0 * 2.4 = 4.80 (sai số residual = 0.20, không phải nội suy chính xác 5.0)
+-> Nhưng điểm dự đoán cho User 2 xem Phim B:
    Score = 1.8 * 2.4 + 0.2 * 0.0 = 4.32!
 ```
 
-Dù Phim B là phim vô danh không ai biết, điểm số dự đoán của nó (4.32) lại cao vượt trội so với Phim A (2.72). Kết quả là Phim B đẩy văng Phim A ra khỏi danh sách Top-K!
+Mặc dù regularized ALS không nội suy tuyệt đối 5.0 sao (vẫn có sai số 0.20 do phạt L2 norm), điểm dự đoán của Phim B cho User 2 (4.32) vẫn vượt trội so với Phim A (2.72). Kết quả là Phim B đẩy văng Phim A ra khỏi danh sách Top-K!
 
 ---
 
@@ -83,24 +86,25 @@ Dù Phim B là phim vô danh không ai biết, điểm số dự đoán của n�
   `Score ≈ 2.5 * 4.1 * cos(theta) ≈ 10.25`.
 - Trong thực nghiệm M09, có khoảng 0.2808% điểm số (165.481 cặp) vượt qua ngưỡng trần 5.0.
 
-### Câu 7: Tại sao PyArrow lại có tốc độ đọc dữ liệu nhanh gấp gần 6 lần Spark DataFrame trong thực nghiệm I/O?
+### Câu 7: Tại sao PyArrow và Spark DataFrame lại có sự khác biệt về thời gian nạp dữ liệu?
 **Trả lời:**
-- PyArrow nạp 24.67 triệu dòng chỉ mất 0.65 giây (đạt 38.2 triệu dòng/giây), trong khi Spark DataFrame mất 3.98 giây (6.2 triệu dòng/giây).
-- Lý do: PyArrow hoạt động ở tầng C++ native, đọc trực tiếp cấu trúc cột Parquet theo cơ chế zero-copy vào bộ nhớ RAM của tiến trình Python, không qua trung gian mạng hay JVM.
-- Spark DataFrame phải khởi tạo Catalyst Logical Plan, phân bổ công việc qua 12 partitions trên JVM và chuyển đổi kiểu dữ liệu nội bộ của Spark SQL, dẫn đến độ trễ khởi động (overhead) cao hơn đối với tác vụ đọc đơn lẻ.
+- Phép đo PyArrow (0.65 giây cho 24.67M dòng) và Spark DataFrame (3.98 giây) phản ánh hai khối lượng công việc (workloads) và mục đích kiến trúc khác nhau:
+  - PyArrow đọc 2 cột (`movieId`, `userId`) trực tiếp từ file snappy parquet cục bộ bằng thư viện C++ zero-copy vào RAM tiến trình Python, phù hợp cho tầng suy luận nhanh (candidate generation).
+  - Spark DataFrame đọc phân tán trên 12 partitions của JVM, khởi tạo Catalyst logical/physical plan và chuẩn bị dữ liệu cho các phép biến đổi phân tán lớn (distributed ETL/training).
+- Đây là hai thành phần bổ trợ nhau trong kiến trúc Big Data, không phải phép so sánh để tuyên bố một framework vượt trội hơn framework kia ở mọi tác vụ.
 
 ### Câu 8: Cơ chế chia lô (Batch Scoring) bằng NumPy BLAS tối ưu hóa bộ nhớ RAM như thế nào?
 **Trả lời:**
 - Thay vì tính toán toàn bộ ma trận 162.541 users x 58.932 items một lúc (sẽ tốn tới 38 GB RAM và gây lỗi Out-Of-Memory), nhóm chia người dùng thành các lô nhỏ (batch_size = 2.500).
 - Kích thước bộ nhớ lý thuyết cho 1 lô:
   `2.500 users * 58.932 items * 4 bytes (float32) ≈ 589.32 MB`.
-- Thực nghiệm M09 cho thấy tại batch_size = 2.500, bộ nhớ RAM đỉnh chỉ đạt 724.6 MB, nằm hoàn toàn dưới hạn mức an toàn 1.2 GB, đồng thời đạt thông lượng xử lý cực cao: 8.864 users/giây.
+- Thực nghiệm M09 cho thấy tại batch_size = 2.500, bộ nhớ RAM đỉnh cô lập chỉ đạt 724.6 MB, nằm hoàn toàn dưới hạn mức an toàn 1.2 GB, đồng thời đạt thông lượng xử lý cực cao: 8.864 users/giây.
 
 ### Câu 9: Tại sao nhóm không tăng tham số điều chuẩn (regParam) lên thật cao để triệt tiêu Fluke Bias?
 **Trả lời:**
-- Nhóm đã thực hiện khảo sát toàn diện tại Module M07: khi tăng `regParam` từ 0.05 lên 0.1, 0.2, 0.3, và kiểm tra trên Validation.
-- Khi tăng `regParam` quá cao, thuật toán co toàn bộ các vector về gốc tọa độ, làm suy giảm nghiêm trọng khả năng phân biệt sở thích (discriminative power) và làm tăng mạnh sai số RMSE trên tập Train.
-- Điều chuẩn L2 chỉ co nhỏ độ dài vector đồng đều chứ không thể thay đổi hướng vector của các item chỉ có 1 tương tác. Giải pháp đúng đắn không phải là ép ALS làm điều nó không thể, mà là phối hợp với đồ thị tri thức (Knowledge Graph) và độ phổ biến tại khối Hybrid tiếp theo.
+- Nhóm đã thực hiện khảo sát tham số tại Module M07: thử nghiệm các mức `regParam` 0.1 (baseline), 0.3, 1.0, 3.0 trên tập Validation.
+- Khi tăng `regParam` lên quá cao (1.0 hay 3.0), thuật toán co mạnh toàn bộ các vector về gốc tọa độ, làm suy giảm khả năng phân biệt sở thích giữa các người dùng và làm tăng đáng kể sai số RMSE.
+- Điều chuẩn L2 chỉ co độ dài vector đồng đều chứ không thể bổ sung thông tin ngữ cảnh cho các item chỉ có 1 tương tác. Giải pháp thực tế là kết hợp với đồ thị tri thức (Knowledge Graph) và độ phổ biến tại khối Hybrid tiếp theo.
 
 ### Câu 10: Từ kết quả chẩn đoán M09, hướng phát triển cho Khối 3B (Knowledge Graph) và Hệ Hybrid sẽ là gì?
 **Trả lời:**
@@ -108,3 +112,4 @@ Dù Phim B là phim vô danh không ai biết, điểm số dự đoán của n�
   `Final_Score = w1 * ALS_Score + w2 * KG_Score + w3 * Popularity_Prior`.
 - **Lọc hỗ trợ (Support Filtering):** Đối với các phim thuộc Bin 0 (chưa từng có tương tác) hoặc Bin 1-5 (ít tương tác), hệ thống sẽ dựa chủ yếu vào thông tin Đồ thị tri thức (đạo diễn, diễn viên, thể loại, tâm trạng mood) để đề xuất, thay vì tin cậy vào vector ALS bất ổn định.
 - Đây chính là giá trị học thuật cốt lõi của đề tài: chứng minh vì sao cần Đồ thị tri thức để giải quyết bài toán Cold-Start mà các mô hình Collaborative Filtering truyền thống bất lực.
+

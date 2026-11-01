@@ -1,0 +1,30 @@
+{
+  "record_id": "HERMES-M10-01",
+  "module": "M10",
+  "component": "ALSDeliveryService",
+  "topic": "Production ALS Delivery API, Sub-Millisecond BLAS Scoring, and Clean Cold-Start Contract",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Package the frozen Spark ALS model (ALS_R8_REG0.3_ITER10) into a production-grade inference service that decouples from Spark JVM during serving, delivers sub-millisecond latencies, filters seen movies strictly, and handles unknown users gracefully.",
+  "root_cause": "Calling Spark ALSModel directly during online inference introduces heavy JVM overhead, Spark Session initialization latency, and complex DataFrame conversions. Furthermore, recommender systems must strictly enforce cold-start contracts so that cold users return empty lists rather than fake uncalibrated scores or arbitrary popularities.",
+  "solution_or_decision": "Implemented ALSDeliveryService in recommender/als/delivery.py using vectorized NumPy BLAS dot-product (U_u @ V.T) and O(N) np.argpartition for Top-K candidate generation. Built strict ALSRecommendationItem dataclass with int64 IDs. Enforced clean cold-start contract returning empty list [] for unknown users and lazy-loaded seen movie filtering in RAM.",
+  "files_involved": [
+    "recommender/als/delivery.py",
+    "scripts/run_m10_delivery.py",
+    "tests/als/test_delivery.py",
+    "artifacts/als/m10/m10_real_model_smoke_results.json",
+    "artifacts/als/m10/m10_model_registry.json",
+    "docs/3a/M10_delivery_report.md"
+  ],
+  "relevant_tests": [
+    "tests/als/test_delivery.py::test_01_synthetic_delivery_oracle_basic",
+    "tests/als/test_delivery.py::test_04_recommendation_item_schema_validation",
+    "tests/als/test_delivery.py::test_09_known_user_top_n_length_and_rank",
+    "tests/als/test_delivery.py::test_10_unknown_user_cold_start_empty",
+    "tests/als/test_delivery.py::test_14_seen_filtering_guarantee",
+    "tests/als/test_delivery.py::test_17_real_model_dot_product_alignment"
+  ],
+  "evidence": "Smoke tests on real frozen ALS model ALS_R8_REG0.3_ITER10 (162,541 users, 58,932 items, rank=8) achieved sub-millisecond per-user scoring latency (batch throughput > 750 users/sec on AMD Ryzen 5). Known user 1 Top-5 returned exactly 5 items (top item 202231, score 7.1498, ranks 1-5 descending). Unknown user 999999999 returned exactly empty list []. 100% of seen movies filtered with -inf masking. 20/20 delivery tests PASSED.",
+  "code_version": "feature/als-3a@M10",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-02"
+}

@@ -66,7 +66,7 @@ Khảo sát toàn bộ 58.932 item factors (rank=8) và 162.541 user factors (ra
 | **User Factors (P_u)** | 162.541 | 8 | 0.230200 | 3.037728 | 1.812377 | 1.822677 | 0.215210 | 2.063722 | 2.137824 | 2.292200 |
 
 ### 3.2. Mối tương quan giữa Độ hỗ trợ (Support) và Độ chuẩn Vector
-- Hệ số tương quan Pearson giữa `log1p(support)` và `norm(Q_i)`: **r = +0.157360** (p-value = 3.0e-323, cực kỳ có ý nghĩa thống kê).
+- Hệ số tương quan Pearson giữa `log1p(support)` và `norm(Q_i)`: **r = +0.157360** (p-value = 3.0e-323, có ý nghĩa thống kê do cỡ mẫu lớn N = 58.932; tuy nhiên kích thước hiệu ứng ở mức khiêm tốn / modest effect size, phản ánh xu hướng tổng thể nhưng không phải mối quan hệ tuyến tính tuyệt đối).
 - Hệ số tương quan hạng Spearman: **ρ = +0.144029** (p-value = 1.29e-270).
 
 ### 3.3. So sánh Norm giữa các tầng hỗ trợ
@@ -166,5 +166,6 @@ Toàn bộ 16 tiêu chí tại [m09_release_checklist.json](file:///d:/PROJECT%2
 1. **Kết luận khoa học:** Module M09 đã hoàn thành xuất sắc sứ mệnh giải mã bản chất toán học và thực nghiệm của mô hình Collaborative Filtering trên dữ liệu quy mô lớn MovieLens 25M. Mâu thuẫn giữa hàm mục tiêu RMSE của ALS và độ đo xếp hạng Top-N trên tập Test đã được làm sáng tỏ bằng bằng chứng định lượng không thể phản bác.
 2. **Khuyến nghị kỹ thuật cho Module tiếp theo (Task 3B & Hybrid):**
    - **Không dùng Pure ALS đơn độc:** Tuyệt đối không đưa Pure ALS vào môi trường thực tế mà không có cơ chế lọc hoặc ghép tầng.
-   - **Cơ chế Hybrid Blending:** Khối tiếp theo cần kết hợp điểm ALS với độ phổ biến (Popularity Prior) hoặc đồ thị tri thức (Knowledge Graph Path Score) để triệt tiêu Long-Tail Fluke Bias.
+   - **Cơ chế Hybrid Blending:** Khối tiếp theo được khuyến nghị nghiên cứu kết hợp điểm ALS với độ phổ biến (Popularity Prior) hoặc đồ thị tri thức (Knowledge Graph Path Score) nhằm giảm thiểu thiên lệch Fluke Bias ở các item ít tương tác.
    - **Ngưỡng lọc hỗ trợ tối thiểu (Support Thresholding):** Nên thiết lập ngưỡng tối thiểu (ví dụ chỉ chấm điểm ALS cho phim có support >= 10, các phim dưới 10 ratings dùng fallback tri thức hoặc thể loại).
+

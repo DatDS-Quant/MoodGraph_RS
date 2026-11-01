@@ -629,3 +629,4 @@ def synthetic_throughput_oracle(
     if duration_sec <= 0:
         raise ValueError("duration_sec must be positive")
     return float(count) / float(duration_sec)
+

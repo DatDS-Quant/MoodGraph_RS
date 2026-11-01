@@ -332,3 +332,4 @@ def test_15_real_factor_norm_support_correlation():
     assert corr.pearson_corr > 0.10
     assert corr.pearson_pval < 1e-10
     assert corr.spearman_corr > 0.10
+

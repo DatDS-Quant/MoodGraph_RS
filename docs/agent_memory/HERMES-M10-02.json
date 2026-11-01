@@ -1,0 +1,28 @@
+{
+  "record_id": "HERMES-M10-02",
+  "module": "M10",
+  "component": "HybridIntegrationContract",
+  "topic": "Hybrid Candidate Union Architecture, Score Normalization Prohibition, and Task 3A Acceptance",
+  "category": "ENGINEERING_DECISION",
+  "problem_statement": "Define formal integration contract between Task 3A Collaborative Filtering (Spark ALS) and Task 3B Knowledge Graph recommender to prevent design antipatterns like forced ALS-only reranking or raw score addition.",
+  "root_cause": "Sequential filtering (feeding only ALS Top-20 into KG) suffocates catalog exploration and eliminates KG cold-start and long-tail items, since ALS item coverage is under 0.5%. Furthermore, ALS raw scores are unbounded inner products (up to ~11.0), which mathematically dominate [0, 1] graph scores if summed directly without normalization.",
+  "solution_or_decision": "Established formal integration contract in docs/3a/integration_contract.md: (1) Mandated Candidate Union architecture (Candidates_Hybrid = Candidates_ALS union Candidates_KG); (2) Prohibited direct unnormalized raw score addition, requiring per-user Min-Max normalization or Reciprocal Rank Fusion; (3) Standardized shared MovieLens 64-bit int userId and movieId; (4) Completed full regression test suite (180 tests PASS) and verified 25/25 quality gates in m10_release_checklist.json with formal verdict TASK_3A_ENGINEERING_RELEASE_PASS.",
+  "files_involved": [
+    "docs/3a/integration_contract.md",
+    "docs/3a/TASK_3A_FINAL_ACCEPTANCE.md",
+    "docs/3a/TASK_3A_HANDOVER_TO_HYBRID.md",
+    "scripts/audit_m10_release.py",
+    "artifacts/als/m10/m10_contract_test_results.json",
+    "artifacts/als/m10/m10_release_checklist.json",
+    "tests/als/test_delivery.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_delivery.py::test_18_candidate_union_contract_with_synthetic_kg",
+    "tests/als/test_delivery.py::test_19_no_forced_kg_rerank_of_als_top_20",
+    "tests/als/test_delivery.py::test_20_no_raw_score_blending_without_normalization"
+  ],
+  "evidence": "Candidate union verified in test_18 with 5 ALS candidates and 3 KG candidates producing exactly 7 unique candidates, preserving 100% of KG-only items (999101, 999102). Test_20 confirmed unnormalized score addition resulted in 89.4% ALS domination, whereas Min-Max normalization restored balanced 50/50 weighting. Full Task 3A regression test suite passed: 180/180 tests across 12 files. 25/25 release gates PASS.",
+  "code_version": "feature/als-3a@M10",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-02"
+}
