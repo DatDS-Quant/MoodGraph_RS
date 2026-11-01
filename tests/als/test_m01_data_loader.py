@@ -58,8 +58,7 @@ def spark():
         .config("spark.ui.enabled", "false")
         .getOrCreate()
     )
-    yield session
-    session.stop()
+    return session
 
 
 @pytest.fixture(scope="session")

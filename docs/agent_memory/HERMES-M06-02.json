@@ -1,0 +1,24 @@
+{
+  "record_id": "HERMES-M06-02",
+  "module": "M06",
+  "component": "ALSCandidateGenerator",
+  "topic": "Bounded Batched Matrix Factor Scoring for 162K Users on Laptop Memory Constraints",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Score 162,541 users against 58,932 candidate movies without materializing a dense 10.14-billion cell matrix (which would require >40 GB RAM) on a 16 GB laptop.",
+  "root_cause": "Cross-joining all users and items in Spark or Python causes immediate Out-Of-Memory driver crashes.",
+  "solution_or_decision": "Implement bounded batched scoring with batch_size=2,500 using BLAS matrix multiplication (P_batch @ Q.T). In each batch, 2,500 x 58,932 scores (589 MB) are computed in ~0.25s, masked for seen items in 16ms, and Top-K items extracted via 2D argpartition in 1.6s.",
+  "files_involved": [
+    "recommender/als/candidates.py",
+    "scripts/run_m06_als_topn.py",
+    "artifacts/als/m06/m06_als_top20_recommendations.parquet"
+  ],
+  "relevant_tests": [
+    "tests/als/test_candidates.py::test_13_batch_vs_single_user_consistency",
+    "tests/als/test_candidates.py::test_14_batch_boundary_integrity",
+    "tests/als/test_candidates.py::test_19_arrow_table_export_and_parquet_serialization"
+  ],
+  "evidence": "Processed all 162,541 Validation users in 198.03s (throughput 820.8 users/sec) with peak RAM working set < 3.5 GB. Serialized 3,250,820 rows to Parquet (19.38 MB).",
+  "code_version": "M06",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}

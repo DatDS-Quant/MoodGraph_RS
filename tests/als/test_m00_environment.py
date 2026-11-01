@@ -120,7 +120,7 @@ def test_03_spark_session_and_schema_contract():
         .getOrCreate()
     )
 
-    try:
+    if True:
         base_dir = REPO_ROOT / "data" / "processed"
 
         # 1. Kiểm tra split train schema
@@ -160,8 +160,6 @@ def test_03_spark_session_and_schema_contract():
             assert 0.5 <= row["rating"] <= 5.0
             assert row["timestamp"] > 0
 
-    finally:
-        spark.stop()
 
 
 def test_04_spark_parquet_row_counts():
@@ -176,7 +174,7 @@ def test_04_spark_parquet_row_counts():
         .getOrCreate()
     )
 
-    try:
+    if True:
         base_dir = REPO_ROOT / "data" / "processed"
 
         # Đọc thực tế và đếm dòng bằng Spark
@@ -191,8 +189,6 @@ def test_04_spark_parquet_row_counts():
         assert test_count == 162541, f"Test count {test_count} không khớp 162,541!"
         assert movies_count == 62423, f"Movies count {movies_count} không khớp 62,423!"
 
-    finally:
-        spark.stop()
 
 
 def test_05_roadmap_provenance_and_cleanliness():

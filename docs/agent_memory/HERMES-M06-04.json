@@ -1,0 +1,23 @@
+{
+  "record_id": "HERMES-M06-04",
+  "module": "M06",
+  "component": "ValidationProtocol",
+  "topic": "Validation Positive Target Scorable Catalog Eligibility Ceiling",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Audit the catalog overlap between M05 item factors and held-out validation positive targets to determine theoretical bounds on collaborative filtering recommendation accuracy.",
+  "root_cause": "3,491 catalog movies have 0 ratings in Train and therefore possess no M05 item factor vector.",
+  "solution_or_decision": "Audit shows exactly 30 out of 109,779 positive validation targets belong to these 3,491 unscoreable catalog movies. Under the strict ALS-only policy, these 30 users receive miss (0.0) while being strictly retained in the positive cohort denominator, establishing a theoretical ceiling of 99.9727% for pure collaborative filtering.",
+  "files_involved": [
+    "recommender/als/candidates.py",
+    "scripts/run_m06_als_topn.py",
+    "artifacts/als/m06/m06_als_evaluation_results.json"
+  ],
+  "relevant_tests": [
+    "tests/als/test_candidates.py::test_11_unscoreable_item_catalog_audit",
+    "tests/als/test_candidates.py::test_20_end_to_end_with_top_n_evaluator"
+  ],
+  "evidence": "Catalog audit: 62,423 full movies, 58,932 scorable (94.41%), 3,491 unscoreable (5.59%). Positive targets in unscoreable movies: 30 / 109,779 users. Max possible HR: 99.9727%.",
+  "code_version": "M06",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}

@@ -36,21 +36,6 @@ from recommender.als.toy_als import (
 )
 
 
-@pytest.fixture(scope="session")
-def spark_session() -> SparkSession:
-    """Session-scoped SparkSession for fast test execution."""
-    spark = (
-        SparkSession.builder.appName("MoodGraph_M04_ToyALS_Tests")
-        .master("local[2]")
-        .config("spark.ui.enabled", "false")
-        .config("spark.driver.memory", "1g")
-        .config("spark.sql.shuffle.partitions", "2")
-        .getOrCreate()
-    )
-    yield spark
-    spark.stop()
-
-
 def test_01_hand_calculated_dot_product():
     """Verify dot product r_hat = p_u^T q_i on 1D, 2D, and 3D vectors."""
     # 1D

@@ -1,0 +1,24 @@
+{
+  "record_id": "HERMES-M06-01",
+  "module": "M06",
+  "component": "ALSCandidateGenerator",
+  "topic": "Exact Filter-Before-Top-K vs Naive Oversampling Failure in Collaborative Filtering",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Evaluate recommendation generation architectures to guarantee exact Top-K unseen recommendations for all users, including heavy users with up to 32,200 Train ratings, without fixed-oversampling truncations.",
+  "root_cause": "Naive oversampling strategies (such as calling recommend(K) and then dropping seen items) return fewer than K items or empty lists when the user's top-predicted items have already been watched in Train.",
+  "solution_or_decision": "Implement Exact Filter-Before-Top-K by setting seen item scores to -inf prior to Top-K selection. Combine with fast 2D argpartition and deterministic tie-breaking (als_score DESC, movieId ASC). Verified to return exact K items for all 162,541 users with 0 seen item leakage.",
+  "files_involved": [
+    "recommender/als/candidates.py",
+    "tests/als/test_candidates.py",
+    "scripts/run_m06_als_topn.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_candidates.py::test_01_exact_top_k_oracle_random_data",
+    "tests/als/test_candidates.py::test_07_heavy_user_seen_filtering",
+    "tests/als/test_candidates.py::test_12_oversampling_counterexample_failure"
+  ],
+  "evidence": "Tested against counterexample where naive oversampling returns 0 items while exact filter-before-top-K returns 5 valid unseen items. Tested on user 72315 with 32,200 seen items; completed in 12.55 ms with 0 leaks.",
+  "code_version": "M06",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}

@@ -33,21 +33,6 @@ from recommender.als.trainer import (
 )
 
 
-@pytest.fixture(scope="session")
-def spark_session() -> SparkSession:
-    """Session-scoped SparkSession for fast test execution."""
-    spark = (
-        SparkSession.builder.appName("MoodGraph_M05_Trainer_Tests")
-        .master("local[2]")
-        .config("spark.ui.enabled", "false")
-        .config("spark.driver.memory", "1g")
-        .config("spark.sql.shuffle.partitions", "2")
-        .getOrCreate()
-    )
-    yield spark
-    spark.stop()
-
-
 def test_01_config_validation_positive_rank():
     """Verify rank must be a positive integer."""
     cfg = ALSConfig(rank=16)

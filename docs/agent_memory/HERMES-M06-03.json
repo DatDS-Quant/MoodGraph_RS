@@ -1,0 +1,23 @@
+{
+  "record_id": "HERMES-M06-03",
+  "module": "M06",
+  "component": "ValidationEvaluation",
+  "topic": "Long-Tail Extreme Rating Flukes in Explicit ALS and HitRate@K Collapse",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Diagnose the divergence between low Train RMSE (0.7698) and zero Validation Top-N HitRate@K (0.00000) for unregularized explicit ALS (rank=16, regParam=0.1).",
+  "root_cause": "In explicit ALS without popularity shrinkage, 10,324 items with only 1 rating of 5.0 in Train achieve fitted dot products of 5.0 to 5.3. Legitimate popular movies with thousands of diverse ratings average 4.1 to 4.4. Consequently, the top 20 slots for all users are flooded by obscure 1-rating flukes, pushing true validation targets down to a median rank of 3,990.",
+  "solution_or_decision": "Document this finding as a rigorous empirical proof that in-sample RMSE optimization diverges from Top-N ranking under long-tail item distributions. Enforce strict M06 boundaries: report actual 0.00000 metrics truthfully without cheating or altering denominators, establishing the scientific requirement for M07 hyperparameter tuning (higher regParam, implicit/confidence weighting) and Task 3B Knowledge Graph hybridization.",
+  "files_involved": [
+    "recommender/als/candidates.py",
+    "scripts/run_m06_als_topn.py",
+    "artifacts/als/m06/m06_als_evaluation_results.json",
+    "docs/3a/M06_candidates_report.md"
+  ],
+  "relevant_tests": [
+    "tests/als/test_candidates.py::test_20_end_to_end_with_top_n_evaluator"
+  ],
+  "evidence": "Observed on 109,779 positive validation users: HR@5=0.00000, HR@10=0.00000, HR@20=0.00000 vs Popularity Count HR@10=0.05519. Distribution of validation target ranks on 500 users shows min rank 188, median rank 3,990.0, mean rank 7,803.0.",
+  "code_version": "M06",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}
