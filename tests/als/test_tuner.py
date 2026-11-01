@@ -426,4 +426,87 @@ def test_screening_and_full_validation_denominator_isolation():
     assert best_trial["full_metrics"]["positive_cohort_size"] == 109779
 
 
+def test_actual_experiment_inventory_audit():
+    """Verify that the trial inventory strictly matches real physical experiments with no phantom trials."""
+    registry_path = Path("artifacts/als/m07/experiment_registry.json")
+    if not registry_path.exists():
+        pytest.skip("experiment_registry.json not found")
+
+    with open(registry_path, "r", encoding="utf-8") as f:
+        reg = json.load(f)
+
+    expected_trials = {
+        "M05_ALS_R16_REG0.1_ITER10",
+        "ALS_R16_REG0.3_ITER10",
+        "ALS_R16_REG1.0_ITER10",
+        "ALS_R16_REG3.0_ITER10",
+        "ALS_R8_REG0.3_ITER10",
+        "ALS_R32_REG0.3_ITER10",
+        "ALS_DIAGNOSTIC_MIN_RATINGS_5",
+        "ALS_DIAGNOSTIC_MIN_RATINGS_20",
+    }
+    actual_trials = set(reg["trials"].keys())
+    assert actual_trials == expected_trials, f"Mismatch in trials! Found {actual_trials - expected_trials}, missing {expected_trials - actual_trials}"
+
+    # Confirm phantom trials do NOT exist in registry
+    phantom_trials = ["ALS_R8_REG0.05_ITER10", "ALS_R15_REG0.1_ITER10", "ALS_R15_REG0.05_ITER10", "ALS_R25_REG0.1_ITER15"]
+    for pt in phantom_trials:
+        assert pt not in actual_trials, f"Detected phantom trial {pt} in registry!"
+
+
+def test_freeze_manifest_and_canonical_artifact_integrity():
+    """Verify that the freeze manifest references the canonical existing model path and correct hyperparameters."""
+    freeze_path = Path("artifacts/als/m07/m07_to_m08_freeze_manifest.json")
+    if not freeze_path.exists():
+        pytest.skip("m07_to_m08_freeze_manifest.json not found")
+
+    with open(freeze_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    finalist = manifest["selected_finalist"]
+    assert finalist["trial_id"] == "ALS_R8_REG0.3_ITER10"
+    assert finalist["model_family"] == "ALS_ONLY"
+
+    # Canonical model artifact path must exist on disk
+    canonical_rel_path = finalist["model_artifact_path"]
+    assert canonical_rel_path == "artifacts/models/als/m07_tuning/ALS_R8_REG0.3_ITER10"
+    canonical_full_path = Path(canonical_rel_path)
+    assert canonical_full_path.exists(), f"Canonical model artifact {canonical_rel_path} does not exist!"
+    assert (canonical_full_path / "manifest.json").exists()
+    assert (canonical_full_path / "spark_model").exists()
+
+    # Model manifest inside artifact directory must have rank=8, reg_param=0.3
+    with open(canonical_full_path / "manifest.json", "r", encoding="utf-8") as f:
+        model_meta = json.load(f)
+    assert model_meta["config"]["rank"] == 8
+    assert model_meta["config"]["reg_param"] == 0.3
+    assert model_meta["config"]["max_iter"] == 10
+
+    # Non-existent legacy/typo path must NOT exist
+    bogus_path = Path("models/als/m07_als_rank8_reg0.3_iter10")
+    assert not bogus_path.exists(), "Bogus unmanaged path models/als/... must not exist"
+
+
+def test_long_tail_bucket_label_correctness():
+    """Verify that pct_slots_1_rating corresponds strictly to 1-rating items, not < 20."""
+    csv_path = Path("artifacts/als/m07/long_tail_diagnostics.csv")
+    if not csv_path.exists():
+        pytest.skip("long_tail_diagnostics.csv not found")
+
+    import csv
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = list(csv.DictReader(f))
+
+    rows = {r["trial_id"]: r for r in reader}
+    m05 = rows["M05_ALS_R16_REG0.1_ITER10"]
+    # 65.57% belongs strictly to 1-rating bucket, not < 20
+    assert m05["pct_slots_1_rating"] == "65.57%"
+    assert m05["pct_slots_2_to_5_ratings"] == "30.67%"
+    assert m05["pct_slots_gt_100_ratings"] == "0.00%"
+
+    finalist = rows["ALS_R8_REG0.3_ITER10"]
+    assert finalist["pct_slots_1_rating"] == "95.76%"
+
+
+
 
