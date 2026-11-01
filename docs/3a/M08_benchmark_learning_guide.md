@@ -84,3 +84,4 @@ Có hai nguyên nhân cốt lõi về bản chất toán học:
 ### Câu hỏi 11: Module M08 khác Module M09 thế nào?
 - **M08 (Module hiện tại):** Tập trung vào **Hiệu năng Gợi ý Offline (Recommendation Accuracy & Ranking Quality)** trên tập Test đóng băng, so sánh công bằng giữa Popularity và ALS thuần túy.
 - **M09 (Module tiếp theo):** Tập trung vào **Khảo sát Năng lực Tính toán Phân tán và Hành vi Cold-Start (Profiling & Scalability)**: đo lường thông lượng (throughput), thời gian mở rộng quy mô dữ liệu theo số lõi CPU, chi tiết hóa các tầng đuôi dài và đo lường độ trễ suy luận thực tế.
+

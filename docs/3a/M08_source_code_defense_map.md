@@ -73,3 +73,4 @@ Tài liệu này cung cấp ánh xạ chính xác vị trí tập tin, lớp, h�
 ### Phút 5: Tổng kết & Kết nối với Khối Đồ thị Tri thức (Task 3B & Hybrid)
 - *"Toàn bộ hệ thống kiểm thử `test_benchmark.py` gồm 9 test cases đã vượt qua 100% trong 1.69 giây. Tổng thời gian sinh khuyến nghị cho hơn 111 nghìn người dùng chỉ mất khoảng 3 phút trên máy cá nhân nhờ cơ chế tính toán theo lô (Batch Matrix Scoring) kiểm soát chặt chẽ bộ nhớ RAM dưới 1.2 GB."*
 - *"Kết quả của M08 chính là minh chứng thực nghiệm sống động cho thấy sự cần thiết của việc kết hợp Đồ thị Tri thức (Knowledge Graph) ở Task 3B và mô hình lai (Hybrid Recommender) ở các giai đoạn sau để khắc phục triệt để hiện tượng Fluke Bias của ma trận nhân tử hóa đơn thuần. Em xin chân thành cảm ơn Thầy Cô!"*
+
