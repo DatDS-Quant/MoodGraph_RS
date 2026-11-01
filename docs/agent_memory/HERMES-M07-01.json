@@ -1,0 +1,24 @@
+{
+  "record_id": "HERMES-M07-01",
+  "module": "M07",
+  "component": "ALSTuner",
+  "topic": "Fluke Bias and Spark ALS-WR Regularization Scaling Paradox",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Investigate whether tuning regularization parameter (regParam) in explicit Spark ALS can suppress 1-rating cold/fluke movies and eliminate Fluke Bias in Top-N recommendations.",
+  "root_cause": "Spark MLlib implements ALS with Weighted-lambda Regularization (ALS-WR, Zhou et al., 2008), where the regularization penalty scales proportionally with item observation count (lambda * n_i * I). For popular items (n_i = 50,000), the penalty shrinks latent factors strongly towards zero. For 1-rating items (n_i = 1), the factor only fits a single user with near-zero resistance, preserving predicted scores near 5.0. Consequently, increasing regParam paradoxically increases the proportion of 1-rating items in Top-N recommendations from 65.57% (regParam=0.1) to 95.66% (regParam=0.3) and 100.00% (regParam=1.0, 3.0).",
+  "solution_or_decision": "Document this fundamental limitation of explicit matrix factorization in Top-N recommendation tasks. Acknowledge that explicit rating regression cannot overcome fluke bias via hyperparameter tuning alone, providing strong empirical and theoretical justification for Knowledge Graph augmentation (Task 3B) and Hybrid modeling (Task 3C).",
+  "files_involved": [
+    "recommender/als/tuner.py",
+    "scripts/run_m07_tuning.py",
+    "artifacts/als/m07/comparison_table.csv",
+    "artifacts/als/m07/long_tail_diagnostics.csv"
+  ],
+  "relevant_tests": [
+    "tests/als/test_tuner.py::test_compute_long_tail_diagnostics",
+    "tests/als/test_toy_als.py::test_11_regularization_shrinkage_effect"
+  ],
+  "evidence": "Empirical data across 5,000 screening users: regParam=0.1 has 65.57% 1-rating slots; regParam=0.3 has 95.66%; regParam=1.0 has 100.00%; regParam=3.0 has 100.00% slots. Validation HR@10 remains 0.00000 across all regularization levels.",
+  "code_version": "M07",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}

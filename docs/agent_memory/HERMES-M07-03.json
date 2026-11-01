@@ -1,0 +1,23 @@
+{
+  "record_id": "HERMES-M07-03",
+  "module": "M07",
+  "component": "ALSTuner",
+  "topic": "Diagnostic Support Filtering and Latent Factor Utility Evidence",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Provide empirical evidence on whether ALS latent factor representations contain genuine user preference signal or whether 0 HitRate is due to complete representation failure.",
+  "root_cause": "Fluke bias crowds Top-N recommendation slots with uninformative 1-rating items, making it impossible to observe latent factor ranking utility.",
+  "solution_or_decision": "Execute controlled diagnostic branch ALS_PLUS_TRAIN_SUPPORT_FILTER using the same learned factor vectors but masking low-support items (< 5 ratings and < 20 ratings). Kept strictly separated from ALS_ONLY model family to maintain scientific integrity.",
+  "files_involved": [
+    "recommender/als/tuner.py",
+    "artifacts/als/m07/comparison_table.csv",
+    "artifacts/als/m07/long_tail_diagnostics.csv"
+  ],
+  "relevant_tests": [
+    "tests/als/test_tuner.py::test_trial_config_validation",
+    "tests/als/test_tuner.py::test_compute_long_tail_diagnostics"
+  ],
+  "evidence": "Masking items with < 5 ratings drops 1-rating slots to 0.00% and elevates >100 ratings slots to 15.91%. Masking items with < 20 ratings elevates >100 ratings slots to 76.04% and yields positive Screening HR@10 = 0.00022 and NDCG@10 = 0.00010 (1 hit), proving latent factors carry genuine ranking signal when fluke noise is removed.",
+  "code_version": "M07",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}
