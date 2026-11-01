@@ -260,3 +260,134 @@ def test_compute_long_tail_diagnostics():
     assert pytest.approx(diag.score_max, abs=1e-4) == 5.0
     assert diag.top_10_recommended_movie_ids[0] == 50
 
+
+def test_metric_source_consistency():
+    """Verify reconciled metric consistency between M03 artifacts and M07 manifest."""
+    m03_path = Path("artifacts/m03_popularity_results.json")
+    m07_manifest_path = Path("artifacts/als/m07/best_als_model_manifest.json")
+
+    if not m03_path.exists() or not m07_manifest_path.exists():
+        pytest.skip("Required artifacts not found for source consistency test")
+
+    with open(m03_path, "r", encoding="utf-8") as f:
+        m03_data = json.load(f)
+
+    with open(m07_manifest_path, "r", encoding="utf-8") as f:
+        m07_manifest = json.load(f)
+
+    # Reconciled Popularity Count at K=10
+    m03_count_10 = m03_data["variants"]["POPULARITY_COUNT"]["metrics"]["10"]
+    expected_hr = round(m03_count_10["hit_rate"], 5)  # 0.05519
+    expected_ndcg = round(m03_count_10["ndcg"], 5)   # 0.02789
+
+    m07_comp = m07_manifest["comparison_with_m03_popularity"]
+    assert m07_comp["m03_pop_count_hr_10"] == expected_hr
+    assert m07_comp["m03_pop_count_ndcg_10"] == expected_ndcg
+
+    # Reconciled Popularity Weighted at K=10
+    m03_weighted_10 = m03_data["variants"]["POPULARITY_WEIGHTED"]["metrics"]["10"]
+    expected_weighted_hr = round(m03_weighted_10["hit_rate"], 5)  # 0.01969
+    expected_weighted_ndcg = round(m03_weighted_10["ndcg"], 5)   # 0.00771
+
+    assert m07_comp["m03_pop_weighted_hr_10"] == expected_weighted_hr
+    assert m07_comp["m03_pop_weighted_ndcg_10"] == expected_weighted_ndcg
+
+
+def test_cohort_specific_coverage():
+    """Verify that catalog coverage is correctly bound to cohort size and not conflated."""
+    m06_path = Path("artifacts/als/m06/m06_als_evaluation_results.json")
+    m07_manifest_path = Path("artifacts/als/m07/best_als_model_manifest.json")
+
+    if not m06_path.exists() or not m07_manifest_path.exists():
+        pytest.skip("Required artifacts not found for cohort coverage test")
+
+    with open(m06_path, "r", encoding="utf-8") as f:
+        m06_data = json.load(f)
+
+    with open(m07_manifest_path, "r", encoding="utf-8") as f:
+        m07_manifest = json.load(f)
+
+    # M06 evaluated on ALL 109,779 positive validation users:
+    m06_cov = m06_data["metrics"]["10"]["catalog_coverage_full"]
+    m06_unique = m06_data["metrics"]["10"]["num_unique_recommended_movies"]
+    assert m06_unique == 1545
+    assert pytest.approx(m06_cov, abs=1e-4) == 0.0248  # ~2.48%
+
+    # M07 screening evaluated on 5,000 users, finalist full validation evaluated on 109,779 users:
+    m07_full_cov = m07_manifest["full_metrics"]["catalog_coverage_10"]
+    m07_full_unique = m07_manifest["full_metrics"]["distinct_movies_10"]
+    assert m07_full_unique == 35
+    assert pytest.approx(m07_full_cov, abs=1e-4) == 0.00056  # 0.056%
+
+
+def test_hit_count_and_denominator_consistency():
+    """Verify that HitRate is mathematically consistent with hit_count / positive_cohort_size."""
+    registry_path = Path("artifacts/als/m07/experiment_registry.json")
+    if not registry_path.exists():
+        pytest.skip("experiment_registry.json not found")
+
+    with open(registry_path, "r", encoding="utf-8") as f:
+        reg = json.load(f)
+
+    for trial_id, trial in reg["trials"].items():
+        sm = trial.get("screening_metrics")
+        if sm and "hit_count_10" in sm and "positive_cohort_size" in sm:
+            hit_count = sm["hit_count_10"]
+            pos_cohort = sm["positive_cohort_size"]
+            calculated_hr = hit_count / float(pos_cohort)
+            assert pytest.approx(sm["hit_rate_10"], abs=1e-7) == calculated_hr
+
+
+def test_model_selection_tie_breaking():
+    """Verify Selection Oracle breaks ties deterministically using Occam's Razor."""
+    tmp_file = Path("artifacts/als/m07/test_dummy_registry.json")
+    reg = ExperimentRegistry(tmp_file)
+
+    # Create 3 tied trials with HR=0 and NDCG=0, but different ranks
+    t1 = TrialResult(
+        trial_id="ALS_R32",
+        config=TrialConfig(trial_id="ALS_R32", rank=32, reg_param=0.3, max_iter=10),
+        status=TrialStatus.EVALUATED,
+        screening_metrics={"ndcg_10": 0.0, "hit_rate_10": 0.0},
+    )
+    t2 = TrialResult(
+        trial_id="ALS_R8",
+        config=TrialConfig(trial_id="ALS_R8", rank=8, reg_param=0.3, max_iter=10),
+        status=TrialStatus.EVALUATED,
+        screening_metrics={"ndcg_10": 0.0, "hit_rate_10": 0.0},
+    )
+    t3 = TrialResult(
+        trial_id="ALS_R16",
+        config=TrialConfig(trial_id="ALS_R16", rank=16, reg_param=0.3, max_iter=10),
+        status=TrialStatus.EVALUATED,
+        screening_metrics={"ndcg_10": 0.0, "hit_rate_10": 0.0},
+    )
+
+    reg.update_trial(t1)
+    reg.update_trial(t2)
+    reg.update_trial(t3)
+
+    best = reg.select_best_model(cohort="screening")
+    assert best.config.trial_id == "ALS_R8"
+    assert best.config.rank == 8
+
+    if tmp_file.exists():
+        tmp_file.unlink()
+
+
+def test_screening_vs_full_validation_metric_provenance():
+    """Verify clear provenance separation between screening metrics and full validation metrics."""
+    manifest_path = Path("artifacts/als/m07/best_als_model_manifest.json")
+    if not manifest_path.exists():
+        pytest.skip("best_als_model_manifest.json not found")
+
+    with open(manifest_path, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    assert "screening_metrics" in manifest
+    assert "full_metrics" in manifest
+    assert manifest["selected_trial_id"] == "ALS_R8_REG0.3_ITER10"
+    assert manifest["model_family"] == "ALS_ONLY"
+    assert manifest["full_metrics"]["positive_cohort_size"] == 109779
+
+

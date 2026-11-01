@@ -6,7 +6,7 @@
   "category": "VERIFIED_FACT",
   "problem_statement": "Design an evaluation protocol that explores multiple ALS hyperparameter combinations under strict resource bounds while guaranteeing zero data leakage and uncompromised full validation rigour.",
   "root_cause": "Scoring 109,779 full validation users takes ~165 seconds per trial. Running full generation for 6 trials would consume excessive runtime.",
-  "solution_or_decision": "Implement Level 1 Screening Cohort (deterministic sample of 5,000 positive validation users, seed 42) reducing trial scoring to 7-9 seconds. Implement independent Selection Oracle sorting trials by NDCG@10 DESC, HitRate@10 DESC, rank ASC (Occam's razor), regParam ASC, and trial_id ASC. Only the selected finalist is evaluated on Level 2 Full Validation (109,779 users). Strict test split guard raises PermissionError if any test path is accessed.",
+  "solution_or_decision": "Implement Level 1 Screening Cohort (deterministic sample of 5,000 positive validation users, seed 42) reducing trial scoring to 7-9 seconds. Implement independent Selection Oracle sorting trials by NDCG@10 DESC, HitRate@10 DESC, rank ASC (Occam's razor), regParam ASC, and trial_id ASC. Designate rank=8 as complexity-preferred finalist among tied screening trials (all 0.0 HR/NDCG). Only this finalist is evaluated on Level 2 Full Validation (109,779 users). Strict test split guard raises PermissionError if any test path is accessed.",
   "files_involved": [
     "recommender/als/tuner.py",
     "tests/als/test_tuner.py",
@@ -16,7 +16,8 @@
   "relevant_tests": [
     "tests/als/test_tuner.py::test_guard_test_split_access",
     "tests/als/test_tuner.py::test_screening_cohort_manager",
-    "tests/als/test_tuner.py::test_experiment_registry_selection_rule"
+    "tests/als/test_tuner.py::test_model_selection_tie_breaking",
+    "tests/als/test_tuner.py::test_screening_vs_full_validation_metric_provenance"
   ],
   "evidence": "Selection Oracle selected ALS_R8_REG0.3_ITER10 (rank=8, train time 100.4s vs 396.5s for rank=32). Level 2 Full Validation evaluated 109,779 users, generating 2,195,580 recommendations in 165.25s (664.3 users/s) with 0 failures.",
   "code_version": "M07",

@@ -463,10 +463,16 @@ def main():
             "best_m07_full_ndcg_10": best_final.full_metrics.get("ndcg_10", 0.0) if best_final.full_metrics else 0.0,
         },
         "comparison_with_m03_popularity": {
-            "m03_pop_count_hr_10": 0.09117,
-            "m03_pop_count_ndcg_10": 0.04603,
-            "m03_pop_weighted_hr_10": 0.03261,
-            "m03_pop_weighted_ndcg_10": 0.01271,
+            "m03_pop_count_hr_10": 0.05519,
+            "m03_pop_count_ndcg_10": 0.02789,
+            "m03_pop_count_coverage_10": 0.00497,
+            "m03_pop_count_unique_movies_10": 310,
+            "m03_pop_weighted_hr_10": 0.01969,
+            "m03_pop_weighted_ndcg_10": 0.00771,
+            "m03_pop_weighted_coverage_10": 0.00074,
+            "m03_pop_weighted_unique_movies_10": 46,
+            "evaluation_cohort": "full_positive_validation_109779_users",
+            "source_artifact": "artifacts/m03_popularity_results.json"
         },
         "scientific_conclusion": {
             "engineering_status": "M07_ENGINEERING_PASS",
