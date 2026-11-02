@@ -1,0 +1,24 @@
+{
+  "record_id": "HERMES-M05-01",
+  "module": "M05",
+  "component": "ALSTrainer",
+  "topic": "Full Spark ALS Distributed Factor Extraction and Convergence on 24.67M Ratings",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Fit ALS Collaborative Filtering on full MovieLens 25M Train split (24,675,013 ratings) within memory constraints and verify learned factor matrices.",
+  "root_cause": null,
+  "solution_or_decision": "PySpark ALS (rank=16, maxIter=10, regParam=0.1, implicitPrefs=False, seed=42) trained successfully on 24,675,013 ratings in 85.96 seconds on local 4-thread Spark. Extracted 162,541 user factors and 58,932 item factors with exact 16 dimensions and 0 NaNs/Infs. Independent dot product verification matches Spark transform within 4.98e-7 max absolute difference.",
+  "files_involved": [
+    "recommender/als/trainer.py",
+    "scripts/run_m05_train_als.py",
+    "artifacts/m05_training_results.json"
+  ],
+  "relevant_tests": [
+    "tests/als/test_als_trainer.py::test_08_trainer_fit_on_toy_data",
+    "tests/als/test_als_trainer.py::test_09_factor_matrices_audit_correctness",
+    "tests/als/test_als_trainer.py::test_10_manual_dot_product_alignment"
+  ],
+  "evidence": "Observed on 24,675,013 ratings: fit time 85.96s, userFactors count=162,541, itemFactors count=58,932. Independent dot product max difference=0.00000050 <= 1e-4.",
+  "code_version": "M05",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31"
+}

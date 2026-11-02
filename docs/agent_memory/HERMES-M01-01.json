@@ -1,0 +1,21 @@
+{
+  "record_id": "HERMES-M01-01",
+  "module": "M01",
+  "component": "DataLoader & DataAudit",
+  "topic": "Distributed Data Audit Single-Pass Aggregation",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Running multiple separate filter().count() calls over 24.6M rows takes several minutes due to repeated Spark stages and Py4J socket overhead.",
+  "solution_or_decision": "Consolidate all null, range, step, zero, and duplicate checks into a single .agg(...) pass using count(when(...)).",
+  "files_involved": [
+    "recommender/als/data_audit.py",
+    "tests/als/test_m01_data_loader.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_m01_data_loader.py::test_04_detect_nulls_in_required_columns"
+  ],
+  "evidence": "Audit duration reduced from over 5 minutes to 63.47 seconds on 24,675,013 rows with 12 cores.",
+  "code_version": "6a7057f",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31",
+  "root_cause": "Each count() triggers an independent Spark job and shuffle barrier over the entire dataset."
+}

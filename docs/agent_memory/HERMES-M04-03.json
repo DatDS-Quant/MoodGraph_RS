@@ -1,0 +1,22 @@
+{
+  "record_id": "HERMES-M04-03",
+  "module": "M04",
+  "component": "ToyALS",
+  "topic": "Non-Equivalence of Euclidean Distance and Dot Product Preference in Latent Space",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Demonstrate whether nearest neighbor search via Euclidean distance in latent space is mathematically equivalent to Top-N recommendation ranking by ALS dot product.",
+  "root_cause": null,
+  "solution_or_decision": "Constructed mathematical counterexample where Item 1 is Euclidean-close to User (distance 0.1414, dot product 4.20) while Item 2 is Euclidean-far (distance 3.0000, dot product 10.00). ALS recommendation rank depends strictly on dot product p_u^T q_i which scales with factor norms, not Euclidean distance. Fast Top-N retrieval requires Maximum Inner Product Search (MIPS), not standard Euclidean k-d trees.",
+  "files_involved": [
+    "recommender/als/toy_als.py",
+    "tests/als/test_toy_als.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_toy_als.py::test_12_euclidean_vs_dot_product_counterexample"
+  ],
+  "evidence": "Counterexample verified: dist1 (0.1414) < dist2 (3.0000), yet dot2 (10.00) > dot1 (4.20).",
+  "code_version": "M04",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31"
+}
+

@@ -1,0 +1,22 @@
+{
+  "record_id": "HERMES-M05-03",
+  "module": "M05",
+  "component": "ALSTrainer",
+  "topic": "Train Diagnostic Error vs Generalization and Top-N Ranking Metrics Distinction",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Prevent conflation of training loss/RMSE with scientific Top-N recommendation ranking metrics.",
+  "root_cause": null,
+  "solution_or_decision": "Document and enforce that ALS train diagnostic metrics (observed RMSE=0.7698, MAE=0.6013 on 50,000 samples) only verify optimization convergence on observed ratings. They must never be interpreted as generalization ability or used to claim superiority over baselines. Ranking quality must be evaluated strictly via Leave-1-Last Top-N metrics (NDCG@K, HitRate@K) on held-out validation data.",
+  "files_involved": [
+    "recommender/als/trainer.py",
+    "scripts/run_m05_train_als.py",
+    "docs/3a/M05_training_report.md"
+  ],
+  "relevant_tests": [
+    "tests/als/test_als_trainer.py::test_13_train_diagnostic_rmse_mae"
+  ],
+  "evidence": "Diagnostic RMSE=0.7698, MAE=0.6013 recorded on 50,000 train samples. Explicitly labeled as internal diagnostic.",
+  "code_version": "M05",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31"
+}

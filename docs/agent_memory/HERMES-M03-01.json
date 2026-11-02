@@ -1,0 +1,23 @@
+{
+  "record_id": "HERMES-M03-01",
+  "module": "M03",
+  "component": "PopularityBaseline",
+  "topic": "Empirical Superiority of Rating Count over Bayesian Weighted Average (m=10) in Top-N",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Compare empirical performance of unpersonalized POPULARITY_COUNT against POPULARITY_WEIGHTED (m=10.0) under full-catalog Leave-1-Last evaluation.",
+  "root_cause": null,
+  "solution_or_decision": "Evaluation on all 109,779 positive validation targets shows POPULARITY_COUNT achieves NDCG@10 = 0.02789 and HitRate@10 = 5.519%, outperforming POPULARITY_WEIGHTED at m=10.0 (NDCG@10 = 0.00771, HitRate@10 = 1.969%) by a factor of 3.62x in NDCG@10 and 2.80x in HitRate@10. This is an observed empirical measurement for m=10.0 and does not imply Count exceeds every possible m parameter.",
+  "files_involved": [
+    "recommender/als/popularity.py",
+    "scripts/run_m03_popularity.py",
+    "artifacts/m03_popularity_results.json"
+  ],
+  "relevant_tests": [
+    "tests/als/test_popularity.py::test_04_count_ranking_order",
+    "tests/als/test_popularity.py::test_16_integration_with_m02_evaluator"
+  ],
+  "evidence": "Observed on 109,779 positive validation targets: Count HR@10=0.05519 vs Weighted(m=10) HR@10=0.01969 (ratio 2.80x). Count NDCG@10=0.02789 vs Weighted(m=10) NDCG@10=0.00771 (ratio 3.62x).",
+  "code_version": "5aa02aa",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31"
+}

@@ -1,0 +1,23 @@
+{
+  "record_id": "HERMES-M08-02",
+  "module": "M08",
+  "component": "ALSTopNRanking",
+  "topic": "Objective Mismatch & Fluke Bias in Spark ALS Top-N Generalization",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Explain why complex Spark Matrix Factorization (ALS) underperforms simple Popularity Count on both Validation (0 vs 6,059 hits) and Test (1 vs 5,958 hits) splits.",
+  "root_cause": "Objective function mismatch: Spark MLlib explicit ALS minimizes squared rating error (RMSE) on observed interactions rather than pairwise ranking loss. On highly sparse (99.75%) long-tail datasets, rare items with 1-2 five-star ratings easily attain unbounded high dot products (5.0-10.0), dominating >95% of Top-20 recommendation slots (Fluke Bias). Popularity Count directly models marginal item interaction probability P(Item), matching real-world blockbuster consumption propensities.",
+  "solution_or_decision": "Document this finding as an essential empirical baseline in the MoodGraph thesis. Explicit rating regression without popularity shrinkage cannot serve as a reliable standalone Top-N recommender, providing clear motivation for Task 3B (Knowledge Graph Semantic Path Exploration) and Task 3C (Hybrid Recommendation Architecture).",
+  "files_involved": [
+    "recommender/als/benchmark.py",
+    "docs/3a/M08_final_benchmark.md",
+    "docs/3a/M08_benchmark_learning_guide.md"
+  ],
+  "relevant_tests": [
+    "tests/als/test_benchmark.py::test_04_als_vectorized_masking_oracle",
+    "tests/als/test_benchmark.py::test_05_unscoreable_cold_target_preserved_in_denominator"
+  ],
+  "evidence": "Validation: Count HR@10=0.05519 vs ALS HR@10=0.00000. Test: Count HR@10=0.05357 vs ALS HR@10=0.00001. Fluke 1-rating items occupy >95% slots in ALS recommendations.",
+  "code_version": "M08",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}

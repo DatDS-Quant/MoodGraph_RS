@@ -1,0 +1,27 @@
+{
+  "record_id": "HERMES-M08-01",
+  "module": "M08",
+  "component": "TestBenchmarkRunner",
+  "topic": "M08 Frozen Test Split Offline Benchmark Results & Provenance",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Execute single-shot frozen offline benchmark on MovieLens 25M Test split (162,541 users) comparing Popularity Count, Popularity Weighted (m=10), and frozen Spark ALS champion (ALS_R8_REG0.3_ITER10).",
+  "root_cause": "On the empirical positive Test cohort (111,211 users with test rating >= 3.5), Popularity Count achieves HR@10=0.05357 (5,958 hits) and NDCG@10=0.02721; Popularity Weighted achieves HR@10=0.01884 (2,095 hits) and NDCG@10=0.00742; Frozen ALS Champion achieves HR@10=0.00001 (1 hit) and NDCG@10=0.00001. Test-stage seen filtering strictly excludes seen_u = Train_u ∪ Validation_u (24,837,554 total interactions). 29 positive test targets had 0 ratings in Train and were properly retained as misses in the evaluation denominator.",
+  "solution_or_decision": "Award M08_ACCEPTANCE_PASS. Persist all 6 benchmark artifacts in artifacts/als/m08. Confirm zero test-leakage and identical positive cohort evaluation across all 3 models without post-hoc tuning.",
+  "files_involved": [
+    "recommender/als/benchmark.py",
+    "scripts/run_m08_frozen_benchmark.py",
+    "tests/als/test_benchmark.py",
+    "artifacts/als/m08/m08_test_benchmark_results.json",
+    "artifacts/als/m08/m08_test_comparison_table.csv",
+    "artifacts/als/m08/m08_test_cohort_manifest.json"
+  ],
+  "relevant_tests": [
+    "tests/als/test_benchmark.py::test_01_preflight_audit_on_actual_repo",
+    "tests/als/test_benchmark.py::test_03_test_stage_seen_filtering_synthetic_oracle",
+    "tests/als/test_benchmark.py::test_08_m08_results_verification"
+  ],
+  "evidence": "Single-shot test run logged in artifacts/als/m08/m08_test_benchmark_results.json. Exact hits: Count 5,958; Weighted 2,095; ALS 1 out of 111,211 positive users.",
+  "code_version": "M08",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}

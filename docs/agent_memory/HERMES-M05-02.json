@@ -1,0 +1,21 @@
+{
+  "record_id": "HERMES-M05-02",
+  "module": "M05",
+  "component": "ALSTrainer",
+  "topic": "Distributed Partition Order Non-Determinism in Spark Model Reload Verification",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Positional zipping of collected predictions from original and reloaded Spark models caused apparent value mismatches during persistence verification.",
+  "root_cause": "Spark distributed transformations do not guarantee partition collection order across separate jobs unless ordered explicitly. Original model output row i differed in user/movie identity from reloaded model row i.",
+  "solution_or_decision": "Index collected DataFrame predictions by composite primary key (userId, movieId) into dictionaries before calculating difference. This ensures exact entity-to-entity comparison regardless of distributed partition scheduling.",
+  "files_involved": [
+    "recommender/als/trainer.py",
+    "tests/als/test_als_trainer.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_als_trainer.py::test_12_model_load_and_prediction_equivalence"
+  ],
+  "evidence": "With key indexing, max absolute prediction difference between original and reloaded model dropped to 0.00000000. Test test_12 passed.",
+  "code_version": "M05",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31"
+}

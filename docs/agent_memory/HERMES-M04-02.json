@@ -1,0 +1,23 @@
+{
+  "record_id": "HERMES-M04-02",
+  "module": "M04",
+  "component": "ToyALS",
+  "topic": "Cold-Start Evaluation Distortion via coldStartStrategy 'drop' vs 'nan'",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Investigate the impact of PySpark ALS coldStartStrategy ('nan' vs 'drop') on evaluation integrity.",
+  "root_cause": null,
+  "solution_or_decision": "Controlled audit on 4 test rows containing 3 cold entities proves coldStartStrategy='drop' silently drops 3 out of 4 rows (75% data loss), whereas 'nan' preserves all 4 rows with explicit NaN predictions. Using 'drop' in Top-N evaluation artificially inflates recall and precision by discarding hard-to-predict targets from the denominator. In MoodGraph, 'nan' must be used and the evaluator must retain all positive targets in the denominator regardless of scorability.",
+  "files_involved": [
+    "recommender/als/toy_als.py",
+    "scripts/run_m04_toy_als.py",
+    "tests/als/test_toy_als.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_toy_als.py::test_09_cold_start_strategy_nan_vs_drop"
+  ],
+  "evidence": "Audit in run_m04_toy_als.py showed 3 rows dropped under 'drop' vs 4 rows preserved under 'nan'. Test test_09 PASS.",
+  "code_version": "M04",
+  "verification_status": "VERIFIED",
+  "date": "2026-10-31"
+}
+

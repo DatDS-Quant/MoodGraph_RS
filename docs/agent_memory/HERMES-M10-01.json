@@ -1,0 +1,33 @@
+{
+  "record_id": "HERMES-M10-01",
+  "module": "M10",
+  "component": "ALSDeliveryService",
+  "topic": "Production ALS Delivery API, Fast CSR Seen Index, and Clean Cold-Start Contract",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Package the frozen Spark ALS model (ALS_R8_REG0.3_ITER10) into a production-grade inference service that decouples from Spark JVM during serving, delivers sub-millisecond latencies, filters full Train-seen interactions safely, and handles unknown users gracefully.",
+  "root_cause": "Calling Spark ALSModel directly during online inference introduces heavy JVM overhead and DataFrame conversion latency. Furthermore, filtering 24,675,013 Train ratings via pure Python dicts causes 2.8 GB RAM usage and 18s loading time, while naive sample fixtures violate correctness in production.",
+  "solution_or_decision": "Implemented ALSDeliveryService in recommender/als/delivery.py using vectorized NumPy BLAS dot-product (U_u @ V.T, ~0.10 ms) and O(N) np.argpartition for Top-K candidate generation (end-to-end median 0.87 ms, p95 1.03 ms). Built Compressed Sparse Row (CSR) index train_seen_csr.npz (53.2 MB, ~100 MB RAM, 0.4s load) covering all 24,675,013 Train ratings and 162,541 users. Enforced clean cold-start contract returning empty list [] for unknown users and strict FileNotFoundError if Train data is missing (zero silent sample fallback).",
+  "files_involved": [
+    "recommender/als/delivery.py",
+    "scripts/run_m10_delivery.py",
+    "tests/als/test_delivery.py",
+    "artifacts/als/m10/train_seen_csr.npz",
+    "artifacts/als/m10/m10_real_model_smoke_results.json",
+    "artifacts/als/m10/m10_model_registry.json",
+    "docs/3a/M10_delivery_report.md"
+  ],
+  "relevant_tests": [
+    "tests/als/test_delivery.py::test_01_synthetic_delivery_oracle_basic",
+    "tests/als/test_delivery.py::test_04_recommendation_item_schema_validation",
+    "tests/als/test_delivery.py::test_09_known_user_top_n_length_and_rank",
+    "tests/als/test_delivery.py::test_10_unknown_user_cold_start_empty",
+    "tests/als/test_delivery.py::test_14_seen_filtering_guarantee",
+    "tests/als/test_delivery.py::test_17_real_model_dot_product_alignment",
+    "tests/als/test_delivery.py::test_21_full_train_provenance_and_heavy_user_filtering",
+    "tests/als/test_delivery.py::test_24_missing_train_data_fails_safely_without_silent_sample_fallback"
+  ],
+  "evidence": "Smoke tests and benchmarks on frozen ALS model ALS_R8_REG0.3_ITER10 (162,541 users, 58,932 items, rank=8) achieved pure BLAS dot-product latency of 0.104 ms and warm single-user full end-to-end request latency of median 0.87 ms, p95 1.03 ms. Batch 100 throughput exceeded 900 users/sec. Full Train CSR index (24,675,013 ratings, 162,541 users) verified with zero seen overlap on Heavy User (>1000 ratings). 24/24 delivery tests PASSED.",
+  "code_version": "feature/als-3a@M10",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-02"
+}

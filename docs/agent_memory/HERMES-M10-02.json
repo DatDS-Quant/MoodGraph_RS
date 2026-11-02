@@ -1,0 +1,31 @@
+{
+  "record_id": "HERMES-M10-02",
+  "module": "M10",
+  "component": "HybridIntegrationContract",
+  "topic": "Hybrid Candidate Union Architecture, Real Catalog Cold Test, and Metric Lock Acceptance",
+  "category": "ENGINEERING_DECISION",
+  "problem_statement": "Define formal integration contract between Task 3A Collaborative Filtering (Spark ALS) and Task 3B Knowledge Graph recommender, reconcile frozen M08 scientific metrics, and verify candidate union with real catalog cold movies.",
+  "root_cause": "Sequential filtering (feeding only ALS Top-20 into KG) suffocates catalog exploration and eliminates KG cold-start and long-tail items, since ALS item coverage on Test is only 34 movies (0.054%). Furthermore, uncalibrated score addition lets raw ALS scores (~7.5 to 10.8) dominate KG graph scores (~0.65 to 0.85) by nearly 90%.",
+  "solution_or_decision": "Established formal integration contract in docs/3a/integration_contract.md: (1) Mandated Candidate Union architecture (Candidates_Hybrid = Candidates_ALS union Candidates_KG); (2) Verified union preservation of real catalog cold movie 25817 (Break of Hearts) without ALS factor; (3) Prohibited direct unnormalized raw score addition, requiring evaluation of candidate fusion strategies (Min-Max, RRF, Z-score) on Validation; (4) Locked M08 scientific metrics: Pop Count HR@10=0.05357 (317 movies), Pop Weighted HR@10=0.01884 (49 movies), ALS HR@10=8.9919e-6 with single hit strictly at rank 2 (NDCG@10=5.6733e-6, MRR@10=4.4960e-6, 34 movies); (5) Completed full regression test suite (184 tests across 12 files PASS) with 25/25 release gates PASS and verdict TASK_3A_FINAL_INTEGRITY_PASS.",
+  "files_involved": [
+    "docs/3a/integration_contract.md",
+    "docs/3a/TASK_3A_FINAL_ACCEPTANCE.md",
+    "docs/3a/TASK_3A_HANDOVER_TO_HYBRID.md",
+    "scripts/audit_m10_release.py",
+    "artifacts/als/m10/m10_contract_test_results.json",
+    "artifacts/als/m10/m10_release_checklist.json",
+    "artifacts/als/m10/m10_scientific_audit.json",
+    "tests/als/test_delivery.py"
+  ],
+  "relevant_tests": [
+    "tests/als/test_delivery.py::test_18_candidate_union_contract_with_synthetic_kg",
+    "tests/als/test_delivery.py::test_19_no_forced_kg_rerank_of_als_top_20",
+    "tests/als/test_delivery.py::test_20_no_raw_score_blending_without_normalization",
+    "tests/als/test_delivery.py::test_22_real_catalog_aware_kg_candidate_union",
+    "tests/als/test_delivery.py::test_23_real_catalog_bijective_id_mapping_and_exact_oracle"
+  ],
+  "evidence": "Candidate union verified in test_22 with real MovieLens cold catalog item 25817 preserved with als_raw_score=None and source='KG'. Spark ALS bijective original ID mapping verified in test_23 against raw factor dot-product oracle (error < 1e-5). M08 metric lock verified with zero drift. Full Task 3A regression test suite passed: 184/184 tests across 12 files. 25/25 release gates PASS with TASK_3A_FINAL_INTEGRITY_PASS.",
+  "code_version": "feature/als-3a@M10",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-02"
+}

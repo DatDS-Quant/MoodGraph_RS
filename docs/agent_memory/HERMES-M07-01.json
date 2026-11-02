@@ -1,0 +1,24 @@
+{
+  "record_id": "HERMES-M07-01",
+  "module": "M07",
+  "component": "ALSTuner",
+  "topic": "Fluke Bias and Spark ALS-WR Regularization Analysis",
+  "category": "VERIFIED_FACT",
+  "problem_statement": "Investigate whether tuning regularization parameter (regParam) in explicit Spark ALS can suppress 1-rating cold/fluke movies and eliminate Fluke Bias in Top-N recommendations on MovieLens 25M.",
+  "root_cause": "Analytically, in rank=1 with identical user factors and ratings, the item observation count n_i cancels out in Spark ALS-WR: y_i = r / (1 + lambda). However, on MovieLens 25M empirical data, user factors span high-dimensional space and popular items have ratings ranging 0.5-5.0 from diverse users, pulling predicted scores towards dataset mean. 1-rating 5-star items fit a single user collinear factor, preserving higher relative dot products. Consequently, increasing regParam co-shrinks scores but increases 1-rating Top-10 slots from 65.57% (reg=0.1) to 95.66% (reg=0.3) and 100.00% (reg=1.0, 3.0).",
+  "solution_or_decision": "Document this empirical finding honestly. Distinguish between Spark ALS-WR normalization mechanism, empirical measurements, and explanatory hypotheses. Acknowledge that within the tested parameter space, explicit rating regression does not overcome fluke bias via hyperparameter tuning alone, motivating Knowledge Graph augmentation (Task 3B) and Hybrid modeling (Task 3C).",
+  "files_involved": [
+    "recommender/als/tuner.py",
+    "scripts/run_m07_tuning.py",
+    "artifacts/als/m07/comparison_table.csv",
+    "artifacts/als/m07/long_tail_diagnostics.csv"
+  ],
+  "relevant_tests": [
+    "tests/als/test_tuner.py::test_compute_long_tail_diagnostics",
+    "tests/als/test_toy_als.py::test_11_regularization_shrinkage_effect"
+  ],
+  "evidence": "Empirical data across 5,000 screening users: regParam=0.1 has 65.57% 1-rating slots; regParam=0.3 has 95.66%; regParam=1.0 has 100.00%; regParam=3.0 has 100.00% slots. Validation HR@10 remains 0.00000 across all regularization levels.",
+  "code_version": "M07",
+  "verification_status": "VERIFIED",
+  "date": "2026-11-01"
+}

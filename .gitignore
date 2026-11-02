@@ -133,6 +133,7 @@ lerna-debug.log*
 # ==========================================
 logs/
 *.log
+tmp/
 
 # ==========================================
 # IDE & System Files
@@ -147,6 +148,11 @@ desktop.ini
 *~
 
 # ==========================================
+# SQLite Databases & Agent Memory Index
+*.sqlite3
+*.db
+docs/agent_memory/*.db
+
 # Whitelist Git Keepers
 # ==========================================
 !**/.gitkeep
