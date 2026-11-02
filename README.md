@@ -184,7 +184,7 @@ from recommender.als.delivery import ALSDeliveryService
 
 # 1. Khởi tạo dịch vụ gợi ý ALS từ artifact mô hình và ma trận thưa Seen-item
 delivery_service = ALSDeliveryService(
-    model_dir="artifacts/models/als/m05_spark_als_rank16",
+    model_dir="artifacts/models/als/m07_tuning/ALS_R8_REG0.3_ITER10",  # Finalist Champion Task 3A
     train_csr_path="artifacts/als/m10/train_seen_csr.npz",
 )
 
