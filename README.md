@@ -151,11 +151,10 @@ pip install pyspark==4.2.0 numpy scipy pandas pytest
 
 1. **Dữ liệu phân vùng:** Đảm bảo các tệp parquet `train.parquet`, `validation.parquet`, `test.parquet` đã được đặt tại `data/processed/`.
 2. **Khởi tạo Ma trận thưa lọc phim đã xem (Seen-Item CSR):**
-   Mô hình ALS cần loại trừ các phim người dùng đã xem trong tập Train khi gợi ý Top-N:
+   Mô hình ALS cần loại trừ các phim người dùng đã xem trong tập Train khi gợi ý Top-N. Kịch bản phân phối M10 tự động quét tương tác Train và lưu ma trận tại `artifacts/als/m10/train_seen_csr.npz` (đồng thời kiểm thử toàn bộ 25 Quality Gates):
    ```bash
-   python scripts/run_m10_delivery.py --build-seen-csr
+   python scripts/run_m10_delivery.py
    ```
-   Lệnh trên sẽ quét toàn bộ tương tác Train và lưu ma trận tại `artifacts/als/m10/train_seen_csr.npz`.
 
 ---
 
@@ -178,32 +177,40 @@ python scripts/hermes_memory.py verify
 
 ## 8. Hướng Dẫn Sử Dụng API ALS (Quickstart)
 
-Dưới đây là ví dụ nạp mô hình ALS đã được nghiệm thu và sinh danh sách gợi ý Top-N phim cho một người dùng:
+Dưới đây là ví dụ nạp mô hình ALS đã được nghiệm thu và sinh danh sách gợi ý Top-N phim cho một người dùng bằng lớp `ALSDeliveryService` (hoặc hàm tiện ích `recommend_als`):
 
 ```python
-from recommender.als.delivery import ALSDeliveryModel
+from recommender.als.delivery import ALSDeliveryService
 
-# 1. Khởi tạo và nạp mô hình sản xuất từ artifact
-delivery_model = ALSDeliveryModel.from_artifact_dir(
+# 1. Khởi tạo dịch vụ gợi ý ALS từ artifact mô hình và ma trận thưa Seen-item
+delivery_service = ALSDeliveryService(
     model_dir="artifacts/models/als/m05_spark_als_rank16",
-    seen_csr_path="artifacts/als/m10/train_seen_csr.npz",
+    train_csr_path="artifacts/als/m10/train_seen_csr.npz",
 )
 
-# 2. Sinh gợi ý Top-10 phim cho người dùng (user_id = 100)
-recommendations = delivery_model.recommend_for_user(
+# 2. Sinh gợi ý Top-10 phim cho người dùng (user_id = 100, stage="production" tự động lọc phim đã xem)
+recommendations = delivery_service.recommend(
     user_id=100,
-    top_k=10,
-    filter_seen=True,  # Tự động loại trừ các phim đã xem trong tập Train
+    top_n=10,
+    stage="production",
 )
 
-print(f"Top 10 phim gợi ý cho người dùng 100:")
-for rank, (movie_id, predicted_score) in enumerate(recommendations, start=1):
-    print(f"  {rank}. Movie ID: {movie_id} - Điểm dự báo: {predicted_score:.4f}")
+print("Top 10 phim gợi ý cho người dùng 100:")
+for rec in recommendations:
+    print(f"  {rec['rank']}. Movie ID: {rec['movieId']} - Điểm dự báo: {rec['raw_score']:.4f}")
 ```
 
-Kiểm tra suy luận nhanh bằng CLI:
+Ngoài ra, có thể gọi nhanh hàm tiện ích cấp module:
+```python
+from recommender.als.delivery import recommend_als
+
+# Gọi trực tiếp gợi ý cho người dùng với cấu hình mặc định đã lưu
+recommendations = recommend_als(user_id=100, top_n=10)
+```
+
+Kiểm tra toàn bộ quy trình phân phối và smoke test bằng CLI:
 ```bash
-python scripts/run_m10_delivery.py --smoke-only
+python scripts/run_m10_delivery.py
 ```
 
 ---

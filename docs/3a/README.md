@@ -18,7 +18,7 @@ Nếu bạn cần ôn tập kiến thức nền tảng, cơ sở toán học và
 - [Cẩm nang Tối ưu hóa Siêu tham số (M07)](M07_tuning_learning_guide.md): Phương pháp Grid Search trên Validation split, kỹ thuật Screening 5.000 users để tiết kiệm chi phí tính toán.
 - [Cẩm nang Đánh giá trên Frozen Test Split (M08)](M08_benchmark_learning_guide.md): Nguyên lý rào chắn rò rỉ thông tin (Data Leakage) và phương pháp đánh giá một lần duy nhất trên tập Test đông băng.
 - [Cẩm nang Chẩn đoán Cold-Start & Long-Tail (M09)](M09_diagnostics_learning_guide.md): Phân tích động thái suy giảm chất lượng biểu diễn của ALS ở vùng người dùng ít tương tác và đuôi dài sản phẩm.
-- [Cẩm nang Đóng gói Mô hình & Phục vụ Sản xuất (M10)](M10_delivery_learning_guide.md): Hướng dẫn thiết kế lớp Wrapper `ALSDeliveryModel`, cơ chế tải mô hình và quản lý bộ nhớ.
+- [Cẩm nang Đóng gói Mô hình & Phục vụ Sản xuất (M10)](M10_delivery_learning_guide.md): Hướng dẫn thiết kế dịch vụ phục vụ `ALSDeliveryService`, cơ chế tải mô hình và quản lý bộ nhớ.
 
 ---
 
@@ -65,10 +65,9 @@ Tài liệu định vị chính xác từng hàm, từng dòng code và lập lu
 
 ### 1.5. Dành Cho Việc Chạy Suy Luận (Inference M10)
 Để chạy mô hình đã huấn luyện sinh gợi ý cho người dùng:
-- Module thực thi: `recommender/als/delivery.py` (lớp `ALSDeliveryModel`)
-- Kịch bản CLI phục vụ: `scripts/run_m10_delivery.py`
-  - Tạo ma trận thưa lọc phim đã xem: `python scripts/run_m10_delivery.py --build-seen-csr`
-  - Chạy suy luận mẫu: `python scripts/run_m10_delivery.py --smoke-only`
+- Module thực thi: `recommender/als/delivery.py` (lớp `ALSDeliveryService`, hàm `recommend_als`, `recommend_als_batch`)
+- Kịch bản CLI phục vụ và kiểm định: `scripts/run_m10_delivery.py`
+  - Thực thi toàn bộ quy trình: chuẩn bị registry, sinh ma trận thưa `train_seen_csr.npz`, chạy smoke test và đánh giá 25 Quality Gates: `python scripts/run_m10_delivery.py`
 - Báo cáo chi tiết: [M10_delivery_report.md](M10_delivery_report.md)
 
 ---
@@ -77,3 +76,4 @@ Tài liệu định vị chính xác từng hàm, từng dòng code và lập lu
 Khi đội ngũ phát triển Task 3B (Đồ thị tri thức) và Khối 4 (Hybrid) cần lấy đầu ra từ ALS:
 - [Hợp đồng Tích hợp Kỹ thuật (Integration Contract)](integration_contract.md): Định nghĩa cấu trúc dữ liệu đầu vào/đầu ra, chuẩn điểm số, schema bảng ứng viên và cơ chế fallback.
 - [Biên bản Bàn giao Cho Khối Hybrid](TASK_3A_HANDOVER_TO_HYBRID.md): Tóm tắt trách nhiệm bàn giao của Task 3A và các khuyến nghị vận hành cho khối Hybrid.
+
