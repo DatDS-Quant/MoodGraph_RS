@@ -1,8 +1,12 @@
 """
-MoodGraph Task 3A - Stage 7: Real Parquet Experiment Runner for Module M03
-Evaluates Rating Count Baseline vs Bayesian Weighted Average Baseline
-on MovieLens 25M Validation split (162,541 total users, 109,779 positive cohort)
-using Module M02 TopNEvaluator.
+MoodGraph - Task 3A: Module M03 Popularity Baseline Runner
+(Kịch bản thực thi đánh giá các mô hình Popularity Baseline trên dữ liệu thực tế).
+
+Đánh giá so sánh giữa:
+- Rating Count Baseline (Đếm số lượt rating)
+- Bayesian Weighted Average Baseline (Trung bình có trọng số Bayes)
+trên tập Validation MovieLens 25M (162.541 người dùng, 109.779 người dùng dương)
+sử dụng động cơ M02 TopNEvaluator.
 """
 
 from __future__ import annotations

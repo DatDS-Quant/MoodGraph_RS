@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-MOODGRAPH TASK 3A: MODULE M10 FINAL DELIVERY & RELEASE RUNNER
-=============================================================
-Autonomous script to:
-1. Initialize Production Delivery Service on frozen ALS champion.
-2. Execute real-model smoke tests (latency breakdown, exact ranking, seen filtering, cold-start).
-3. Execute real-catalog-aware Hybrid Integration Consumer tests.
-4. Collect actual PyTest test inventory from disk.
-5. Generate verified Scientific Audit referencing frozen M08 benchmarks.
-6. Evaluate 25 release quality gates.
-7. Generate and write all 8 machine-readable artifacts into artifacts/als/m10/.
+MoodGraph - Task 3A: Module M10 Final Delivery & Release Runner
+(Kịch bản chạy chuyển giao và phát hành chính thức dịch vụ suy diễn ALS).
+
+Các chức năng tự động:
+1. Khởi tạo Production Delivery Service trên mô hình ALS vô địch đã đóng băng.
+2. Thực thi smoke tests trên mô hình thực (phân rã độ trễ latency, xếp hạng chính xác, lọc seen, cold-start).
+3. Thực thi kiểm thử hợp đồng tích hợp Hybrid Integration Consumer trên catalog thực.
+4. Thu thập toàn bộ 184 tests thực tế từ đĩa.
+5. Tạo báo cáo kiểm toán khoa học đối chiếu chuẩn với benchmark M08 đóng băng.
+6. Đánh giá 25 cổng chất lượng phát hành (Quality Gates).
+7. Xuất toàn bộ 8 artifacts máy đọc được vào thư mục artifacts/als/m10/.
 """
 
 import os

@@ -1,7 +1,9 @@
 """
 MoodGraph - HERMES Structured Persistent Memory Engine
-Provides version-controlled structured knowledge storage in docs/agent_memory/
-and an SQLite FTS5 full-text search index for fast retrieval across agent sessions.
+(Động cơ quản lý bộ nhớ tri thức bền vững có cấu trúc của Agent).
+
+Cung cấp kho lưu trữ tri thức kiểm soát phiên bản trong thư mục docs/agent_memory/
+và chỉ mục tìm kiếm toàn văn SQLite FTS5 phục vụ truy xuất thông tin nhanh chóng.
 """
 
 from __future__ import annotations

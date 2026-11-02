@@ -1,18 +1,17 @@
 """
-MoodGraph - Task 3A: Spark ALS
-Module M05: Full MovieLens 25M Spark ALS Training Pipeline
+MoodGraph - Task 3A: Module M05 Spark ALS Training Pipeline Runner
+(Kịch bản thực thi huấn luyện mô hình Spark ALS trên toàn bộ MovieLens 25M).
 
-This script executes the complete production training sprint:
-1. Environment and pre-flight hardware inspection.
-2. Load 24,675,013 Train ratings from data/processed/splits/train.
-3. Validate schema and integer ID requirements.
-4. Fit PySpark ALS (rank=16, maxIter=10, regParam=0.1, implicitPrefs=False, seed=42).
-5. Audit factor matrices (userFactors: 162,541, itemFactors: 58,932, rank=16).
-6. Independent mathematical verification (manual dot product vs Spark transform).
-7. Compute diagnostic train RMSE/MAE on a 50,000-interaction diagnostic sample.
-8. Persist ALSModel and metadata manifest to artifacts/models/als/m05_spark_als_rank16.
-9. Reload model and verify prediction equivalence.
-10. Export comprehensive execution summary to artifacts/m05_training_results.json.
+Quy trình thực thi:
+1. Kiểm toán môi trường thực thi và tài nguyên phần cứng.
+2. Nạp 24.675.013 tương tác Train từ Parquet.
+3. Xác thực hợp đồng lược đồ dữ liệu PySpark.
+4. Huấn luyện mô hình PySpark ALS (rank=16, maxIter=10, regParam=0.1, seed=42).
+5. Kiểm toán kích thước và độ hợp lệ của userFactors (162.541) và itemFactors (58.932).
+6. Kiểm chứng toán học độc lập: So khớp tích vô hướng thủ công với Spark transform.
+7. Tính toán chẩn đoán kỹ thuật nội bộ (diagnostic RMSE/MAE).
+8. Lưu trữ mô hình và manifest vào artifacts/models/als/m05_spark_als_rank16/.
+9. Nạp lại mô hình để kiểm chứng tính toàn vẹn của tệp lưu trữ.
 """
 
 from __future__ import annotations

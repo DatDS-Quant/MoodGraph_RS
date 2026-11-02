@@ -1,14 +1,14 @@
 """
 MoodGraph - Task 3A: Spark ALS
-Module M04: ALS Theory, Toy Fit & Latent Factor Inspection
+Mô-đun: M04 - Cơ sở lý thuyết ALS, Kiểm chứng Toy Fit & Kiểm toán nhân tố ẩn.
 
-This module implements the mathematical foundations of Matrix Factorization
-via Alternating Least Squares (ALS) in explicit feedback mode:
-1. Exact mathematical reference solver in pure Python/NumPy.
-2. Verified Golden Example with hand-calculated updates.
-3. PySpark ALS model fitting, factor extraction, and manual dot product verification.
-4. Cold-start behavior audit (coldStartStrategy 'nan' vs 'drop').
-5. Latent factor geometric analysis (Euclidean distance vs dot product).
+Mô-đun này triển khai nền tảng toán học của Phân rã Ma trận (Matrix Factorization)
+bằng thuật toán Alternating Least Squares (ALS) trên phản hồi hiện (explicit feedback):
+1. Bộ giải tham chiếu toán học chính xác thuần Python/NumPy (không phụ thuộc Spark).
+2. Ví dụ mẫu chuẩn (Golden Example) tính tay từng bước cập nhật tham số.
+3. Huấn luyện mô hình PySpark ALS trên toy data, trích xuất nhân tố và so khớp tích vô hướng.
+4. Kiểm toán hành vi Cold-Start (chiến lược coldStartStrategy 'nan' vs 'drop').
+5. Phân tích hình học nhân tố ẩn: Phản ví dụ khoảng cách Euclidean vs tích vô hướng (Dot Product).
 """
 
 import math
@@ -87,14 +87,14 @@ TOY_TRAIN_RATINGS: List[Tuple[int, int, float]] = [
 
 def compute_dot_product(user_vector: np.ndarray, item_vector: np.ndarray) -> float:
     """
-    Compute predicted rating r_hat = p_u^T q_i.
+    Tính điểm dự đoán bằng tích vô hướng: r_hat = p_u^T q_i.
     
     Args:
-        user_vector: 1D numpy array of shape (rank,)
-        item_vector: 1D numpy array of shape (rank,)
+        user_vector: Mảng numpy 1D kích thước (rank,)
+        item_vector: Mảng numpy 1D kích thước (rank,)
         
     Returns:
-        Scalar float representing predicted preference.
+        Giá trị float vô hướng biểu diễn sở thích dự đoán.
     """
     u_vec = np.asarray(user_vector, dtype=np.float64).ravel()
     i_vec = np.asarray(item_vector, dtype=np.float64).ravel()
@@ -112,10 +112,10 @@ def compute_als_loss(
     reg_param: float,
 ) -> float:
     """
-    Compute the exact explicit feedback ALS loss function:
+    Tính giá trị hàm tổn thất chính xác của ALS trên explicit feedback:
     L = sum_{(u, i) in R} (r_{u,i} - p_u^T q_i)^2 + lambda * (sum_u ||p_u||_2^2 + sum_i ||q_i||_2^2)
     
-    Missing entries are completely unobserved (NOT treated as zero).
+    Các ô chưa quan sát hoàn toàn bị bỏ qua (KHÔNG coi là bằng 0).
     """
     squared_error_sum = 0.0
     for u, i, r in ratings:
@@ -142,7 +142,7 @@ def als_update_user_factors(
     reg_param: float,
 ) -> Dict[int, np.ndarray]:
     """
-    Perform closed-form ridge regression update for all users holding item factors fixed:
+    Thực hiện bước cập nhật nghiệm giải tích ridge regression cho toàn bộ user khi cố định item factors:
     p_u = ( sum_{i in I_u} q_i q_i^T + lambda * I_k )^{-1} ( sum_{i in I_u} r_{u,i} q_i )
     """
     new_user_factors: Dict[int, np.ndarray] = {}
@@ -177,7 +177,7 @@ def als_update_item_factors(
     reg_param: float,
 ) -> Dict[int, np.ndarray]:
     """
-    Perform closed-form ridge regression update for all items holding user factors fixed:
+    Thực hiện bước cập nhật nghiệm giải tích ridge regression cho toàn bộ item khi cố định user factors:
     q_i = ( sum_{u in U_i} p_u p_u^T + lambda * I_k )^{-1} ( sum_{u in U_i} r_{u,i} p_u )
     """
     new_item_factors: Dict[int, np.ndarray] = {}
@@ -213,7 +213,7 @@ def run_toy_als_reference(
     seed: int = 42,
 ) -> Tuple[Dict[int, np.ndarray], Dict[int, np.ndarray], List[float]]:
     """
-    Run the independent reference ALS solver on explicit ratings.
+    Thực thi bộ giải ALS tham chiếu độc lập trên tập ratings hiện.
     
     Returns:
         (user_factors, item_factors, loss_history)
@@ -262,15 +262,15 @@ def run_toy_als_reference(
 
 def verify_golden_example_step() -> Dict[str, float]:
     """
-    Compute and verify the exact step-by-step Golden Example:
-    - Users: An (1), Binh (2)
-    - Movies: A (101), B (102), C (103)
-    - Ratings: An -> A:2, B:4; Binh -> A:1, B:2, C:1.5
-    - Item factors: q_A = [1.0], q_B = [2.0], q_C = [1.5]
+    Tính toán và kiểm chứng từng bước của Ví dụ mẫu chuẩn (Golden Example):
+    - Người dùng: An (1), Binh (2)
+    - Phim: A (101), B (102), C (103)
+    - Đánh giá: An -> A:2, B:4; Binh -> A:1, B:2, C:1.5
+    - Nhân tố phim khởi tạo: q_A = [1.0], q_B = [2.0], q_C = [1.5]
     - lambda = 0.0, rank = 1
     
     Returns:
-        Dictionary of calculated intermediate and final values.
+        Từ điển chứa các giá trị trung gian và điểm dự đoán sau bước cập nhật.
     """
     q_A = 1.0
     q_B = 2.0
@@ -313,7 +313,7 @@ def create_toy_spark_dataframe(
     ratings_data: Optional[List[Tuple[int, int, float]]] = None,
 ) -> DataFrame:
     """
-    Convert raw rating tuples into a typed Spark DataFrame.
+    Chuyển đổi danh sách tuple đánh giá thô thành Spark DataFrame có định kiểu rõ ràng.
     """
     data = ratings_data if ratings_data is not None else TOY_TRAIN_RATINGS
     schema = StructType([
@@ -334,7 +334,7 @@ def fit_spark_toy_als(
     cold_start_strategy: str = "nan",
 ) -> ALSModel:
     """
-    Fit PySpark explicit ALS on toy DataFrame.
+    Khớp mô hình PySpark ALS trên toy DataFrame.
     """
     als = ALS(
         userCol="userId",
@@ -354,10 +354,10 @@ def extract_factors(
     model: ALSModel,
 ) -> Tuple[Dict[int, np.ndarray], Dict[int, np.ndarray]]:
     """
-    Extract user and item factor matrices from Spark ALSModel into Python dictionaries.
+    Trích xuất ma trận nhân tố người dùng và phim từ ALSModel sang từ điển Python.
     
     Returns:
-        (user_factors_dict, item_factors_dict) where keys are IDs and values are 1D np.ndarray
+        (user_factors_dict, item_factors_dict) với khóa là ID và giá trị là mảng numpy 1D.
     """
     user_factors_df = model.userFactors
     item_factors_df = model.itemFactors
@@ -379,12 +379,9 @@ def verify_spark_vs_manual_dot(
     tolerance: float = 1e-4,
 ) -> Dict[str, Any]:
     """
-    Audit Spark ALS transform against manual dot product of extracted factors:
+    Kiểm toán kết quả dự đoán của Spark transform so với tích vô hướng thủ công:
     predicted_spark = model.transform(spark_df)
     predicted_manual = p_u^T q_i
-    
-    Returns:
-        Audit report containing discrepancies, max_error, mean_error, and status.
     """
     user_factors, item_factors = extract_factors(model)
     predictions_df = model.transform(spark_df).select("userId", "movieId", "rating", "prediction")
@@ -444,7 +441,7 @@ def demonstrate_cold_start_difference(
     cold_df: DataFrame,
 ) -> Dict[str, Any]:
     """
-    Audit coldStartStrategy='nan' vs 'drop' on unseen user/item pairs.
+    Kiểm toán hành vi coldStartStrategy='nan' vs 'drop' trên các cặp người dùng/phim chưa từng xuất hiện.
     """
     nan_pred_df = model_nan.transform(cold_df).select("userId", "movieId", "prediction")
     drop_pred_df = model_drop.transform(cold_df).select("userId", "movieId", "prediction")
@@ -481,19 +478,8 @@ def demonstrate_cold_start_difference(
 
 def verify_euclidean_vs_dot_product_counterexample() -> Dict[str, Any]:
     """
-    Demonstrate mathematically why Euclidean proximity in latent space does NOT
-    substitute for high dot product preference (p_u^T q_i).
-    
-    Proof by counterexample:
-    - User vector: p_u = [2.0, 0.0] (Active user, high magnitude)
-    - Item 1: q_1 = [2.1, 0.1]
-      Distance ||p_u - q_1|| = sqrt((2-2.1)^2 + (0-0.1)^2) = sqrt(0.01 + 0.01) = sqrt(0.02) ≈ 0.1414
-      Dot product: 2.0 * 2.1 + 0 = 4.20
-    - Item 2: q_2 = [5.0, 0.0]
-      Distance ||p_u - q_2|| = sqrt((2-5)^2 + 0) = 3.00 (Farther away in Euclidean space!)
-      Dot product: 2.0 * 5.0 + 0 = 10.00 (Much higher preference!)
-    
-    ALS ranks items strictly by dot product p_u^T q_i, not Euclidean distance ||p_u - q_i||.
+    Chứng minh toán học bằng phản ví dụ: Vì sao khoảng cách gần Euclidean trong không gian ẩn
+    KHÔNG THỂ thay thế cho tích vô hướng lớn (p_u^T q_i) trong việc xếp hạng ALS.
     """
     p_u = np.array([2.0, 0.0], dtype=np.float64)
     q_1 = np.array([2.1, 0.1], dtype=np.float64)

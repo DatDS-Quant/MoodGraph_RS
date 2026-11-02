@@ -1,25 +1,26 @@
 """
 MoodGraph - Task 3A: Spark ALS & Baselines
-Module M03: Global Popularity Baseline Recommender
+Mô-đun: M03 - Mô hình gợi ý Baseline Phổ biến Toàn cục (Global Popularity Baseline).
 
-Implements non-personalized popularity baseline recommenders:
-1. Rating Count Baseline (POPULARITY_COUNT):
-   Ranks movies by total rating count in Train DESC, tie-breaking by avg rating DESC, movieId ASC.
-2. Bayesian / Weighted Average Baseline (POPULARITY_WEIGHTED):
-   Ranks movies using the Dirichlet/Bayesian prior formula:
+Triển khai các mô hình gợi ý baseline không cá nhân hóa làm chuẩn so sánh thực nghiệm:
+1. Baseline Số lượt đánh giá (POPULARITY_COUNT):
+   Xếp hạng phim theo tổng số lượt rating trong tập Train (rating_count DESC).
+   Phá vỡ thế hòa: avg_rating DESC, movieId ASC.
+2. Baseline Trung bình có trọng số Bayes / IMDb (POPULARITY_WEIGHTED):
+   Xếp hạng phim theo công thức Dirichlet / Bayesian prior:
        WeightedScore = (v * R + m * C) / (v + m)
-   where:
-       v: Number of ratings of movie in Train (rating_count)
-       R: Average rating of movie in Train (avg_rating)
-       C: Global average rating across all ratings in Train (global_mean)
-       m: Smoothing parameter (prior pseudo-counts, default: 10.0)
-   Tie-breaking: WeightedScore DESC, v DESC, movieId ASC.
+   Trong đó:
+       v: Số lượt đánh giá của phim trong Train (rating_count)
+       R: Điểm trung bình của phim trong Train (avg_rating)
+       C: Điểm trung bình toàn cục trên toàn bộ Train (global_mean)
+       m: Tham số làm mượt tiên nghiệm (prior pseudo-counts, mặc định: 10.0)
+   Phá vỡ thế hòa: WeightedScore DESC, v DESC, movieId ASC.
 
-Features:
-- Pure Python mathematical core for deterministic, reproducible unit testing.
-- PySpark distributed aggregation on big data (24.6M ratings).
-- History-aware seen-item filtering ensuring exactly K unseen items for any user.
-- Full compatibility with M02 TopNEvaluator and Task 3B output contract.
+Đặc tính kỹ thuật:
+- Lõi toán học thuần Python bảo đảm tính tất định 100% trong kiểm thử.
+- Tích hợp PySpark phân tán xử lý gom cụm trên dữ liệu lớn (24,6 triệu ratings).
+- Lọc lịch sử đã xem (Seen-item filtering) bảo đảm trả về đúng K phim chưa xem cho mỗi người dùng.
+- Tương thích hoàn toàn với chuẩn M02 TopNEvaluator và hợp đồng tích hợp Task 3B.
 """
 
 from __future__ import annotations
@@ -44,7 +45,7 @@ import pyspark.sql.functions as F
 
 @dataclass(frozen=True)
 class PopularityMovieRecord:
-    """Represents a movie with its popularity metrics and ranking."""
+    """Đại diện cho một bộ phim kèm thống kê độ phổ biến và thứ hạng tương ứng."""
     movie_id: int
     rating_count: int
     avg_rating: float
@@ -54,7 +55,7 @@ class PopularityMovieRecord:
 
 @dataclass(frozen=True)
 class PopularityRecommendation:
-    """Represents a single recommendation entry for a user."""
+    """Đại diện cho một bản ghi gợi ý phim cho người dùng từ mô hình Popularity."""
     user_id: int
     movie_id: int
     rank: int
@@ -73,17 +74,17 @@ class PopularityRecommendation:
 
 def compute_weighted_score(v: int, r: float, c: float, m: float) -> float:
     """
-    Compute Bayesian Weighted Average rating (IMDB / Dirichlet prior formula):
+    Tính điểm trung bình có trọng số Bayes (Công thức IMDb / Dirichlet prior):
         WeightedScore = (v * R + m * C) / (v + m)
     
     Args:
-        v: Movie rating count in Train (>= 0).
-        r: Movie average rating in Train.
-        c: Global average rating across all ratings in Train.
-        m: Prior weight / smoothing parameter (>= 0).
+        v: Số lượt đánh giá của phim trong Train (v >= 0).
+        r: Điểm trung bình của phim trong Train.
+        c: Điểm trung bình toàn cục trên toàn bộ Train.
+        m: Trọng số tiên nghiệm / tham số làm mượt (m >= 0).
     
     Returns:
-        Weighted score as a finite float.
+        Điểm số trọng số hữu hạn dạng float.
     """
     if v < 0:
         raise ValueError(f"Rating count v must be non-negative, got {v}")
@@ -96,7 +97,7 @@ def compute_weighted_score(v: int, r: float, c: float, m: float) -> float:
 
     denominator = float(v + m)
     if denominator == 0.0:
-        # Edge case: movie has 0 ratings and prior weight is 0
+        # Trường hợp biên: Phim có 0 lượt đánh giá và tham số m bằng 0
         return float(c)
 
     score = (float(v) * float(r) + float(m) * float(c)) / denominator
@@ -107,14 +108,14 @@ def rank_movies_by_count(
     movie_stats: Sequence[Tuple[int, int, float]],
 ) -> List[PopularityMovieRecord]:
     """
-    Sort movies deterministically by Rating Count.
+    Sắp xếp tất định danh sách phim theo Số lượng đánh giá (Rating Count).
     
-    Tie-breaking rule:
-    1. rating_count DESC (primary)
-    2. avg_rating DESC (secondary)
-    3. movieId ASC (deterministic tie-break)
+    Quy tắc phá vỡ thế hòa:
+    1. rating_count DESC (ưu tiên chính)
+    2. avg_rating DESC (ưu tiên phụ)
+    3. movieId ASC (tất định)
     """
-    # Sort key: (-rating_count, -avg_rating, movieId)
+    # Sắp xếp theo khóa: (-rating_count, -avg_rating, movieId)
     sorted_stats = sorted(
         movie_stats,
         key=lambda x: (-x[1], -x[2], x[0]),
@@ -126,7 +127,7 @@ def rank_movies_by_count(
             movie_id=mid,
             rating_count=count,
             avg_rating=avg_r,
-            weighted_score=float(count),  # raw score is the count
+            weighted_score=float(count),  # Điểm raw chính là số lượt rating
             rank=rank_idx,
         )
         ranked_records.append(record)
@@ -140,19 +141,19 @@ def rank_movies_by_weighted_average(
     m: float = 10.0,
 ) -> List[PopularityMovieRecord]:
     """
-    Sort movies deterministically by Bayesian Weighted Average.
+    Sắp xếp tất định danh sách phim theo Trung bình có trọng số Bayes.
     
-    Tie-breaking rule:
-    1. weighted_score DESC (primary)
-    2. rating_count DESC (secondary)
-    3. movieId ASC (deterministic tie-break)
+    Quy tắc phá vỡ thế hòa:
+    1. weighted_score DESC (ưu tiên chính)
+    2. rating_count DESC (ưu tiên phụ)
+    3. movieId ASC (tất định)
     """
     scored_items: List[Tuple[int, int, float, float]] = []
     for mid, count, avg_r in movie_stats:
         ws = compute_weighted_score(v=count, r=avg_r, c=global_mean, m=m)
         scored_items.append((mid, count, avg_r, ws))
 
-    # Sort key: (-weighted_score, -rating_count, movieId)
+    # Sắp xếp theo khóa: (-weighted_score, -rating_count, movieId)
     sorted_stats = sorted(
         scored_items,
         key=lambda x: (-x[3], -x[1], x[0]),
@@ -181,10 +182,8 @@ def generate_user_top_k(
     model_name: str = "POPULARITY",
 ) -> List[PopularityRecommendation]:
     """
-    Generate Top-K recommendations for a single user by filtering seen items.
-    
-    Scans the globally ranked movie list and skips movies in seen_movies until
-    exactly K unseen movies are collected (or candidate pool is exhausted).
+    Sinh danh sách Top-K cho một người dùng bằng cách lọc bỏ các phim đã xem.
+    Duyệt danh sách xếp hạng toàn cục và bỏ qua seen_movies cho đến khi đủ K phim.
     """
     if k <= 0:
         raise ValueError(f"Cutoff k must be strictly positive, got: {k}")
@@ -219,8 +218,7 @@ def generate_batch_top_k(
     target_user_ids: Optional[Iterable[int]] = None,
 ) -> Dict[int, List[int]]:
     """
-    Generate Top-K recommendations for a collection of users.
-    Returns mapping of userId -> List of recommended movieIds (ordered by rank).
+    Sinh danh sách Top-K cho tập hợp người dùng. Trả về mapping userId -> List[movieId].
     """
     eval_uids = target_user_ids if target_user_ids is not None else user_histories.keys()
     results: Dict[int, List[int]] = {}
@@ -242,7 +240,7 @@ def generate_batch_top_k(
 
 class PopularityRecommender:
     """
-    Full Popularity Recommender supporting both Count and Weighted Average baselines.
+    Bộ gợi ý Popularity đầy đủ hỗ trợ cả 2 biến thể: Count và Weighted Average.
     """
 
     def __init__(self, m: float = 10.0):
@@ -263,8 +261,7 @@ class PopularityRecommender:
         m: Optional[float] = None,
     ) -> PopularityRecommender:
         """
-        Fit popularity models from pre-aggregated movie statistics.
-        Useful for unit testing and lightweight deployment.
+        Khớp mô hình từ thống kê phim đã tổng hợp trước (dùng cho test và deploy nhẹ).
         """
         if m is not None:
             self.m = float(m)
@@ -290,25 +287,24 @@ class PopularityRecommender:
         m: Optional[float] = None,
     ) -> PopularityRecommender:
         """
-        Fit popularity models directly from PySpark Train DataFrame.
-        Aggregates rating count and average rating per movieId.
+        Khớp mô hình trực tiếp từ PySpark Train DataFrame bằng phép gom cụm phân tán.
         """
         if m is not None:
             self.m = float(m)
 
-        # 1. Compute global mean rating
+        # 1. Tính điểm trung bình toàn cục
         global_mean_val = (
             train_df.select(F.avg("rating").alias("mean_r")).first()["mean_r"]
         )
         self.global_mean = float(global_mean_val)
 
-        # 2. Compute movie-level counts and averages
+        # 2. Tính số lượng và điểm trung bình theo từng movieId
         movie_agg_df = train_df.groupBy("movieId").agg(
             F.count("userId").alias("rating_count"),
             F.avg("rating").alias("avg_rating"),
         )
 
-        # Collect compact table (58,932 rows, ~2-3 MB)
+        # Thu thập bảng gọn nhẹ (58.932 dòng, ~2-3 MB)
         rows = movie_agg_df.collect()
         movie_stats = [
             (int(row["movieId"]), int(row["rating_count"]), float(row["avg_rating"]))
@@ -325,8 +321,7 @@ class PopularityRecommender:
         variant: str = "count",
     ) -> List[PopularityRecommendation]:
         """
-        Generate Top-K recommendations for a single user.
-        variant: 'count' or 'weighted'.
+        Sinh gợi ý Top-K cho một người dùng đơn lẻ (biến thể 'count' hoặc 'weighted').
         """
         if not self.is_fitted:
             raise RuntimeError("Model has not been fitted. Call fit_from_stats or fit_from_spark first.")
@@ -360,7 +355,7 @@ class PopularityRecommender:
         target_user_ids: Optional[Iterable[int]] = None,
     ) -> Dict[int, List[int]]:
         """
-        Generate Top-K recommendation dictionary for multiple users.
+        Sinh từ điển gợi ý Top-K cho nhiều người dùng.
         """
         if not self.is_fitted:
             raise RuntimeError("Model has not been fitted.")
@@ -387,7 +382,7 @@ class PopularityRecommender:
         )
 
     def export_ranking_table(self, variant: str = "count", top_n: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Export ranked movie table as list of dicts."""
+        """Xuất bảng xếp hạng phim dưới dạng danh sách từ điển."""
         if not self.is_fitted:
             raise RuntimeError("Model has not been fitted.")
 

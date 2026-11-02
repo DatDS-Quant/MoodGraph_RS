@@ -1,11 +1,13 @@
 """
 MoodGraph - Task 3A: Module M09 Diagnostics & Benchmark Runner
-Executes comprehensive offline diagnostics:
-1. Item support distribution across 5 disjoint bins on Train (24.67M ratings).
-2. Latent factor norm statistics and support correlation.
-3. Score distribution analysis and Top-20 support concentration on 5,000 user cohort.
-4. Performance benchmarks comparing Spark, PyArrow, and BLAS matrix scoring.
-5. Emits all 10 machine-readable artifacts into artifacts/als/m09/.
+(Kịch bản thực thi phân tích chuẩn đoán chuyên sâu và đo lường hiệu năng).
+
+Các bước thực thi:
+1. Phân phối bậc hỗ trợ (Item support distribution) trên 5 nhóm rời rạc từ tập Train (24,67 triệu ratings).
+2. Thống kê chuẩn L2 nhân tố ẩn và phân tích tương quan với bậc hỗ trợ.
+3. Phân tích phân phối điểm số và mức độ tập trung Top-20 trên cohort 5.000 người dùng.
+4. Đo lường hiệu năng so sánh giữa PySpark DataFrame, PyArrow và NumPy BLAS.
+5. Xuất toàn bộ 10 artifacts máy đọc được vào thư mục artifacts/als/m09/.
 """
 
 from __future__ import annotations

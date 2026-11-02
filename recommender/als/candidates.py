@@ -1,27 +1,24 @@
 """
 MoodGraph - Task 3A: ALS Candidate Generation & Exact Top-N Recommendation
-Module: M06 - Exact ALS Top-N Recommendation & Validation Evaluation
+Mô-đun: M06/M10 - Bộ sinh gợi ý ứng viên Top-N chính xác bằng ALS Spark.
 
-Provides memory-safe, mathematically verified exact Top-N candidate generation
-using trained Spark ALS factor matrices (rank=16).
+Cung cấp cơ chế sinh danh sách Top-K an toàn bộ nhớ, kiểm chứng toán học chuẩn xác
+sử dụng ma trận nhân tố ẩn đã huấn luyện từ Spark ALS (rank=16).
 
-Key Engineering Principles:
-1. Exact Filter-Before-Top-K:
-   Filters out user Train-seen interactions BEFORE selecting Top-K items.
-   Guarantees exact Top-K unseen recommendations without fixed-oversampling errors,
-   even for heavy users with tens of thousands of ratings.
-2. Memory-Safe Bounded Batch Scoring:
-   Scores user batches (e.g. 2,500 users) against all 58,932 scorable items using
-   optimized BLAS matrix multiplication (P_batch @ Q.T), peak RAM < 600 MB.
-3. Deterministic Tie-Breaking:
-   1. als_score DESC
-   2. movieId ASC
-   Straddling ties at the Top-K boundary are detected and resolved deterministically.
-4. Scientific Integrity & Protocol Adherence:
-   - Full Catalog: 62,423 movies.
-   - ALS-Scoreable Catalog: 58,932 movies with M05 item factors.
-   - Unscoreable Catalog: 3,491 movies without factors (never assigned fake 0.0 scores).
-   - Validation users with unscoreable targets are strictly preserved in the evaluation denominator.
+Các nguyên tắc kỹ thuật cốt lõi:
+1. Exact Filter-Before-Top-K (Lọc trước khi Top-K):
+   Loại bỏ toàn bộ tương tác người dùng đã xem trong Train TRƯỚC KHI trích xuất Top-K.
+   Đảm bảo 100% không mắc sai số thiếu Top-K do oversampling cố định (kể cả heavy users).
+2. Phép tính theo lô giới hạn an toàn bộ nhớ (Bounded Batch Scoring):
+   Chấm điểm theo lô (ví dụ 2.500 users) trên toàn bộ 58.932 phim bằng BLAS matrix multiplication
+   (P_batch @ Q.T), kiểm soát RAM đỉnh dưới 600 MB.
+3. Phá vỡ thế hòa điểm số tất định (Deterministic Tie-Breaking):
+   Ưu tiên 1: als_score DESC; Ưu tiên 2: movieId ASC.
+   Xử lý triệt để ranh giới phân vị k khi có nhiều phim đồng hạng điểm số.
+4. Tính toàn vẹn khoa học:
+   - Toàn bộ danh mục: 62.423 phim.
+   - Danh mục có thể chấm điểm: 58.932 phim có nhân tố M05.
+   - Danh mục không thể chấm điểm: 3.491 phim không có nhân tố (không gán 0.0 giả tạo).
 """
 
 from __future__ import annotations
@@ -53,14 +50,14 @@ from recommender.als.evaluator import validate_k
 
 @dataclass(frozen=True)
 class ALSCandidateConfig:
-    """Configuration for ALS Candidate Generation."""
+    """Cấu hình cho bộ sinh ứng viên ALS (K list, batch size, model version)."""
     k_list: Tuple[int, ...] = (5, 10, 20)
     batch_size: int = 2500
     model_version: str = "m05_spark_als_rank16"
     candidate_source: str = "ALS"
 
     def validate(self) -> None:
-        """Validate configuration parameters."""
+        """Kiểm tra tính hợp lệ của danh sách K và kích thước batch."""
         for k in self.k_list:
             validate_k(k)
         if self.batch_size <= 0:
@@ -70,7 +67,7 @@ class ALSCandidateConfig:
 @dataclass
 class ScoreableCatalog:
     """
-    Holds item latent factors and catalog metadata for scoring.
+    Lưu trữ ma trận nhân tố ẩn vật phẩm (Item Factors) và metadata danh mục phục vụ chấm điểm.
     """
     movie_ids: np.ndarray  # 1D int64 array of shape (M,)
     factors: np.ndarray    # 2D float32 array of shape (M, rank)
@@ -89,7 +86,7 @@ class ScoreableCatalog:
         if np.any(np.isnan(self.factors)) or np.any(np.isinf(self.factors)):
             raise ValueError("item factors matrix contains NaN or Inf values")
 
-        # Build movie_to_idx mapping if not provided
+        # Xây dựng bản đồ movie_to_idx nếu chưa được truyền
         if not self.movie_to_idx:
             self.movie_to_idx = {int(mid): idx for idx, mid in enumerate(self.movie_ids)}
         if len(self.movie_to_idx) != len(self.movie_ids):
@@ -117,7 +114,7 @@ class ScoreableCatalog:
 @dataclass
 class UserFactorsContainer:
     """
-    Holds user latent factors and userId indexing.
+    Lưu trữ ma trận nhân tố ẩn người dùng (User Factors) và bản đồ tra cứu chỉ mục userId.
     """
     user_ids: np.ndarray  # 1D int64 array of shape (U,)
     factors: np.ndarray   # 2D float32 array of shape (U, rank)
@@ -157,12 +154,11 @@ def exact_top_k_oracle(
     k: int,
 ) -> List[Tuple[int, float]]:
     """
-    Independent reference implementation of Exact Filter-Before-Top-K.
-    
-    1. Computes scalar dot product for each item.
-    2. Filters out items in seen_movie_ids.
-    3. Sorts valid unseen candidates deterministically by (-score, movieId).
-    4. Returns Top-K [(movieId, score), ...].
+    Hàm đối chứng tham chiếu độc lập cho giải thuật Exact Filter-Before-Top-K:
+    1. Tính tích vô hướng từng vật phẩm.
+    2. Loại bỏ các vật phẩm nằm trong seen_movie_ids.
+    3. Sắp xếp tất định các ứng viên chưa xem theo (-score, movieId).
+    4. Trả về Top-K [(movieId, score), ...].
     """
     validate_k(k)
     seen_set = set(seen_movie_ids)
@@ -172,13 +168,13 @@ def exact_top_k_oracle(
         mid_int = int(mid)
         if mid_int in seen_set:
             continue
-        # manual dot product
+        # Tích vô hướng đơn lẻ
         score = float(np.dot(user_factor, item_factors[idx]))
         if math.isnan(score) or math.isinf(score):
             raise ValueError(f"Non-finite score encountered for movie {mid_int}: {score}")
         scored_unseen.append((mid_int, score))
 
-    # Deterministic sort: score DESC, movieId ASC
+    # Sắp xếp tất định: score DESC, movieId ASC
     scored_unseen.sort(key=lambda x: (-x[1], x[0]))
     return scored_unseen[:k]
 
@@ -189,14 +185,12 @@ def fast_exact_top_k_from_scores(
     k: int,
 ) -> List[Tuple[int, float]]:
     """
-    Fast, memory-safe selection of Top-K items from a pre-computed 1D score array
-    where seen items have been masked with -np.inf.
+    Trích xuất Top-K nhanh, an toàn bộ nhớ từ mảng điểm số 1D đã được che (mask) vật phẩm đã xem bằng -inf.
     
-    Guarantees 100% mathematical equivalence to exact_top_k_oracle:
-    - Filters out -np.inf (seen items).
-    - If valid items <= k, returns all valid items sorted by (-score, movieId).
-    - Uses argpartition for O(M) average complexity.
-    - Handles straddling ties at the K-boundary deterministically.
+    Bảo đảm 100% tương đương toán học với exact_top_k_oracle:
+    - Bỏ qua các giá trị -inf.
+    - Dùng argpartition đạt độ phức tạp trung bình O(M).
+    - Phá vỡ thế hòa điểm số tất định (deterministic tie-breaking) tại ranh giới phân vị k.
     """
     validate_k(k)
     valid_mask = np.isfinite(scores)
@@ -211,17 +205,17 @@ def fast_exact_top_k_from_scores(
         pairs.sort(key=lambda x: (-x[1], x[0]))
         return pairs
 
-    # Use argpartition to find top K candidates
+    # Sử dụng argpartition để tìm top K ứng viên
     part_idx = np.argpartition(-scores, k)[:k]
     top_scores = scores[part_idx]
     min_top_score = float(np.min(top_scores))
 
-    # Detect if ties straddle the K-boundary
+    # Phát hiện trường hợp hòa điểm số tại ranh giới K
     total_ties = int(np.sum(scores == min_top_score))
     top_ties = int(np.sum(top_scores == min_top_score))
 
     if total_ties > top_ties:
-        # Straddling tie detected! Collect all items >= min_top_score and sort deterministically
+        # Hòa điểm số qua ngưỡng: Lấy toàn bộ phần tử >= min_top_score và sắp xếp tất định
         cand_mask = scores >= min_top_score
         cand_scores = scores[cand_mask]
         cand_ids = movie_ids[cand_mask]
@@ -229,7 +223,7 @@ def fast_exact_top_k_from_scores(
         pairs.sort(key=lambda x: (-x[1], x[0]))
         return pairs[:k]
     else:
-        # No straddling tie. Sort exactly the K items in the partition
+        # Không có hòa điểm số qua ngưỡng: Sắp xếp đúng K phần tử trong partition
         top_ids = movie_ids[part_idx]
         pairs = [(int(mid), float(sc)) for mid, sc in zip(top_ids, top_scores)]
         pairs.sort(key=lambda x: (-x[1], x[0]))
@@ -238,10 +232,10 @@ def fast_exact_top_k_from_scores(
 
 class ALSCandidateGenerator:
     """
-    Production-grade ALS Candidate Generator.
+    Bộ sinh ứng viên ALS chuẩn Production.
     
-    Operates on extracted latent factor matrices to generate exact Top-N recommendations
-    with prior seen-item exclusion and deterministic tie-breaking.
+    Vận hành trên ma trận nhân tố ẩn để sinh gợi ý Top-N chính xác
+    với cơ chế loại bỏ lịch sử đã xem từ trước và phá vỡ thế hòa tất định.
     """
 
     def __init__(self, config: Optional[ALSCandidateConfig] = None):
@@ -256,7 +250,7 @@ class ALSCandidateGenerator:
         movies_parquet_path: Optional[Union[str, Path]] = None,
     ) -> None:
         """
-        Load itemFactors, userFactors, and full catalog from Parquet files on disk.
+        Nạp itemFactors, userFactors và danh mục đầy đủ từ các file Parquet trên đĩa.
         """
         model_path = Path(model_dir)
         item_path = model_path / "spark_model" / "itemFactors"
@@ -305,7 +299,7 @@ class ALSCandidateGenerator:
 
     def audit_catalog(self) -> Dict[str, Any]:
         """
-        Produce a scientific audit of full catalog vs scoreable catalog vs unscoreable catalog.
+        Kiểm toán quy mô danh mục phim: Toàn bộ catalog vs Catalog có thể chấm điểm vs Không thể chấm điểm.
         """
         if self.catalog is None:
             raise ValueError("Catalog not loaded. Call load_catalog_and_factors() first.")
@@ -330,10 +324,8 @@ class ALSCandidateGenerator:
         k: int = 10,
     ) -> List[Tuple[int, float]]:
         """
-        Generate exact Top-K recommendations for a single user.
-        
-        Returns:
-            List of (movieId, als_score) tuples sorted deterministically.
+        Sinh danh sách gợi ý Top-K chính xác cho một người dùng đơn lẻ.
+        Lọc bỏ trước các phim trong seen_movie_ids và giải quyết hòa điểm tất định.
         """
         validate_k(k)
         if self.catalog is None or self.user_factors is None:
@@ -341,7 +333,7 @@ class ALSCandidateGenerator:
 
         user_idx = self.user_factors.user_to_idx.get(user_id)
         if user_idx is None:
-            # User cold-start: user has no factor vector in model
+            # Người dùng cold-start: không có vector nhân tố ẩn
             return []
 
         u_factor = self.user_factors.factors[user_idx]
@@ -362,10 +354,9 @@ class ALSCandidateGenerator:
         k: int = 20,
     ) -> Dict[int, List[Tuple[int, float]]]:
         """
-        Generate exact Top-K recommendations for a bounded batch of users.
-        
-        Uses P_batch @ Q.T for high-throughput matrix scoring, then masks seen items
-        and applies deterministic Top-K extraction.
+        Sinh danh sách gợi ý Top-K chính xác cho một lô người dùng bị chặn giới hạn bộ nhớ.
+        Sử dụng BLAS matrix multiplication (P_batch @ Q.T) đạt hiệu năng cao, che mặt nạ lịch sử
+        và trích xuất Top-K tất định.
         """
         validate_k(k)
         if self.catalog is None or self.user_factors is None:
@@ -439,7 +430,7 @@ class ALSCandidateGenerator:
         show_progress: bool = True,
     ) -> Dict[int, List[Tuple[int, float]]]:
         """
-        Generate exact Top-K recommendations for all target users across bounded batches.
+        Sinh gợi ý Top-K cho toàn bộ tập người dùng mục tiêu thông qua các batch giới hạn an toàn RAM.
         """
         validate_k(k)
         effective_batch_size = batch_size or self.config.batch_size
@@ -480,15 +471,9 @@ class ALSCandidateGenerator:
         model_version: Optional[str] = None,
     ) -> pa.Table:
         """
-        Convert recommendation mapping to an Apache Arrow Table for high-performance serialization.
-        
-        Schema:
-            userId: int64
-            movieId: int64
-            rank: int32 (1-based)
-            als_score: float32
-            candidate_source: string ("ALS")
-            model_version: string
+        Chuyển đổi mapping gợi ý sang Apache Arrow Table phục vụ tuần tự hóa tốc độ cao.
+        Schema: userId (int64), movieId (int64), rank (int32), als_score (float32),
+                candidate_source (string), model_version (string).
         """
         version_str = model_version or self.config.model_version
         uids: List[int] = []
@@ -523,7 +508,7 @@ class ALSCandidateGenerator:
         model_version: Optional[str] = None,
     ) -> None:
         """
-        Save recommendations to Parquet with Snappy compression.
+        Lưu danh sách gợi ý ra tệp định dạng Parquet với chuẩn nén Snappy.
         """
         table = self.export_recommendations_dataframe(recommendations, model_version)
         out_p = Path(output_path)

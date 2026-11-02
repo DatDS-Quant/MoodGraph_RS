@@ -1,10 +1,11 @@
 """
-MoodGraph - Task 3A: ALS Diagnostics Engine
-Module: M09 - Cold-Start, Long-Tail, Factor Reliability & Spark Performance
+Động cơ phân tích chẩn đoán mô hình Spark ALS (Task 3A - Module M09).
 
-Provides scientific diagnostics, empirical distributions, factor norm statistics,
-cold-start classifications, score distribution analysis, and performance benchmarks
-for Spark ALS collaborative filtering on MovieLens 25M.
+Đầu vào: File parquet tương tác Train, danh mục phim core movies, và mô hình ALS đóng băng.
+Đầu ra: Báo cáo phân bố độ hỗ trợ (item support bins), chuẩn vector tiềm ẩn (factor norms),
+hệ số tương quan log(support) với norm, phân loại khởi động lạnh, và phân bố điểm số Top-K.
+Cơ chế: Thống kê số lượng tương tác theo 5 bins, tính độ lớn Euclidean L2 norm,
+và phân tích hiện tượng thiên lệch đuôi dài (Long-Tail Fluke Bias).
 """
 
 from __future__ import annotations
@@ -23,17 +24,21 @@ import scipy.stats as stats
 
 
 class ColdStartType(str, Enum):
-    """Classification types for cold-start and support regimes."""
-    WARM_PAIR = "WARM_PAIR"              # User and item both have >= 6 ratings in Train
-    COLD_USER = "COLD_USER"              # User has 0 ratings in Train
-    COLD_ITEM = "COLD_ITEM"              # Item has 0 ratings in Train (unscoreable catalog item)
-    LOW_SUPPORT_ITEM = "LOW_SUPPORT_ITEM"  # Item has 1 to 5 ratings in Train
-    MODERATE_SUPPORT_ITEM = "MODERATE_SUPPORT_ITEM"  # Item has 6 to 10 ratings in Train
+    """
+    Phân loại trạng thái khởi động lạnh và mức độ hỗ trợ tương tác.
+    """
+    WARM_PAIR = "WARM_PAIR"              # Cả user và item đều có >= 6 tương tác trong Train
+    COLD_USER = "COLD_USER"              # User chưa có tương tác nào trong Train (0 ratings)
+    COLD_ITEM = "COLD_ITEM"              # Item chưa có tương tác nào trong Train (0 ratings, không thể tính điểm ALS)
+    LOW_SUPPORT_ITEM = "LOW_SUPPORT_ITEM"  # Item ở phần đuôi dài (có từ 1 đến 5 tương tác trong Train)
+    MODERATE_SUPPORT_ITEM = "MODERATE_SUPPORT_ITEM"  # Item có từ 6 đến 10 tương tác trong Train
 
 
 @dataclass(frozen=True)
 class ItemSupportBin:
-    """Statistics for a single item support bin."""
+    """
+    Thống kê cho một khoảng phân bố độ hỗ trợ tương tác (support bin) của phim.
+    """
     bin_name: str
     lower_bound: int  # Inclusive
     upper_bound: Optional[int]  # Inclusive, None for unbounded (>50)
@@ -91,7 +96,10 @@ class FactorNormSummary:
 
 @dataclass(frozen=True)
 class SupportNormCorrelation:
-    """Correlation analysis between log item support and factor norms."""
+    """
+    Phân tích tương quan giữa log bậc hỗ trợ vật phẩm (item support) và chuẩn L2 nhân tố ẩn.
+    Đo lường mức độ ảnh hưởng của số lượng tương tác đến độ lớn vector biểu diễn.
+    """
     num_items: int
     pearson_corr: float
     pearson_pval: float
@@ -110,7 +118,10 @@ class SupportNormCorrelation:
 
 @dataclass(frozen=True)
 class ScoreDistributionSummary:
-    """Empirical distribution of predicted ALS dot-product scores."""
+    """
+    Tóm tắt thống kê phân phối thực nghiệm của điểm số tích vô hướng (dot-product) ALS.
+    Bao gồm các giá trị phân vị, phương sai, tỉ lệ điểm âm và tỉ lệ điểm vượt ngưỡng danh nghĩa (>5.0).
+    """
     num_users: int
     num_items: int
     total_evaluations: int
@@ -157,7 +168,10 @@ class ScoreDistributionSummary:
 
 @dataclass(frozen=True)
 class TopKSupportConcentration:
-    """Concentration of Top-K recommendations across item support bins."""
+    """
+    Phân tích mức độ tập trung của danh sách gợi ý Top-K vào các nhóm bậc hỗ trợ vật phẩm.
+    Đo lường độ bao phủ danh mục (catalog coverage) và tỉ lệ chiếm lĩnh của head vs long-tail.
+    """
     k: int
     num_users: int
     total_recommendations: int
@@ -192,12 +206,13 @@ class TopKSupportConcentration:
 
 class ItemSupportAnalyzer:
     """
-    Computes exact Train item-support distribution across 5 disjoint bins:
-    1. 0 ratings (unscoreable catalog items)
-    2. 1-5 ratings (extreme long-tail / cold-start)
-    3. 6-10 ratings (low support)
-    4. 11-50 ratings (medium support)
-    5. >50 ratings (head / popular items)
+    Bộ phân tích bậc hỗ trợ (Item Support) của vật phẩm trên tập Train.
+    Phân chia catalog thành 5 nhóm rời rạc (disjoint bins):
+    1. 0 đánh giá (vật phẩm hoàn toàn cold-start, không có trong Train)
+    2. 1-5 đánh giá (vật phẩm cực đuôi dài / extreme long-tail)
+    3. 6-10 đánh giá (bậc hỗ trợ thấp / low support)
+    4. 11-50 đánh giá (bậc hỗ trợ trung bình / medium support)
+    5. >50 đánh giá (vật phẩm phổ biến / head / popular items)
     """
 
     SUPPORT_BIN_DEFS = [
@@ -214,8 +229,8 @@ class ItemSupportAnalyzer:
         catalog_movie_ids: Set[int],
     ) -> List[ItemSupportBin]:
         """
-        Compute support bins given item support dictionary and full catalog movie IDs.
-        Guarantees that sum(item_count) == len(catalog_movie_ids).
+        Tính toán phân phối các nhóm bậc hỗ trợ dựa trên từ điển support và toàn bộ catalog ID.
+        Đảm bảo định lý bảo toàn danh mục: sum(item_count) == len(catalog_movie_ids).
         """
         total_catalog = len(catalog_movie_ids)
         if total_catalog == 0:
@@ -276,8 +291,9 @@ class ItemSupportAnalyzer:
 
 class FactorReliabilityAnalyzer:
     """
-    Computes L2 norms and statistical summaries for item and user latent factor vectors.
-    Evaluates correlation between item support and factor norms.
+    Bộ phân tích độ tin cậy của nhân tố ẩn (Factor Reliability).
+    Tính chuẩn L2 và thống kê mô tả cho ma trận nhân tố người dùng và vật phẩm.
+    Đánh giá tương quan giữa bậc hỗ trợ vật phẩm và chuẩn L2 của vector nhân tố.
     """
 
     @staticmethod
@@ -285,7 +301,7 @@ class FactorReliabilityAnalyzer:
         factors: np.ndarray,
         entity_type: str,
     ) -> FactorNormSummary:
-        """Compute L2 norm distribution statistics for a factor matrix."""
+        """Tính thống kê phân phối chuẩn L2 (min, max, mean, median, percentiles) cho ma trận nhân tố."""
         if factors.ndim != 2:
             raise ValueError(f"factors must be 2D array, got shape {factors.shape}")
         if factors.shape[0] == 0:
@@ -315,7 +331,7 @@ class FactorReliabilityAnalyzer:
         item_factors: np.ndarray,
     ) -> SupportNormCorrelation:
         """
-        Compute Pearson and Spearman correlation between log1p(support) and item factor L2 norm.
+        Tính hệ số tương quan Pearson và Spearman giữa log1p(support) và chuẩn L2 vector nhân tố vật phẩm.
         """
         if len(item_supports) != len(item_factors):
             raise ValueError("item_supports and item_factors must have equal length")
@@ -340,7 +356,7 @@ class FactorReliabilityAnalyzer:
         item_factors: np.ndarray,
         item_support_dict: Dict[int, int],
     ) -> List[Dict[str, Any]]:
-        """Compute mean and median factor norms per item support bin."""
+        """Tính giá trị trung bình và trung vị của chuẩn L2 nhân tố theo từng nhóm bậc hỗ trợ."""
         norms = np.linalg.norm(item_factors, axis=1)
         supports = np.array([item_support_dict.get(int(mid), 0) for mid in item_ids])
 
@@ -374,7 +390,8 @@ class FactorReliabilityAnalyzer:
 
 class ColdStartClassifier:
     """
-    Classifies user-item interactions or pairs into distinct cold-start regimes.
+    Bộ phân loại cặp tương tác người dùng - vật phẩm vào các phân tầng Cold-Start:
+    COLD_USER, COLD_ITEM, LOW_SUPPORT_ITEM, MODERATE_SUPPORT_ITEM, WARM_PAIR.
     """
 
     def __init__(
@@ -388,7 +405,7 @@ class ColdStartClassifier:
         self.item_support_dict = item_support_dict
 
     def classify_pair(self, user_id: int, item_id: int) -> ColdStartType:
-        """Classify a user-item pair based on Train history presence and support."""
+        """Phân loại cặp (user_id, item_id) dựa trên lịch sử xuất hiện trong Train và bậc hỗ trợ."""
         user_in_train = user_id in self.train_users
         item_in_train = item_id in self.train_items
 
@@ -413,8 +430,8 @@ class ColdStartClassifier:
 
 class ScoreDiagnosticsAnalyzer:
     """
-    Analyzes predicted ALS dot-product scores (P_u dot Q_i) across a deterministic
-    Train-only user cohort, assessing score range, distribution, and Top-K concentration.
+    Bộ phân tích chuẩn đoán phân phối điểm tích vô hướng ALS (P_u dot Q_i).
+    Đánh giá trên tập thuần Train cohort nhằm phát hiện lệch chuẩn hoặc phân rã điểm số.
     """
 
     @staticmethod
@@ -423,8 +440,8 @@ class ScoreDiagnosticsAnalyzer:
         item_factors: np.ndarray,
     ) -> ScoreDistributionSummary:
         """
-        Compute score distribution over user_factors @ item_factors.T.
-        Scores are calculated in memory-safe chunks if necessary.
+        Tính phân phối điểm số trên ma trận tích user_factors @ item_factors.T.
+        Thực hiện an toàn bộ nhớ và thu thập đầy đủ bách phân vị.
         """
         n_users = user_factors.shape[0]
         n_items = item_factors.shape[0]
@@ -482,7 +499,8 @@ class ScoreDiagnosticsAnalyzer:
         k: int = 20,
     ) -> TopKSupportConcentration:
         """
-        Analyze what item support bins dominate the generated Top-K recommendations.
+        Phân tích các nhóm bậc hỗ trợ nào đang chiếm lĩnh danh sách gợi ý Top-K.
+        Tính tỉ lệ vật phẩm chỉ có 1 đánh giá, vật phẩm cold-start, và độ bao phủ toàn danh mục.
         """
         all_recs: List[int] = []
         for uid, rec_list in recommendations.items():
@@ -527,7 +545,10 @@ class ScoreDiagnosticsAnalyzer:
 
 @dataclass(frozen=True)
 class BenchmarkRecord:
-    """Record of an isolated performance benchmark."""
+    """
+    Bản ghi đo lường hiệu năng biệt lập (Isolated Performance Benchmark).
+    Lưu trữ thời gian thực thi, độ trễ p50/p99, thông lượng (throughput) và mức tiêu thụ RAM RSS.
+    """
     component: str  # "Spark_DataFrame", "PyArrow", "NumPy_BLAS"
     operation: str
     scale_units: int
@@ -563,8 +584,8 @@ def synthetic_item_support_oracle(
     catalog_size: int,
 ) -> Dict[str, int]:
     """
-    Synthetic Oracle A: Verifies item support bin counts on arbitrary support lists.
-    Guarantees bin conservation.
+    Synthetic Oracle A: Hàm đối chứng độc lập phân phối bậc hỗ trợ trên danh sách support tùy ý.
+    Bảo đảm tính bảo toàn tổng số lượng phần tử.
     """
     b0 = sum(1 for s in supports if s == 0)
     b1_5 = sum(1 for s in supports if 1 <= s <= 5)
@@ -593,7 +614,7 @@ def synthetic_cold_start_oracle(
     support_map: Dict[int, int],
 ) -> str:
     """
-    Synthetic Oracle B: Pure reference function for Cold-Start classification.
+    Synthetic Oracle B: Hàm đối chứng tham chiếu thuần túy cho phân loại Cold-Start.
     """
     if user_id not in known_users:
         return "COLD_USER"
@@ -612,7 +633,7 @@ def synthetic_factor_dot_product_oracle(
     item_vec: List[float],
 ) -> float:
     """
-    Synthetic Oracle C: Scalar dot product computed purely with Python primitives.
+    Synthetic Oracle C: Tính tích vô hướng vô hướng dùng kiểu nguyên thủy Python làm chuẩn đối chiếu.
     """
     if len(user_vec) != len(item_vec):
         raise ValueError("Vector length mismatch in dot product oracle")
@@ -624,7 +645,7 @@ def synthetic_throughput_oracle(
     duration_sec: float,
 ) -> float:
     """
-    Synthetic Oracle D: Pure reference function for throughput calculation.
+    Synthetic Oracle D: Hàm đối chứng tham chiếu tính thông lượng (throughput = count / duration).
     """
     if duration_sec <= 0:
         raise ValueError("duration_sec must be positive")

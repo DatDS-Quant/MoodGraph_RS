@@ -1,16 +1,16 @@
 """
-MoodGraph - Task 3A: Full Experiment Runner for Module M06
-Module: M06 - Exact ALS Top-N Recommendation & Validation Evaluation
+MoodGraph - Task 3A: Module M06 ALS Top-N Runner
+(Kịch bản thực thi sinh ứng viên Top-N chính xác và đánh giá trên tập Validation).
 
-Executes end-to-end:
-1. Loads M05 Spark ALS model factors (rank=16).
-2. Audits scorable vs unscoreable catalog items and validation cold-start impact.
-3. Extracts Train-seen interactions for all 162,541 users.
-4. Executes benchmark gates (single user, heavy user, small batch, medium batch).
-5. Generates exact Top-20 recommendations for all 162,541 Validation users.
-6. Evaluates using Module M02 TopNEvaluator across K=5, 10, 20 on the 109,779 positive cohort.
-7. Performs scientific comparison against Module M03 Popularity Count Baseline.
-8. Serializes artifacts to artifacts/als/m06/.
+Quy trình thực thi:
+1. Nạp ma trận nhân tố ẩn từ mô hình M05 Spark ALS (rank=16).
+2. Kiểm toán danh mục có thể chấm điểm và ảnh hưởng của hiện tượng cold-start.
+3. Trích xuất tương tác đã xem trong Train cho toàn bộ 162.541 người dùng.
+4. Chạy các bài kiểm tra hiệu năng chuẩn (đơn người dùng, heavy user, batch).
+5. Sinh gợi ý Top-20 chính xác cho toàn bộ 162.541 người dùng Validation.
+6. Đánh giá đa ngưỡng K bằng M02 TopNEvaluator trên 109.779 người dùng dương.
+7. So sánh hiệu năng thực nghiệm với baseline Popularity M03.
+8. Tuần tự hóa artifacts vào thư mục artifacts/als/m06/.
 """
 
 from __future__ import annotations

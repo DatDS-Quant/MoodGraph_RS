@@ -1,14 +1,14 @@
 """
-MoodGraph - Task 3A: Spark ALS
-Module M04: Toy ALS Experiment Runner & Verification
+MoodGraph - Task 3A: Module M04 Toy ALS Experiment Runner & Verification
+(Kịch bản thực thi kiểm chứng lý thuyết ALS trên tập dữ liệu đồ chơi).
 
-This script executes the complete M04 experiment pipeline:
-1. Golden Example mathematical derivation & step-by-step verification.
-2. Reference ALS solver execution and convergence tracking.
-3. PySpark ALS model fitting, factor extraction, and manual dot product audit.
-4. Cold-start strategy audit ('nan' vs 'drop').
-5. Latent space geometric counterexample (Euclidean vs Dot Product).
-6. Export structured JSON artifact to artifacts/m04_toy_als_results.json.
+Quy trình thực thi:
+1. Kiểm chứng từng bước toán học của ví dụ mẫu chuẩn (Golden Example).
+2. Chạy bộ giải ALS tham chiếu độc lập và theo dõi sự hội tụ của hàm tổn thất.
+3. Khớp mô hình PySpark ALS, trích xuất nhân tố và so khớp tích vô hướng thủ công.
+4. Kiểm toán chiến lược cold-start ('nan' vs 'drop').
+5. Kiểm chứng phản ví dụ hình học: Khoảng cách Euclidean vs Tích vô hướng.
+6. Xuất artifact tổng hợp vào artifacts/als/m04_toy_als_results.json.
 """
 
 import json

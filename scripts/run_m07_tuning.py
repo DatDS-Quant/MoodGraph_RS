@@ -1,26 +1,18 @@
 """
-Autonomous Execution Script for Module M07: Scientific ALS Hyperparameter Tuning.
-MoodGraph Project - Task 3A.
+MoodGraph - Task 3A: Module M07 Scientific ALS Hyperparameter Tuning Runner
+(Kịch bản thực thi tinh chỉnh siêu tham số ALS tự động trên tập Validation).
 
-Workflow:
-1. Initialize Spark session with safe memory configuration.
-2. Load Train split, Item Counts, and Train Seen sets (pyarrow).
-3. Load Validation split and Targets (pyarrow).
-4. Guard against any Test split access.
-5. Create / load deterministic 5,000 positive user screening cohort.
-6. Register M05 baseline and score on screening cohort.
-7. Stage A: Regularization Sweep (regParam in {0.3, 1.0, 3.0}, rank=16, maxIter=10).
-8. Stage B: Rank Sweep (rank in {8, 32}, regParam=best_from_stage_a, maxIter=10).
-9. Stage D: Controlled Diagnostic (ALS_PLUS_TRAIN_SUPPORT_FILTER with min_ratings=5, 20).
-10. Independent Model Selection on ALS_ONLY family.
-11. Level 2: Full Validation (109,779 positive users) on best ALS model.
-12. Generate artifacts:
-    - artifacts/als/m07/m07_best_als_top20_recommendations.parquet
-    - artifacts/als/m07/best_als_model_manifest.json
-    - artifacts/als/m07/experiment_registry.json
-    - artifacts/als/m07/comparison_table.csv
-    - artifacts/als/m07/long_tail_diagnostics.csv
-    - artifacts/als/m07/screening_cohort.json
+Quy trình thực thi:
+1. Khởi tạo phiên Spark Session an toàn cấu hình bộ nhớ local.
+2. Nạp dữ liệu Train, thống kê item counts và tập lịch sử train_seen bằng pyarrow.
+3. Nạp tập mục tiêu Validation (positive cohort).
+4. Kích hoạt chốt chặn bảo vệ chống rò rỉ phân vùng Test (guard_test_split_access).
+5. Quản lý tập screening cohort 5.000 người dùng dương cố định.
+6. Đăng ký mô hình M05 baseline và đánh giá mốc cơ sở.
+7. Giai đoạn A: Dò quét hệ số điều chuẩn (regParam in {0.3, 1.0, 3.0}).
+8. Giai đoạn B: Dò quét số chiều tiềm ẩn rank in {8, 32}.
+9. Lựa chọn mô hình tối ưu độc lập trên họ ALS_ONLY và đánh giá Full Validation (109.779 users).
+10. Xuất toàn bộ artifacts và bảng so sánh vào artifacts/als/m07/.
 """
 
 import csv

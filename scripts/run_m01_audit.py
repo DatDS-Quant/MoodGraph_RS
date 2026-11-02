@@ -1,7 +1,9 @@
 """
-MoodGraph Task 3A - Stage 8: Real Parquet Data Audit Runner
-Executes run_full_m01_audit on MovieLens 25M Parquet datasets.
-Outputs summary to stdout and full metrics to artifacts/m01_audit_result.json.
+MoodGraph - Task 3A: Module M01 Real Data Audit Runner
+(Kịch bản thực thi kiểm toán dữ liệu MovieLens 25M Parquet thực tế).
+
+Thực thi run_full_m01_audit trên dữ liệu phân vùng Train, Validation và danh mục phim.
+In tóm tắt kết quả ra màn hình và lưu báo cáo chi tiết vào artifacts/als/m01_audit_result.json.
 """
 import json
 import os

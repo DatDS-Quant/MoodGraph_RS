@@ -1,18 +1,18 @@
 """
 MoodGraph - Task 3A: Frozen Test Benchmark
-Module M08: Final Offline Benchmark on Frozen Test Split
+Mô-đun: M08 - Đánh giá ngoại tuyến độc lập cuối cùng trên phân vùng Test đóng băng (Frozen Test Split).
 
-Implements the strictly controlled, reproducible, memory-safe final offline benchmark:
-1. Model A: M03_POPULARITY_COUNT (Train rating counts only)
-2. Model B: M03_POPULARITY_WEIGHTED_M10 (Bayesian Dirichlet prior m=10 on Train only)
-3. Model C: ALS_R8_REG0.3_ITER10 (Frozen Spark ALS champion from M07, ALS_ONLY)
+Triển khai quy trình kiểm định khoa học nghiêm ngặt, an toàn bộ nhớ và tái lập 100%:
+1. Model A: M03_POPULARITY_COUNT (Xếp hạng theo số lượt đánh giá thuần Train).
+2. Model B: M03_POPULARITY_WEIGHTED_M10 (Mô hình Bayes Dirichlet prior m=10 trên Train).
+3. Model C: ALS_R8_REG0.3_ITER10 (Mô hình ALS vô địch đã đóng băng từ M07, thuộc họ ALS_ONLY).
 
-Key Evaluation Invariants:
-- Test-stage seen filtering: seen_u = Train_u ∪ Validation_u.
-- Training provenance: All models trained / counted on Train ONLY.
-- Evaluation cohort: 100% identical positive Test cohort (rating >= 3.5) across all 3 models.
-- Single-shot execution: strictly no post-hoc hyperparameter tuning or selective dropping.
-- M02 TopNEvaluator: evaluates at K in {5, 10, 20} with NDCG@10 as primary metric.
+Các bất biến đánh giá cốt lõi:
+- Lọc lịch sử tại giai đoạn Test: seen_u = Train_u ∪ Validation_u (không rò rỉ target vào mặt nạ).
+- Nguồn gốc huấn luyện: Toàn bộ mô hình chỉ được học/thống kê trên tập Train duy nhất.
+- Tập mẫu số đánh giá: 100% người dùng dương tập Test (rating >= 3.5) đồng nhất cho cả 3 mô hình.
+- Thực thi One-shot: Tuyệt đối không điều chỉnh siêu tham số hay can thiệp thủ công sau khi mở Test.
+- Động cơ TopNEvaluator: Đánh giá tại K in {5, 10, 20} với NDCG@10 là chỉ số ưu tiên hàng đầu.
 """
 
 from __future__ import annotations
@@ -80,7 +80,7 @@ EXPECTED_HASHES = {
 
 
 def compute_sha256(path: Path) -> str:
-    """Compute SHA-256 hash of a file on disk."""
+    """Tính mã băm SHA-256 của một tệp trên đĩa."""
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
     hasher = hashlib.sha256()
@@ -89,7 +89,7 @@ def compute_sha256(path: Path) -> str:
 
 
 def get_git_info(repo_root: Path) -> Dict[str, str]:
-    """Retrieve Git branch and short commit."""
+    """Truy xuất tên nhánh Git và mã commit ngắn hiện tại."""
     try:
         branch = subprocess.check_output(
             ["git", "branch", "--show-current"], cwd=repo_root, text=True
@@ -107,8 +107,8 @@ def get_git_info(repo_root: Path) -> Dict[str, str]:
 
 def run_preflight_audit(repo_root: Path) -> Dict[str, Any]:
     """
-    Perform strict pre-flight audit before reading the Test split.
-    Raises PreflightBlockedError if any invariant is violated.
+    Thực hiện kiểm toán tiền kiểm nghiêm ngặt trước khi mở phân vùng Test.
+    Ném ngoại lệ PreflightBlockedError nếu bất kỳ bất biến đóng băng nào bị vi phạm.
     """
     print("[PreFlight] Starting M08 Pre-Flight Release Audit...")
     audit_results: Dict[str, Any] = {"status": "PASS", "checks": {}}
@@ -194,13 +194,13 @@ def load_train_and_val_seen(
     val_dir: Path,
 ) -> Tuple[Dict[int, Set[int]], Dict[int, int], Dict[int, float], float, int, int]:
     """
-    Rapidly scan Train and Validation splits to extract:
-    1. test_seen_dict: user_id -> set of seen movie_ids in (Train ∪ Validation)
-    2. item_train_counts: movie_id -> rating count in Train ONLY
-    3. item_train_sum: movie_id -> rating sum in Train ONLY
-    4. global_train_mean: float (from Train ONLY)
-    5. total_train_ratings: int
-    6. total_val_ratings: int
+    Quét nhanh phân vùng Train và Validation để trích xuất:
+    1. test_seen_dict: user_id -> tập các movie_id đã xem trong (Train ∪ Validation).
+    2. item_train_counts: movie_id -> số lượt đánh giá thuần trong Train.
+    3. item_train_sum: movie_id -> tổng điểm đánh giá thuần trong Train.
+    4. global_train_mean: float (tính thuần từ Train).
+    5. total_train_ratings: int.
+    6. total_val_ratings: int.
     """
     print(f"[DataLoader] Scanning Train ratings from {train_dir}...")
     t0 = time.time()
@@ -275,8 +275,8 @@ def load_test_targets(
     preflight_passed: bool,
 ) -> Tuple[Dict[int, HeldOutTarget], List[int], List[int]]:
     """
-    Load Test targets after preflight validation.
-    Enforces that Test targets are NOT in test_seen (zero leakage into mask).
+    Nạp tập mục tiêu Test sau khi đã hoàn thành xác thực tiền kiểm (preflight).
+    Bảo đảm 100% không có sự rò rỉ mục tiêu Test vào mặt nạ đã xem (zero leakage).
     """
     if not preflight_passed:
         raise PreflightBlockedError("M08_PREFLIGHT_BLOCKED: Cannot open Test split before preflight verification!")

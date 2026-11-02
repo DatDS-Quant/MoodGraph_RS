@@ -12,10 +12,10 @@
 
 | Thành phần | Đường dẫn File | Số dòng | Chức năng chính |
 | :--- | :--- | :--- | :--- |
-| **Delivery API** | [delivery.py](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py) | 517 | Inference Service, Top-K BLAS, Fast CSR Seen Index, Clean Cold-Start Contract |
-| **Execution Runner** | [run_m10_delivery.py](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/scripts/run_m10_delivery.py) | 452 | Latency Breakdown, Real Catalog Cold Test, 8 Machine Artifacts, Checklist 25 Gates |
+| **Delivery API** | [delivery.py](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py) | 532 | Inference Service, Top-K BLAS, Fast CSR Seen Index, Clean Cold-Start Contract |
+| **Execution Runner** | [run_m10_delivery.py](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/scripts/run_m10_delivery.py) | 453 | Latency Breakdown, Real Catalog Cold Test, 8 Machine Artifacts, Checklist 25 Gates |
 | **Test Suite M10** | [test_delivery.py](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/tests/als/test_delivery.py) | 556 | 24 Unit, Integration, Adversarial, Real Catalog Union & Mapping Oracle Tests |
-| **Release Auditor** | [audit_m10_release.py](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/scripts/audit_m10_release.py) | 260 | Tự động thẩm tra 25 Gates, M08 Metric Lock, CSR Provenance, Zero Dollar |
+| **Release Auditor** | [audit_m10_release.py](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/scripts/audit_m10_release.py) | 261 | Tự động thẩm tra 25 Gates, M08 Metric Lock, CSR Provenance, Zero Dollar |
 | **Integration Contract** | [integration_contract.md](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/docs/3a/integration_contract.md) | 160 | Hợp đồng tích hợp Candidate Union & cấm cộng điểm thô chưa chuẩn hóa |
 
 ---
@@ -23,7 +23,7 @@
 ## 2. Chi Tiết Tọa Độ Dòng Code Trong `recommender/als/delivery.py`
 
 ### 2.1 Cấu trúc Dữ liệu Đầu ra (`ALSRecommendationItem`)
-- **Tọa độ:** [delivery.py#L49-L80](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py#L49-L80)
+- **Tọa độ:** [delivery.py#L50-L85](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py#L50-L85)
 - **Điểm mấu chốt khi bảo vệ:**
   - `@dataclass(frozen=True)` (Dòng 50): Bất biến 100%, bảo đảm Thread-Safety khi truyền qua các pipeline song song.
   - `userId: int`, `movieId: int` (Dòng 52-53): Định danh nguyên thủy chuẩn 64-bit của MovieLens 25M, hoàn toàn độc lập với chỉ số nội bộ 32-bit `user_idx`, `movie_idx`.
@@ -31,14 +31,14 @@
   - `model_version: str` (Dòng 57): Truy xuất nguồn gốc mô hình (Provenance Tracking).
 
 ### 2.2 Quản lý Bộ nhớ & Tải CSR Lịch sử Đã xem (`ALSDeliveryService`)
-- **Tọa độ:** [delivery.py#L161-L260](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py#L161-L260)
+- **Tọa độ:** [delivery.py#L170-L265](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py#L170-L265)
 - **Điểm mấu chốt khi bảo vệ:**
-  - `_load_csr_if_available()` (Dòng 205-215): Tải nhanh file nén CSR `train_seen_csr.npz` (53.2 MB) chỉ mất 0.4s và tốn ~100 MB RAM, bao phủ toàn bộ 24.675.013 tương tác Train của 162.541 users.
-  - `get_train_seen_for_user(user_id)` (Dòng 217-227): Tra cứu tập phim đã xem của một user chỉ mất dưới 1 micro-giây thông qua mảng `offsets`.
-  - Từ chối fallback ngầm (Dòng 242-247): Nếu thiếu dữ liệu Train, hệ thống chủ động ném `FileNotFoundError`, tuyệt đối không âm thầm fallback sang dữ liệu mẫu partial fixtures.
+  - `_load_csr_if_available()` (Dòng 224-234): Tải nhanh file nén CSR `train_seen_csr.npz` (53.2 MB) chỉ mất 0.4s và tốn ~100 MB RAM, bao phủ toàn bộ 24.675.013 tương tác Train của 162.541 users.
+  - `get_train_seen_for_user(user_id)` (Dòng 235-245): Tra cứu tập phim đã xem của một user chỉ mất dưới 1 micro-giây thông qua mảng `offsets`.
+  - Từ chối fallback ngầm (Dòng 250-258): Nếu thiếu dữ liệu Train, hệ thống chủ động ném `FileNotFoundError`, tuyệt đối không âm thầm fallback sang dữ liệu mẫu partial fixtures.
 
 ### 2.3 Thuật toán Tính điểm & Chọn Top-K Hiệu năng Cao
-- **Tọa độ:** [delivery.py#L318-L380](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py#L318-L380) (Hàm `recommend` và `recommend_batch`)
+- **Tọa độ:** [delivery.py#L330-L410](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py#L330-L410) (Hàm `recommend` và `recommend_batch`)
 - **Điểm mấu chốt khi bảo vệ:**
   - **Cold-Start Handling** (Dòng 345-350): Unknown user lập tức trả về danh sách rỗng `[]`, không sinh điểm số 0.0 giả tạo.
   - **Batch Dot-Product via BLAS**: Tính điểm đồng thời cho 58.932 phim chỉ mất ~0.10 ms trên CPU.
@@ -46,7 +46,7 @@
   - **Độ trễ toàn trình (Full End-to-End Latency)**: Đo thực tế đạt median 0.87 ms, p95 1.03 ms trên mỗi user.
 
 ### 2.4 Hàm Công Khai (Public API)
-- **Tọa độ:** [delivery.py#L430-L470](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py#L430-L470) (`recommend_als`, `recommend_als_batch`)
+- **Tọa độ:** [delivery.py#L435-L480](file:///d:/PROJECT%20BIG%20DATA/MoodGraph/recommender/als/delivery.py#L435-L480) (`recommend_als`, `recommend_als_batch`)
   - Hỗ trợ linh hoạt cả `top_n` và alias `k`, hỗ trợ cờ `filter_seen`.
 
 ---
@@ -63,10 +63,10 @@
 | `test_18_candidate_union_contract_with_synthetic_kg` | L320-L369 | Kiểm thử tích hợp: Candidate Union giữ nguyên các phim KG-only |
 | `test_19_no_forced_kg_rerank_of_als_top_20` | L371-L390 | Chứng minh nếu ép KG chỉ lọc trên Top-20 ALS sẽ làm mất hoàn toàn ứng viên KG-only |
 | `test_20_no_raw_score_blending_without_normalization` | L392-L410 | Chứng minh sự thiên lệch khi cộng điểm thô và các candidate fusion strategies |
-| `test_21_full_train_provenance_and_heavy_user_filtering` | L412-L445 | Kiểm tra provenance 24.67M tương tác Train và zero overlap trên Heavy User (>1000 ratings) |
-| `test_22_real_catalog_aware_kg_candidate_union` | L447-L505 | Kiểm thử tích hợp với REAL catalog cold movie 25817 (Break of Hearts) không có trong ALS |
-| `test_23_real_catalog_bijective_id_mapping_and_exact_oracle` | L507-L536 | Chứng minh Spark ALS dùng original movieId trực tiếp và dot(u, v) khớp chính xác 1e-5 |
-| `test_24_missing_train_data_fails_safely_without_silent_sample_fallback` | L538-L555 | Kiểm tra ném FileNotFoundError nếu thiếu dữ liệu Train, từ chối fallback sang sample |
+| `test_21_full_train_provenance_and_heavy_user_filtering` | L413-L449 | Kiểm tra provenance 24.67M tương tác Train và zero overlap trên Heavy User (>1000 ratings) |
+| `test_22_real_catalog_aware_kg_candidate_union` | L451-L512 | Kiểm thử tích hợp với REAL catalog cold movie 25817 (Break of Hearts) không có trong ALS |
+| `test_23_real_catalog_bijective_id_mapping_and_exact_oracle` | L514-L541 | Chứng minh Spark ALS dùng original movieId trực tiếp và dot(u, v) khớp chính xác 1e-5 |
+| `test_24_missing_train_data_fails_safely_without_silent_sample_fallback` | L543-L555 | Kiểm tra ném FileNotFoundError nếu thiếu dữ liệu Train, từ chối fallback sang sample |
 
 ---
 

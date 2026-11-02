@@ -1,9 +1,10 @@
 """
-MoodGraph - Task 3A: ALS Delivery & Hybrid Integration Interface
-Module: M10 - Production-Like ALS Inference API & Integration Contract
+Giao diện suy luận gợi ý phim bằng mô hình Spark ALS (Task 3A - Module M10).
 
-Provides clean, reproducible, and contract-validated inference APIs for
-Collaborative Filtering recommendations using the frozen Spark ALS model.
+Đầu vào: ID người dùng (userId chuẩn int64), số lượng phim cần gợi ý (Top-N/K).
+Đầu ra: Danh sách bản ghi ALSRecommendationItem sắp xếp theo điểm số giảm dần.
+Cơ chế: Sử dụng phép nhân ma trận BLAS trên CPU, nén lịch sử Train qua CSR
+để lọc phim đã xem trong thời gian microsecond, và trả về danh sách rỗng cho người dùng mới.
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ from recommender.als.candidates import (
 from recommender.als.evaluator import validate_k
 
 
-# Default Repository Paths
+# Đường dẫn mặc định trong kho lưu trữ
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _DEFAULT_FROZEN_MODEL_DIR = _REPO_ROOT / "artifacts" / "models" / "als" / "m07_tuning" / "ALS_R8_REG0.3_ITER10"
 _DEFAULT_MOVIES_PATH = _REPO_ROOT / "data" / "processed" / "core" / "movies"
@@ -48,7 +49,10 @@ _DEFAULT_TRAIN_CSR_PATH = _REPO_ROOT / "artifacts" / "als" / "m10" / "train_seen
 
 @dataclass(frozen=True)
 class ALSRecommendationItem:
-    """Standardized output schema for single movie recommendation."""
+    """
+    Bản ghi dữ liệu đầu ra chuẩn hóa cho một phim được gợi ý bởi ALS.
+    Sử dụng định danh 64-bit gốc của MovieLens (userId, movieId).
+    """
     userId: int
     movieId: int
     raw_score: float
@@ -58,6 +62,7 @@ class ALSRecommendationItem:
     run_id: Optional[str] = None
 
     def __post_init__(self) -> None:
+        # Kiểm tra tính hợp lệ của kiểu dữ liệu và giá trị số học
         if not isinstance(self.userId, (int, np.integer)):
             raise TypeError(f"userId must be int, got {type(self.userId)}")
         if not isinstance(self.movieId, (int, np.integer)):
@@ -68,6 +73,7 @@ class ALSRecommendationItem:
             raise ValueError(f"rank must be >= 1, got {self.rank}")
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi bản ghi sang dictionary chuẩn để phục vụ serialization/JSON."""
         return {
             "userId": int(self.userId),
             "movieId": int(self.movieId),
@@ -81,7 +87,9 @@ class ALSRecommendationItem:
 
 @dataclass(frozen=True)
 class ModelMetadata:
-    """Metadata specification for registered ALS models."""
+    """
+    Thông tin siêu dữ liệu (metadata) của mô hình ALS đã đăng ký trong hệ thống.
+    """
     model_id: str
     model_name: str
     model_family: str
@@ -96,15 +104,19 @@ class ModelMetadata:
     limitations: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Xuất metadata sang dictionary."""
         return asdict(self)
 
 
 class ALSModelRegistry:
-    """Lightweight registry managing frozen and evaluated ALS models."""
+    """
+    Bộ quản lý đăng ký và tra cứu các phiên bản mô hình ALS phục vụ suy luận.
+    """
 
     def __init__(self, repo_root: Optional[Union[str, Path]] = None) -> None:
         root = Path(repo_root) if repo_root else _REPO_ROOT
         self.root = root
+        # Danh mục đăng ký mô hình finalist đã đóng băng từ Sprint M07
         self._registry: Dict[str, ModelMetadata] = {
             "ALS_R8_REG0.3_ITER10": ModelMetadata(
                 model_id="ALS_R8_REG0.3_ITER10",
@@ -142,6 +154,7 @@ class ALSModelRegistry:
         }
 
     def get_model_metadata(self, model_version: Optional[str] = None) -> ModelMetadata:
+        """Tra cứu metadata theo phiên bản mô hình; mặc định là finalist ALS_R8_REG0.3_ITER10."""
         key = model_version or "ALS_R8_REG0.3_ITER10"
         if key not in self._registry:
             raise KeyError(
@@ -150,13 +163,14 @@ class ALSModelRegistry:
         return self._registry[key]
 
     def list_models(self) -> List[Dict[str, Any]]:
+        """Liệt kê toàn bộ danh sách các mô hình ALS đã đăng ký."""
         return [m.to_dict() for m in self._registry.values()]
 
 
 class ALSDeliveryService:
     """
-    High-performance, memory-safe inference service for ALS recommendations.
-    Caches factor matrices in RAM for sub-millisecond per-user scoring.
+    Dịch vụ suy luận gợi ý ALS hiệu năng cao, tối ưu bộ nhớ cho môi trường phục vụ.
+    Nạp sẵn ma trận vector tiềm ẩn vào RAM để tính điểm nhanh qua thư viện BLAS.
     """
 
     def __init__(
@@ -177,7 +191,7 @@ class ALSDeliveryService:
         self.batch_size = batch_size
         self.model_version = model_version
 
-        # 1. Candidate Generator & Factor Caching
+        # 1. Khởi tạo Candidate Generator và nạp factor ma trận vào RAM
         self.generator = ALSCandidateGenerator(
             ALSCandidateConfig(k_list=(5, 10, 20), batch_size=batch_size, model_version=model_version)
         )
@@ -186,7 +200,7 @@ class ALSDeliveryService:
             movies_parquet_path=self.movies_path if self.movies_path.exists() else None,
         )
 
-        # 2. Fast CSR and Lazy Seen History Caches
+        # 2. Bộ nhớ đệm chỉ số CSR và lịch sử tương tác đã xem
         self._csr_offsets: Optional[np.ndarray] = None
         self._csr_mids: Optional[np.ndarray] = None
         self._train_seen_cache: Optional[Dict[int, Set[int]]] = None
@@ -194,18 +208,21 @@ class ALSDeliveryService:
 
     @property
     def rank(self) -> int:
+        """Số chiều của không gian tiềm ẩn (Latent Factor Rank)."""
         return self.generator.catalog.rank
 
     @property
     def num_scoreable_items(self) -> int:
+        """Số lượng phim có vector tiềm ẩn để tính điểm (58,932 phim)."""
         return self.generator.catalog.num_movies
 
     @property
     def num_known_users(self) -> int:
+        """Số lượng người dùng đã học được vector trong tập Train (162,541 users)."""
         return self.generator.user_factors.num_users
 
     def _load_csr_if_available(self) -> bool:
-        """Load pre-materialized CSR seen index if available."""
+        """Nạp chỉ số CSR nén của lịch sử tương tác Train nếu file tồn tại."""
         if self._csr_offsets is not None and self._csr_mids is not None:
             return True
         if self.train_csr_path.exists():
@@ -216,7 +233,7 @@ class ALSDeliveryService:
         return False
 
     def get_train_seen_for_user(self, user_id: int) -> Set[int]:
-        """Retrieve full Train-seen items for a single user in microseconds."""
+        """Truy xuất toàn bộ danh sách phim đã xem trong Train của 1 user theo thời gian microsecond."""
         if self._load_csr_if_available():
             if self._csr_offsets is not None and self._csr_mids is not None:
                 if 1 <= user_id < len(self._csr_offsets):
@@ -228,8 +245,8 @@ class ALSDeliveryService:
 
     def _get_train_seen(self) -> Dict[int, Set[int]]:
         """
-        Lazy load full Train-seen items from CSR or Parquet splits.
-        Never falls back to partial sample fixtures.
+        Tải lười toàn bộ lịch sử xem của tập Train từ file CSR hoặc file Parquet phân vùng.
+        Nghiêm cấm tự ý chuyển hướng sang fixture mẫu trong môi trường sản xuất.
         """
         if self._train_seen_cache is None:
             if self._load_csr_if_available():
@@ -263,8 +280,8 @@ class ALSDeliveryService:
 
     def _get_test_stage_seen(self) -> Dict[int, Set[int]]:
         """
-        Lazy load test-stage seen items (Train + Validation interactions).
-        Strictly zero access to Test target ratings.
+        Tải lịch sử xem phục vụ đánh giá giai đoạn Test (gồm Train + Validation).
+        Tuyệt đối không truy cập rating mục tiêu của tập Test để chống rò rỉ dữ liệu.
         """
         if self._test_seen_cache is None:
             combined = {k: set(v) for k, v in self._get_train_seen().items()}
@@ -286,7 +303,7 @@ class ALSDeliveryService:
         stage: str = "production",
         custom_histories: Optional[Dict[int, Set[int]]] = None,
     ) -> Dict[int, Set[int]]:
-        """Retrieve seen items for requested users under specified operational stage."""
+        """Lấy tập hợp phim đã xem cho danh sách người dùng theo ngữ cảnh vận hành cụ thể."""
         if custom_histories is not None:
             return {uid: custom_histories.get(uid, set()) for uid in user_ids}
 
@@ -320,8 +337,8 @@ class ALSDeliveryService:
         run_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
-        Generate Top-N recommendations for a single user.
-        Cold user handling: returns empty list [] (ALS_ONLY contract, no fake popularity).
+        Sinh danh sách Top-N gợi ý cho một người dùng đơn lẻ.
+        Xử lý Cold-Start: Trả về danh sách rỗng [] nếu người dùng chưa từng có tương tác trong Train.
         """
         if top_n <= 0:
             raise ValueError(f"top_n must be positive, got {top_n}")
@@ -344,8 +361,8 @@ class ALSDeliveryService:
         run_id: Optional[str] = None,
     ) -> Dict[int, List[Dict[str, Any]]]:
         """
-        Generate Top-N recommendations for a batch of users using BLAS matrix operations.
-        Ensures exact ranking: raw_score DESC, movieId ASC.
+        Sinh danh sách Top-N gợi ý cho một lô (batch) người dùng thông qua phép nhân ma trận BLAS.
+        Đảm bảo thứ tự xếp hạng chính xác: raw_score giảm dần, tie-break bằng movieId tăng dần.
         """
         if top_n <= 0:
             raise ValueError(f"top_n must be positive, got {top_n}")
@@ -355,26 +372,26 @@ class ALSDeliveryService:
         active_run_id = run_id or f"run_{uuid.uuid4().hex[:12]}"
         user_id_list = [int(u) for u in user_ids]
 
-        # Partition into known users (with factors) and cold users
+        # Phân chia người dùng thành nhóm đã biết (có factors) và nhóm cold-start
         known_user_factors = self.generator.user_factors
         known_uids = [u for u in user_id_list if u in known_user_factors.user_to_idx]
         cold_uids = [u for u in user_id_list if u not in known_user_factors.user_to_idx]
 
         results: Dict[int, List[Dict[str, Any]]] = {}
 
-        # 1. Cold Users: Return empty list (ALS_ONLY contract)
+        # 1. Người dùng mới (Cold-Start): Trả về danh sách rỗng theo hợp đồng minh bạch
         for u in cold_uids:
             results[u] = []
 
         if not known_uids:
             return results
 
-        # 2. Resolve Seen Histories
+        # 2. Lấy lịch sử phim đã xem để chuẩn bị loại trừ
         user_histories = self.get_seen_history(
             user_ids=known_uids, stage=stage, custom_histories=custom_user_histories
         )
 
-        # 3. Generate Exact Recommendations via ALSCandidateGenerator
+        # 3. Tính điểm qua BLAS và chọn Top-K bằng thuật toán phân vùng O(N)
         raw_recs = self.generator.generate_recommendations(
             target_user_ids=known_uids,
             user_histories=user_histories,
@@ -382,7 +399,7 @@ class ALSDeliveryService:
             batch_size=self.batch_size,
         )
 
-        # 4. Format into Canonical Output Contract
+        # 4. Đóng gói kết quả vào đối tượng ALSRecommendationItem chuẩn
         for uid in known_uids:
             item_list = raw_recs.get(uid, [])
             formatted_items: List[Dict[str, Any]] = []
@@ -402,7 +419,7 @@ class ALSDeliveryService:
         return results
 
 
-# Module-level singleton service
+# Thể hiện singleton của dịch vụ suy luận ở cấp module
 _SERVICE_INSTANCE: Optional[ALSDeliveryService] = None
 
 
@@ -410,7 +427,7 @@ def get_delivery_service(
     model_dir: Optional[Union[str, Path]] = None,
     movies_path: Optional[Union[str, Path]] = None,
 ) -> ALSDeliveryService:
-    """Retrieve or initialize the singleton ALSDeliveryService instance."""
+    """Lấy hoặc khởi tạo thể hiện singleton của ALSDeliveryService."""
     global _SERVICE_INSTANCE
     if _SERVICE_INSTANCE is None:
         _SERVICE_INSTANCE = ALSDeliveryService(
@@ -430,8 +447,8 @@ def recommend_als(
     custom_seen: Optional[Set[int]] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Public Function Interface: Generate ALS Top-N recommendations for a single user.
-    Supports 'top_n' and 'k' interchangeably. If filter_seen=False, skips seen suppression.
+    Giao diện hàm công khai: Sinh danh sách Top-N gợi ý cho một người dùng.
+    Hỗ trợ linh hoạt cả tham số 'top_n' và alias 'k'. Có thể tắt lọc phim đã xem bằng filter_seen=False.
     """
     effective_top_n = k if k is not None else top_n
     svc = service or get_delivery_service()
@@ -452,8 +469,8 @@ def recommend_als_batch(
     custom_user_histories: Optional[Dict[int, Set[int]]] = None,
 ) -> Dict[int, List[Dict[str, Any]]]:
     """
-    Public Function Interface: Generate ALS Top-N recommendations for a batch of users.
-    Supports 'top_n' and 'k' interchangeably. If filter_seen=False, skips seen suppression.
+    Giao diện hàm công khai: Sinh danh sách Top-N gợi ý cho một lô (batch) người dùng.
+    Hỗ trợ linh hoạt cả tham số 'top_n' và alias 'k'. Có thể tắt lọc phim đã xem bằng filter_seen=False.
     """
     effective_top_n = k if k is not None else top_n
     svc = service or get_delivery_service()
@@ -469,7 +486,7 @@ def recommend_als_batch(
 
 
 # ==============================================================================
-# SYNTHETIC ORACLE FOR INDEPENDENT DELIVERY QA
+# HÀM ORACLE TỔNG HỢP PHỤC VỤ KIỂM THỬ ĐỘC LẬP
 # ==============================================================================
 
 def synthetic_delivery_oracle(
@@ -480,9 +497,8 @@ def synthetic_delivery_oracle(
     top_n: int,
 ) -> List[Dict[str, Any]]:
     """
-    Synthetic Reference Oracle: Computes unvectorized scalar dot products,
-    filters seen items, sorts deterministically by (-score, movieId),
-    and validates canonical output schema.
+    Hàm đối chiếu tham chiếu (Oracle): Tính tích vô hướng vô hướng tuần tự,
+    lọc phim đã xem và sắp xếp tất định theo (-score, movieId) để đối soát thuật toán phân vùng.
     """
     if user_factor.ndim != 1 or item_factors.ndim != 2:
         raise ValueError("Invalid factor dimensions")
@@ -495,11 +511,11 @@ def synthetic_delivery_oracle(
         mid_int = int(mid)
         if mid_int in seen:
             continue
-        # Pure Python dot product
+        # Tích vô hướng Python thuần
         score = float(sum(float(u) * float(v) for u, v in zip(user_factor, item_factors[idx])))
         candidates.append((score, mid_int))
 
-    # Sort deterministically: -score ASC (score DESC), movieId ASC
+    # Sắp xếp tất định: Điểm giảm dần, tie-break bằng ID phim tăng dần
     candidates.sort(key=lambda x: (-x[0], x[1]))
 
     out: List[Dict[str, Any]] = []
@@ -514,4 +530,3 @@ def synthetic_delivery_oracle(
         )
         out.append(item.to_dict())
     return out
-

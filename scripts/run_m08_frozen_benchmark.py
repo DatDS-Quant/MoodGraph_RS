@@ -1,9 +1,11 @@
 """
 MoodGraph - Task 3A: Module M08 Final Offline Benchmark Runner
-Executes single-shot offline benchmark on frozen Test split:
-- Model A: M03_POPULARITY_COUNT
-- Model B: M03_POPULARITY_WEIGHTED_M10
-- Model C: ALS_R8_REG0.3_ITER10 (Frozen Spark ALS Champion)
+(Kịch bản thực thi đánh giá ngoại tuyến cuối cùng trên phân vùng Test đóng băng).
+
+Thực hiện benchmark one-shot so sánh công bằng giữa 3 mô hình:
+- Model A: M03_POPULARITY_COUNT (chuẩn đếm lượt rating)
+- Model B: M03_POPULARITY_WEIGHTED_M10 (chuẩn trung bình có trọng số Bayes m=10)
+- Model C: ALS_R8_REG0.3_ITER10 (Mô hình Spark ALS vô địch đã đóng băng)
 """
 
 from __future__ import annotations

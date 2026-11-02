@@ -1,6 +1,8 @@
 """
-MoodGraph Task 3A - Module M02 Verification Script
-Verifies real Validation split properties and tests TopNEvaluator integration.
+MoodGraph - Task 3A: Module M02 Verification Script
+(Kịch bản kiểm chứng tích hợp động cơ đánh giá TopNEvaluator trên tập Validation).
+
+Kiểm tra các thuộc tính của phân vùng Validation thực tế và tích hợp TopNEvaluator.
 """
 
 import json

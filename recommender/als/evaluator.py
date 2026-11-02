@@ -1,24 +1,22 @@
 """
 MoodGraph - Task 3A: Evaluation Engine for Top-N Recommender Systems
-Module: M02 - Top-N Evaluation Engine
+Mô-đun: M02 - Động cơ đánh giá Top-N đa chỉ số chuẩn khoa học.
 
-Provides mathematically rigorous, reproducible offline evaluation for Top-N recommendation
-under the User-wise Leave-1-Last protocol (MovieLens 25M).
+Cung cấp công cụ đánh giá ngoại tuyến (offline evaluation) chính xác theo giao thức
+User-wise Leave-1-Last (MovieLens 25M).
 
-Supported Metrics:
+Các chỉ số hỗ trợ:
 - HitRate@K (HR@K)
 - NDCG@K
 - MRR@K
 - Precision@K
 - Recall@K
-- Catalog Coverage@K (Full-Catalog and Scorable-Catalog)
+- Catalog Coverage@K (Full-Catalog và Scorable-Catalog)
 
-Primary Protocol:
-- Target is considered positive if rating >= relevance_threshold (default: 3.5).
-- Evaluated strictly on Positive-Target Cohort.
-- Users with non-positive targets (rating < 3.5) are excluded from the positive cohort denominator
-  and tracked in non-positive diagnostics.
-- Missing predictions or unranked items are evaluated as 0.0 (miss), never silently dropped.
+Quy tắc giao thức cốt lõi:
+- Mục tiêu đánh giá dương: rating >= relevance_threshold (mặc định: 3.5 sao).
+- Mẫu số đánh giá chuẩn: Đo lường nghiêm ngặt trên Positive-Target Cohort.
+- Người dùng thiếu khuyến nghị: Đánh giá bằng 0.0 (miss), bảo lưu 100% trong mẫu số (denominator).
 """
 
 from __future__ import annotations
@@ -40,7 +38,7 @@ from typing import (
 
 @dataclass(frozen=True)
 class HeldOutTarget:
-    """Represents a single held-out target interaction for a user."""
+    """Đại diện cho một tương tác mục tiêu bị giữ lại (held-out target) của người dùng."""
     movie_id: int
     rating: float
     timestamp: Optional[int] = None
@@ -48,7 +46,7 @@ class HeldOutTarget:
 
 @dataclass(frozen=True)
 class SingleUserMetricResult:
-    """Individual evaluation result for one user at a specific K cutoff."""
+    """Kết quả đo lường riêng lẻ cho một người dùng tại một ngưỡng K cụ thể."""
     user_id: int
     k: int
     hit: float
@@ -62,7 +60,7 @@ class SingleUserMetricResult:
 
 @dataclass
 class EvaluationSummary:
-    """Aggregated evaluation metrics for a specific K cutoff."""
+    """Tóm tắt tổng hợp các chỉ số đánh giá Top-K cho toàn bộ tập người dùng."""
     k: int
     hit_rate: float
     recall: float
@@ -81,7 +79,7 @@ class EvaluationSummary:
     diagnostic_all_users: Optional[Dict[str, float]] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert summary to dictionary for reporting and serialization."""
+        """Chuyển đổi tóm tắt kết quả sang từ điển phục vụ báo cáo và lưu trữ JSON."""
         return {
             "k": self.k,
             "hit_rate": self.hit_rate,
@@ -103,13 +101,13 @@ class EvaluationSummary:
 
 
 def validate_k(k: int) -> None:
-    """Ensure K is a strictly positive integer."""
+    """Xác thực ngưỡng K phải là số nguyên dương nghiêm ngặt."""
     if not isinstance(k, int) or k <= 0:
         raise ValueError(f"Cutoff K must be a strictly positive integer, got: {k}")
 
 
 def validate_raw_score(score: float, movie_id: int) -> None:
-    """Ensure raw_score is a valid finite float."""
+    """Xác thực raw_score là số hữu hạn hợp lệ (không NaN, không Inf)."""
     if not isinstance(score, (int, float)):
         raise ValueError(f"Score for movie {movie_id} must be numeric, got: {type(score).__name__}")
     if math.isnan(score) or math.isinf(score):
@@ -121,13 +119,11 @@ def sort_and_rank_candidates(
     k: Optional[int] = None,
 ) -> List[int]:
     """
-    Sort scored candidate items deterministically and return ranked movieIds.
+    Sắp xếp tất định các ứng viên đã chấm điểm và trả về danh sách movieIds đã xếp hạng.
     
-    Tie-breaking rule:
+    Quy tắc phá vỡ thế hòa:
     1. raw_score DESC
-    2. movieId ASC (stable deterministic tie-break)
-    
-    Validates finite scores and detects duplicate movie IDs.
+    2. movieId ASC (tất định, ổn định)
     """
     items_list = list(scored_items)
     seen_ids: Set[int] = set()
@@ -153,23 +149,18 @@ def compute_single_user_metrics(
     k: int,
 ) -> Dict[str, Union[float, Optional[int]]]:
     """
-    Compute Top-N evaluation metrics for a single user with ONE target movie.
+    Tính toán các chỉ số Top-N cho một người dùng đơn lẻ có ĐÚNG 1 phim mục tiêu.
     
-    Under the Leave-1-Last protocol:
-    If target is found at rank j (1 <= j <= k):
+    Theo giao thức Leave-1-Last:
+    Nếu tìm thấy target tại rank j (1 <= j <= k):
         - HitRate@K = 1.0
-        - Recall@K = 1.0 (1 observed target retrieved / 1 observed target total)
-        - Precision@K = 1.0 / k (1 observed target retrieved / k recommended slots)
-        - NDCG@K = 1.0 / log2(j + 1) (IDCG = 1.0, DCG = 1.0 / log2(j + 1))
+        - Recall@K = 1.0
+        - Precision@K = 1.0 / k
+        - NDCG@K = 1.0 / log2(j + 1)
         - MRR@K = 1.0 / j
         - rank = j
-    If target is not found in Top-K (or recommended list is empty):
-        - HitRate@K = 0.0
-        - Recall@K = 0.0
-        - Precision@K = 0.0
-        - NDCG@K = 0.0
-        - MRR@K = 0.0
-        - rank = None
+    Nếu không tìm thấy target trong Top-K:
+        - HitRate@K = 0.0, Recall@K = 0.0, NDCG@K = 0.0, MRR@K = 0.0, rank = None
     """
     validate_k(k)
 
@@ -216,8 +207,8 @@ def filter_seen_items(
     seen_movie_ids: Set[int],
 ) -> List[int]:
     """
-    Filter out previously seen items from candidate / recommendation list.
-    Preserves original ranking order.
+    Lọc bỏ các phim người dùng đã xem trong quá khứ khỏi danh sách ứng viên.
+    Bảo toàn nguyên vẹn thứ tự xếp hạng ban đầu.
     """
     return [mid for mid in recommendations if mid not in seen_movie_ids]
 
@@ -229,12 +220,10 @@ def validate_candidate_pool(
     strict: bool = True,
 ) -> Dict[str, Any]:
     """
-    Audit candidate pool adherence:
-    - Checks for leak of seen items.
-    - Checks for items outside catalog.
-    - Checks for duplicate IDs.
-    
-    If strict=True, raises ValueError on any violation.
+    Kiểm toán tính toàn vẹn của tập ứng viên:
+    - Kiểm tra rò rỉ phim đã xem (seen leaks).
+    - Kiểm tra phim ngoài danh mục (out of catalog).
+    - Kiểm tra phần tử trùng lặp (duplicates).
     """
     seen_leaks = [mid for mid in recommendations if mid in seen_movie_ids]
     out_of_catalog: List[int] = []
@@ -268,16 +257,14 @@ def validate_candidate_pool(
 
 class TopNEvaluator:
     """
-    Evaluation Engine for Top-N Recommendations in MoodGraph.
+    Động cơ đánh giá hệ thống gợi ý Top-N cho MoodGraph.
     
-    Core design principles:
-    1. Protocol adherence: Primary metrics calculated on Positive-Target Cohort (rating >= relevance_threshold).
-    2. Denominator preservation: Users with positive targets but missing/empty recommendations are scored 0.0
-       and strictly retained in the denominator.
-    3. Non-positive diagnostic: Users with target rating < threshold are excluded from the positive cohort
-       and counted in non_positive_cohort_size.
-    4. Multi-K support: Evaluates across multiple K cutoffs (e.g., K = 5, 10, 20).
-    5. Catalog coverage: Reports coverage over full catalog and optionally model-scorable catalog.
+    Các nguyên tắc thiết kế:
+    1. Tuân thủ giao thức: Chỉ số chính được đo trên Positive-Target Cohort (rating >= 3.5).
+    2. Bảo toàn mẫu số: Người dùng dương không có khuyến nghị được chấm 0.0 và giữ nguyên trong mẫu số.
+    3. Chuẩn đoán non-positive: Người dùng có target < 3.5 được theo dõi riêng biệt.
+    4. Hỗ trợ đa ngưỡng K: Đánh giá đồng thời nhiều ngưỡng (K = 5, 10, 20).
+    5. Độ bao phủ danh mục: Báo cáo tỷ lệ phim được gợi ý trên toàn bộ danh mục và catalog chấm điểm được.
     """
 
     def __init__(
@@ -300,14 +287,14 @@ class TopNEvaluator:
         targets: Dict[int, Union[HeldOutTarget, Tuple[int, float], Dict[str, Any]]],
     ) -> Dict[int, EvaluationSummary]:
         """
-        Evaluate recommendations against held-out targets.
+        Đánh giá danh sách gợi ý so với tập mục tiêu bị giữ lại (held-out targets).
         
         Args:
-            recommendations: Mapping of userId -> ordered sequence of recommended movieIds.
-            targets: Mapping of userId -> target info (HeldOutTarget, (movieId, rating), or dict).
-        
+            recommendations: Bản đồ userId -> danh sách có thứ tự các movieId được gợi ý.
+            targets: Bản đồ userId -> thông tin mục tiêu (HeldOutTarget, tuple hoặc dict).
+            
         Returns:
-            Mapping of k -> EvaluationSummary.
+            Bản đồ k -> EvaluationSummary (tổng hợp đầy đủ chỉ số HR, Recall, Precision, NDCG, MRR, Coverage).
         """
         # Normalize targets to HeldOutTarget
         norm_targets: Dict[int, HeldOutTarget] = {}

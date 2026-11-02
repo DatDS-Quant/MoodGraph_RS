@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-MOODGRAPH TASK 3A: MODULE M10 RELEASE HARDENING & SCIENTIFIC AUDITOR
-=====================================================================
-Rigorous, independent verification script to audit:
-1. All 8 M10 machine-readable artifacts and CSR seen index.
-2. 25/25 Quality Gates with TASK_3A_FINAL_INTEGRITY_PASS.
-3. Automated M08 Frozen Scientific Metric Lock (zero tolerance for drift).
-4. Full Train-seen history provenance (24,675,013 interactions, 162,541 users).
-5. Real MovieLens identifier mapping and bijective index integrity.
-6. Real catalog-aware candidate union verification (movie 25817 cold test).
-7. Actual PyTest test inventory (184 tests across 12 files).
-8. Strict typography compliance (zero dollar signs, zero raw LaTeX).
+MoodGraph - Task 3A: Module M10 Release Hardening & Scientific Auditor
+(Kịch bản kiểm toán độc lập nghiệm thu và chốt chặn chất lượng Task 3A).
+
+Kiểm toán nghiêm ngặt:
+1. Toàn bộ 8 artifacts máy đọc được và chỉ mục thưa CSR train_seen_csr.npz.
+2. 25/25 cổng chất lượng với kết luận TASK_3A_FINAL_INTEGRITY_PASS.
+3. Khóa cứng số liệu khoa học đóng băng M08 (sai số 0% tuyệt đối).
+4. Tính nguồn gốc lịch sử Train (24.675.013 tương tác, 162.541 người dùng).
+5. Ánh xạ định danh MovieLens và tính song ánh của chỉ mục mảng.
+6. Hợp nhất ứng viên an toàn với danh mục thực tế (test cold movie 25817).
+7. Kiểm kê thực tế 184 tests PyTest qua 12 tệp kiểm thử.
+8. Tuân thủ 100% quy chuẩn Typography (không dollar sign, không raw LaTeX).
 """
 
 import os

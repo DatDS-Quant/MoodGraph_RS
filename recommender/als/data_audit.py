@@ -1,10 +1,10 @@
 """
 MoodGraph - Task 3A: Spark ALS
-Module M01: Data & Input Audit Engine
+Mô-đun: M01 - Động cơ kiểm toán dữ liệu đầu vào và chẩn đoán phân phối (Data & Input Audit Engine).
 
-This module executes rigorous data validation, sparsity analysis,
-long-tail popularity binning, and cold-start diagnostics for ALS.
-Optimized with single-pass distributed aggregations.
+Thực hiện kiểm toán ràng buộc dữ liệu nghiêm ngặt, phân tích độ thưa thớt (sparsity),
+phân nhóm độ phổ biến đuôi dài (long-tail) và chẩn đoán Cold-Start cho mô hình ALS.
+Tối ưu hóa bằng các phép gom cụm phân tán một lượt (single-pass distributed aggregations).
 """
 
 import time
@@ -22,14 +22,13 @@ def validate_train_input_constraints(
     movies_df: DataFrame,
 ) -> Dict[str, Any]:
     """
-    Validate ALS input constraints on Train split:
-    - Non-null and positive IDs
-    - Rating bounds [0.5, 5.0] with step 0.5
-    - Non-null timestamps
-    - Zero duplicate (userId, movieId) pairs
-    - Referential integrity: all train movieIds must exist in movies catalog
-    - No artificial zero-ratings
-    Uses single-pass aggregation for maximum efficiency.
+    Kiểm toán các ràng buộc đầu vào của phân vùng Train cho thuật toán ALS:
+    - ID người dùng và phim không null, mang giá trị dương.
+    - Miền giá trị điểm đánh giá [0.5, 5.0] với bước nhảy 0.5.
+    - Dấu thời gian timestamp không null và mang giá trị dương.
+    - Không tồn tại cặp (userId, movieId) trùng lặp.
+    - Tính toàn vẹn tham chiếu: Toàn bộ movieId trong Train phải tồn tại trong danh mục phim.
+    - Không tồn tại đánh giá bằng 0.0 giả tạo.
     """
     # 1. Single-pass aggregation for all row-level constraint checks
     agg_row = train_df.select(
@@ -101,12 +100,12 @@ def audit_als_input_distribution(
     movies_df: DataFrame,
 ) -> Dict[str, Any]:
     """
-    Compute ALS input statistics on Train:
-    - Distinct users & distinct train movies
-    - Ratings per user: min, median (p50), p95, max
-    - Ratings per movie: min, median (p50), p95, max
-    - Long-tail popularity buckets: 1-5, 6-10, >10 ratings
-    - Matrix density & sparsity for both Train-known and Full-Catalog universes
+    Tính toán thống kê phân phối đầu vào của mô hình ALS trên tập Train:
+    - Số lượng user và movie phân biệt trong Train.
+    - Phân phối đánh giá theo người dùng (min, median, p95, max).
+    - Phân phối đánh giá theo phim (min, median, p95, max).
+    - Phân nhóm độ phổ biến đuôi dài: 1-5, 6-10, >10 đánh giá.
+    - Mật độ và độ thưa thớt (sparsity) của ma trận tương tác.
     """
     total_ratings = train_df.count()
     distinct_users = train_df.select("userId").distinct().count()
@@ -216,10 +215,10 @@ def audit_movie_cold_start(
     movies_df: DataFrame,
 ) -> Dict[str, Any]:
     """
-    Audit Movie Cold-Start and Validation Target Coverage:
-    - Train-known vs Train-unseen catalog movies
-    - Validation targets scorable by ALS (item factor exists in Train)
-    - Positive Validation targets scorable by ALS (rating >= 3.5)
+    Kiểm toán hiện tượng Movie Cold-Start và độ bao phủ mục tiêu Validation:
+    - Số lượng phim Train-known vs Train-unseen trong danh mục.
+    - Tỷ lệ mục tiêu Validation có thể chấm điểm được bởi ALS.
+    - Tỷ lệ mục tiêu Validation dương (rating >= 3.5) có thể chấm điểm được bởi ALS.
     """
     catalog_count = movies_df.select("movieId").distinct().count()
     train_movie_ids = train_df.select("movieId").distinct()
@@ -285,8 +284,8 @@ def run_full_m01_audit(
     base_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """
-    Execute complete end-to-end M01 audit on real data.
-    Measures duration and returns all audit sections.
+    Thực thi toàn diện quy trình kiểm toán M01 end-to-end trên dữ liệu thực tế.
+    Đo lường thời gian thực thi và trả về toàn bộ kết quả kiểm toán.
     """
     t_start = time.time()
     train_df, val_df, movies_df = load_als_datasets(spark, base_dir)

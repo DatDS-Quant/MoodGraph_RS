@@ -1,5 +1,19 @@
 """
-MoodGraph - Task 3A: Spark ALS Recommendation Module
+MoodGraph - Task 3A: Spark ALS Recommendation Module (Mô-đun Khuyến nghị ALS PySpark).
+
+Gói thư viện cung cấp toàn bộ quy trình định lượng cho Mô hình Nhân tố Ẩn (Matrix Factorization)
+bằng thuật toán Alternating Least Squares (ALS) trên nền tảng Apache Spark:
+- data_loader: Nạp dữ liệu Train, Validation, Test, Movies và kiểm tra schema PySpark.
+- data_audit: Kiểm toán tính toàn vẹn, phân phối ratings và hiện tượng Cold-Start người dùng/vật phẩm.
+- toy_als: Triển khai kiểm chứng toán học độc lập (Golden Vector, NumPy reference, ALS loss).
+- trainer: Huấn luyện Spark ALS (explicit feedback), checkpointing và kiểm toán ma trận nhân tố.
+- candidates: Khởi tạo catalog dự đoán, sinh Top-K recommendations và tính điểm tích vô hướng (Dot Product).
+- evaluator: Đánh giá Top-N đa chỉ số (HR@K, NDCG@K, MRR@K, Coverage@K) trên tập Hold-out dương.
+- popularity: Mô hình Baseline Popularity (Count & IMDb Weighted Average) làm chuẩn so sánh.
+- tuner: Tinh chỉnh siêu tham số ALS (Screening Grid Search & Full Validation).
+- benchmark: Đánh giá độc lập trên Frozen Test Split (M08).
+- diagnostics: Phân tích chuẩn đoán phân phối điểm số, suy thoái Cold-Start và Top-K concentration (M09).
+- delivery: Giao diện suy diễn chuẩn hóa (Standard Delivery Contract) và lọc lịch sử Train (M10).
 """
 
 from .data_loader import (

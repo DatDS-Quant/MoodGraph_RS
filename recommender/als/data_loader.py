@@ -1,9 +1,13 @@
 """
 MoodGraph - Task 3A: Spark ALS
-Module M01: Data Loader
+Mô-đun: M01 - Bộ nạp và xác thực lược đồ dữ liệu PySpark (Data Loader).
 
-This module provides clean, reproducible, and contract-validated loaders
-for MovieLens 25M Parquet datasets used by ALS Collaborative Filtering.
+Cung cấp các hàm nạp dữ liệu tái lập, an toàn bộ nhớ và kiểm soát hợp đồng schema
+cho tập dữ liệu MovieLens 25M Parquet phục vụ huấn luyện Spark ALS:
+- load_train_data: Nạp tập Train (userId, movieId, rating, timestamp).
+- load_validation_data: Nạp tập Validation phục vụ tinh chỉnh siêu tham số.
+- load_movies_data: Nạp siêu dữ liệu danh mục phim (movieId, title, genres, genre_list).
+- load_als_datasets: Tiện ích nạp đồng thời bộ ba dữ liệu Train, Validation, Movies.
 """
 
 import os
@@ -31,7 +35,7 @@ from pyspark.sql.types import (
 
 
 def get_repo_root() -> Path:
-    """Return repository root path dynamically."""
+    """Trả về đường dẫn tuyệt đối đến thư mục gốc của repository."""
     return Path(__file__).resolve().parent.parent.parent
 
 
@@ -41,7 +45,7 @@ def get_spark_session(
     driver_memory: str = "4g",
     shuffle_partitions: int = 16,
 ) -> SparkSession:
-    """Initialize or retrieve an optimized SparkSession."""
+    """Khởi tạo hoặc tái sử dụng SparkSession tối ưu hóa cấu hình thực thi."""
     builder = (
         SparkSession.builder.appName(app_name)
         .master(master)
@@ -58,8 +62,8 @@ def get_spark_session(
 
 def _validate_schema(df: DataFrame, dataset_name: str, expected_fields: dict) -> None:
     """
-    Validate that DataFrame contains required fields with expected data types.
-    Raises ValueError with descriptive diagnostics if validation fails.
+    Xác thực DataFrame chứa đầy đủ các cột bắt buộc với đúng kiểu dữ liệu kỳ vọng.
+    Ném ngoại lệ ValueError kèm chẩn đoán chi tiết nếu phát hiện sai lệch.
     """
     actual_fields = {field.name: field.dataType for field in df.schema.fields}
 
@@ -100,8 +104,8 @@ def load_train_data(
     base_dir: Optional[Path] = None,
 ) -> DataFrame:
     """
-    Load Train interaction split from Parquet.
-    Contract: userId: int, movieId: int, rating: float, timestamp: long.
+    Nạp tập dữ liệu huấn luyện Train từ Parquet.
+    Hợp đồng schema: userId: int, movieId: int, rating: float, timestamp: long.
     """
     if base_dir is None:
         base_dir = get_repo_root() / "data" / "processed"
@@ -126,8 +130,8 @@ def load_validation_data(
     base_dir: Optional[Path] = None,
 ) -> DataFrame:
     """
-    Load Validation interaction split from Parquet.
-    Contract: userId: int, movieId: int, rating: float, timestamp: long.
+    Nạp tập dữ liệu kiểm định Validation từ Parquet.
+    Hợp đồng schema: userId: int, movieId: int, rating: float, timestamp: long.
     """
     if base_dir is None:
         base_dir = get_repo_root() / "data" / "processed"
@@ -152,8 +156,8 @@ def load_movies_data(
     base_dir: Optional[Path] = None,
 ) -> DataFrame:
     """
-    Load Movie Catalog metadata from Parquet.
-    Contract: movieId: int, title: string, genres: string, genre_list: array<string>.
+    Nạp metadata danh mục phim Movie Catalog từ Parquet.
+    Hợp đồng schema: movieId: int, title: string, genres: string, genre_list: array<string>.
     """
     if base_dir is None:
         base_dir = get_repo_root() / "data" / "processed"
@@ -178,9 +182,9 @@ def load_als_datasets(
     base_dir: Optional[Path] = None,
 ) -> Tuple[DataFrame, DataFrame, DataFrame]:
     """
-    Convenience function to load all 3 datasets required by Task 3A:
+    Hàm tiện ích nạp đồng thời bộ ba dữ liệu cần thiết cho Task 3A:
     (train_df, val_df, movies_df).
-    Does NOT load Test dataset to preserve test isolation.
+    Tuyệt đối KHÔNG nạp tập Test để bảo vệ tính cô lập thực nghiệm.
     """
     train_df = load_train_data(spark, base_dir)
     val_df = load_validation_data(spark, base_dir)

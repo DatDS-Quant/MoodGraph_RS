@@ -1,12 +1,14 @@
 """
-Module M07: Scientific ALS Hyperparameter Tuning on Validation.
-Provides:
-- TrialConfig, TrialStatus, LongTailDiagnostics, TrialResult dataclasses.
-- ExperimentRegistry for state persistence, recovery, and selection.
-- ScreeningCohortManager for fixed 5,000 positive user screening.
-- ALSTuner orchestrator integrating ALSTrainer, ALSCandidateGenerator, and TopNEvaluator.
-- Independent Selection Oracle for verifiable best-model choice.
-- Test split access prevention guards.
+MoodGraph - Task 3A: Scientific ALS Hyperparameter Tuning
+Mô-đun: M07 - Tinh chỉnh siêu tham số ALS trên tập Validation.
+
+Cung cấp:
+- Cấu trúc dữ liệu thử nghiệm: TrialConfig, TrialStatus, LongTailDiagnostics, TrialResult.
+- ExperimentRegistry: Đăng ký, lưu trữ nguyên tử (atomic persistence) và phục hồi phiên thử nghiệm.
+- ScreeningCohortManager: Quản lý tập cohort 5.000 người dùng dương cố định, tái lập 100%.
+- ALSTuner: Điều phối huấn luyện ALSTrainer, sinh ứng viên ALSCandidateGenerator và đánh giá TopNEvaluator.
+- Independent Selection Oracle: Bộ quy tắc chọn mô hình tối ưu độc lập và tất định.
+- Chốt chặn bảo vệ tập Test (guard_test_split_access): Tuyệt đối ngăn chặn rò rỉ dữ liệu Test split.
 """
 
 from __future__ import annotations
@@ -54,8 +56,8 @@ from recommender.als.trainer import ALSConfig, ALSTrainer
 
 def guard_test_split_access(path: Union[str, Path]) -> None:
     """
-    Scientific boundary guard: raises PermissionError if any code path attempts
-    to access or read the Test split during hyperparameter tuning.
+    Chốt chặn ranh giới khoa học: Kích hoạt PermissionError nếu bất kỳ nhánh mã nào
+    cố tình truy cập hoặc đọc dữ liệu phân vùng Test trong quá trình tinh chỉnh M07.
     """
     norm_path = str(path).replace("\\", "/").lower()
     if "splits/test" in norm_path or "splits\\test" in str(path).lower():
@@ -86,7 +88,7 @@ class ModelFamily(str, Enum):
 @dataclass
 class TrialConfig:
     """
-    Immutable trial configuration for ALS hyperparameter tuning.
+    Cấu hình bất biến của một thử nghiệm siêu tham số ALS (rank, regParam, maxIter, seed).
     """
     trial_id: str
     model_family: str = ModelFamily.ALS_ONLY.value
@@ -100,7 +102,7 @@ class TrialConfig:
     description: str = ""
 
     def validate(self) -> None:
-        """Validate hyperparameter invariants."""
+        """Kiểm tra các bất biến siêu tham số hợp lệ."""
         if not self.trial_id or not isinstance(self.trial_id, str):
             raise ValueError("trial_id must be a non-empty string")
         if self.model_family not in {ModelFamily.ALS_ONLY.value, ModelFamily.ALS_PLUS_TRAIN_SUPPORT_FILTER.value}:
@@ -130,7 +132,7 @@ class TrialConfig:
 @dataclass
 class LongTailDiagnostics:
     """
-    Long-tail exposure and Fluke Bias statistics on generated recommendations.
+    Thống kê phơi nhiễm đuôi dài (Long-tail) và thiên lệch Fluke Bias trên danh sách gợi ý.
     """
     pct_slots_1_rating: float = 0.0
     pct_slots_2_to_5_ratings: float = 0.0
@@ -149,7 +151,7 @@ class LongTailDiagnostics:
 @dataclass
 class TrialResult:
     """
-    Full empirical record of an experiment trial.
+    Hồ sơ thực nghiệm đầy đủ của một lượt chạy mô hình (Trial).
     """
     trial_id: str
     config: TrialConfig
@@ -205,8 +207,8 @@ class TrialResult:
 
 class ExperimentRegistry:
     """
-    Thread-safe, process-safe, and resume-capable trial registry.
-    Saves trial metadata, status, metrics, and selections to JSON.
+    Sổ đăng ký thử nghiệm (Experiment Registry) an toàn đa luồng, hỗ trợ phục hồi (resume-capable).
+    Lưu trữ metadata, trạng thái, chỉ số đánh giá và quyết định lựa chọn mô hình ra tệp JSON nguyên tử.
     """
 
     def __init__(self, registry_file: Union[str, Path]):
@@ -217,7 +219,7 @@ class ExperimentRegistry:
         self._load()
 
     def _load(self) -> None:
-        """Load registry from JSON if it exists."""
+        """Nạp sổ đăng ký từ JSON nếu file đã tồn tại trên đĩa."""
         if self.registry_file.exists():
             try:
                 with open(self.registry_file, "r", encoding="utf-8") as f:
@@ -230,7 +232,7 @@ class ExperimentRegistry:
                 print(f"[ExperimentRegistry] Warning loading registry: {e}", file=sys.stderr)
 
     def save(self) -> None:
-        """Atomically persist registry to disk."""
+        """Ghi bền vững nguyên tử (atomic persist) dữ liệu sổ đăng ký ra đĩa."""
         data = {
             "version": "1.0",
             "last_updated": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -243,7 +245,7 @@ class ExperimentRegistry:
         temp_file.replace(self.registry_file)
 
     def register_trial(self, config: TrialConfig) -> TrialResult:
-        """Register a planned trial or return existing one."""
+        """Đăng ký một thử nghiệm mới theo kế hoạch hoặc trả về thử nghiệm đã có."""
         config.validate()
         if config.trial_id in self.trials:
             return self.trials[config.trial_id]
@@ -253,12 +255,12 @@ class ExperimentRegistry:
         return res
 
     def update_trial(self, result: TrialResult) -> None:
-        """Update trial result in registry."""
+        """Cập nhật kết quả thử nghiệm vào sổ đăng ký."""
         self.trials[result.trial_id] = result
         self.save()
 
     def is_trial_completed(self, trial_id: str, require_full: bool = False) -> bool:
-        """Check if trial is already finished and evaluated."""
+        """Kiểm tra xem thử nghiệm đã hoàn thành và đánh giá xong hay chưa."""
         if trial_id not in self.trials:
             return False
         t = self.trials[trial_id]
@@ -275,13 +277,13 @@ class ExperimentRegistry:
         secondary_metric: str = "hit_rate_10",
     ) -> Optional[TrialResult]:
         """
-        Independent selection rule:
-        1. Consider ONLY ALS_ONLY family models.
-        2. Sort by primary_metric DESC.
-        3. Tie-break by secondary_metric DESC.
-        4. Tie-break by simpler model (smaller rank ASC).
-        5. Tie-break by smaller reg_param ASC.
-        6. Tie-break by alphabetical trial_id ASC.
+        Quy tắc lựa chọn mô hình độc lập (Independent Selection Oracle):
+        1. Chỉ xem xét các mô hình thuộc họ ALS_ONLY thuần túy.
+        2. Sắp xếp theo primary_metric DESC (mặc định: ndcg_10).
+        3. Phá vỡ thế hòa theo secondary_metric DESC (mặc định: hit_rate_10).
+        4. Phá vỡ thế hòa theo độ đơn giản mô hình (rank nhỏ hơn ASC).
+        5. Phá vỡ thế hòa theo hệ số reg_param nhỏ hơn ASC.
+        6. Phá vỡ thế hòa theo thứ tự bảng chữ cái trial_id ASC.
         """
         eligible: List[TrialResult] = []
         for t in self.trials.values():
@@ -316,8 +318,8 @@ class ExperimentRegistry:
 
 class ScreeningCohortManager:
     """
-    Generates and persists a fixed, reproducible cohort of positive Validation users.
-    Guarantees 100% identical user set across all hyperparameter tuning trials.
+    Quản lý tập người dùng dương lấy mẫu cố định cho giai đoạn sàng lọc (Screening Cohort).
+    Bảo đảm 100% tái lập và nhất quán tập người dùng trên mọi thử nghiệm tinh chỉnh.
     """
 
     def __init__(
@@ -334,7 +336,7 @@ class ScreeningCohortManager:
         self._load_or_create()
 
     def _load_or_create(self) -> None:
-        """Load screening cohort from disk if present."""
+        """Nạp tập screening cohort từ đĩa nếu file đã tồn tại."""
         if self.cohort_file.exists():
             with open(self.cohort_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -347,7 +349,7 @@ class ScreeningCohortManager:
         relevance_threshold: float = 3.5,
     ) -> List[int]:
         """
-        Sample exactly target_size positive validation users using deterministic seed.
+        Lấy mẫu chính xác target_size người dùng validation có đánh giá dương bằng seed tất định.
         """
         positive_uids = [
             uid for uid, target in val_targets.items()
@@ -386,7 +388,7 @@ def compute_long_tail_diagnostics(
     item_train_counts: Dict[int, int],
 ) -> LongTailDiagnostics:
     """
-    Calculate Fluke Bias exposure and score distributions from generated recommendations.
+    Tính toán mức độ thiên lệch Fluke Bias và phân phối điểm số trên danh sách gợi ý.
     """
     total_slots = 0
     cnt_1 = 0
@@ -454,9 +456,9 @@ def compute_long_tail_diagnostics(
 
 class ALSTuner:
     """
-    Autonomous Hyperparameter Tuner for Spark ALS.
-    Orchestrates training, candidate scoring, multi-level evaluation,
-    long-tail auditing, and model selection.
+    Bộ điều phối tinh chỉnh siêu tham số tự động cho Spark ALS.
+    Quản lý huấn luyện, chấm điểm ứng viên, đánh giá đa cấp (screening & full validation),
+    kiểm toán đuôi dài và tự động lựa chọn mô hình vô địch.
     """
 
     def __init__(
@@ -474,7 +476,7 @@ class ALSTuner:
         self.spark = spark
 
     def _ensure_spark(self) -> SparkSession:
-        """Obtain or initialize SparkSession with memory-safe local settings."""
+        """Khởi tạo hoặc tái sử dụng SparkSession với cấu hình tối ưu bộ nhớ local."""
         if self.spark is None:
             self.spark = (
                 SparkSession.builder.appName("MoodGraph_M07_ALS_Tuning")
@@ -500,8 +502,8 @@ class ALSTuner:
         movies_parquet_path: Optional[Union[str, Path]] = None,
     ) -> TrialResult:
         """
-        Register M05 baseline model without refitting.
-        Evaluates on screening cohort to establish baseline metrics.
+        Đăng ký mô hình baseline M05 mà không cần huấn luyện lại.
+        Đánh giá trên tập screening cohort để thiết lập mốc so chuẩn ban đầu.
         """
         trial_id = "M05_ALS_R16_REG0.1_ITER10"
         cfg = TrialConfig(

@@ -1,14 +1,14 @@
 """
 MoodGraph - Task 3A: Spark ALS
-Module M05: Full Spark ALS Training Engine & Model Persistence
+Mô-đun: M05 - Động cơ huấn luyện Spark ALS và lưu trữ mô hình chuẩn Production.
 
-This module provides the production trainer for Collaborative Filtering via
-Apache Spark MLlib ALS on the real MovieLens 25M dataset:
-1. Validated ALS configuration (ALSConfig) with parameter guards.
-2. Full distributed matrix factorization via pyspark.ml.recommendation.ALS.
-3. Factor matrix audit (userFactors, itemFactors) with dimension and norm validation.
-4. Independent mathematical verification of Spark predictions vs manual dot product.
-5. Production model persistence (save/load) with complete metadata manifest.
+Cung cấp toàn bộ quy trình huấn luyện Collaborative Filtering thông qua
+Apache Spark MLlib ALS trên tập dữ liệu MovieLens 25M:
+1. ALSConfig: Cấu hình siêu tham số nghiêm ngặt với các chốt chặn kiểm tra.
+2. Huấn luyện phân tán: pyspark.ml.recommendation.ALS trên dữ liệu đánh giá hiện (explicit feedback).
+3. Kiểm toán ma trận nhân tố (FactorMatrixAuditResult): Kiểm tra kích thước rank, NaN/Inf và chuẩn L2.
+4. Kiểm chứng toán học độc lập: So khớp dự đoán của Spark transform với tích vô hướng thủ công.
+5. Lưu trữ và nạp mô hình (save/load) kèm metadata manifest đầy đủ.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ from pyspark.sql.types import DoubleType, FloatType, IntegerType, LongType, Stru
 @dataclass
 class ALSConfig:
     """
-    Hyperparameter and execution configuration for Spark ALS.
+    Cấu hình siêu tham số và thiết lập thực thi cho thuật toán Spark ALS.
     """
     rank: int = 16
     max_iter: int = 10
@@ -59,7 +59,7 @@ class ALSConfig:
     checkpoint_interval: int = 10
 
     def validate(self) -> None:
-        """Enforce strict configuration contracts before launching training."""
+        """Thực thi ràng buộc hợp đồng cấu hình nghiêm ngặt trước khi chạy huấn luyện."""
         if not isinstance(self.rank, int) or self.rank <= 0:
             raise ValueError(f"rank must be a positive integer, got: {self.rank}")
         if not isinstance(self.max_iter, int) or self.max_iter <= 0:
@@ -80,12 +80,12 @@ class ALSConfig:
             raise ValueError("rating_col must be a non-empty string")
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert configuration to dictionary for serialization."""
+        """Chuyển đổi cấu hình sang từ điển phục vụ lưu trữ JSON."""
         return asdict(self)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> ALSConfig:
-        """Create configuration from dictionary with validation."""
+        """Tạo đối tượng cấu hình từ từ điển kèm kiểm tra tính hợp lệ."""
         valid_keys = {f.name for f in cls.__dataclass_fields__.values()}  # type: ignore
         filtered = {k: v for k, v in data.items() if k in valid_keys}
         cfg = cls(**filtered)
@@ -99,7 +99,7 @@ class ALSConfig:
 
 @dataclass
 class FactorMatrixAuditResult:
-    """Audit metrics for an extracted ALS factor matrix (user or item)."""
+    """Kết quả kiểm toán ma trận nhân tố ẩn ALS (userFactors hoặc itemFactors)."""
     factor_type: str
     count: int
     rank: int
@@ -121,8 +121,7 @@ class FactorMatrixAuditResult:
 
 class ALSTrainer:
     """
-    Production-grade ALS Trainer managing training, validation, diagnostics,
-    and lifecycle persistence for MovieLens 25M Collaborative Filtering.
+    Động cơ huấn luyện ALS chuẩn Production trên MovieLens 25M Collaborative Filtering.
     """
 
     def __init__(self, config: Optional[ALSConfig] = None):
@@ -131,10 +130,10 @@ class ALSTrainer:
 
     def validate_training_dataframe(self, df: DataFrame) -> None:
         """
-        Ensure DataFrame conforms to Spark ALS requirements:
-        - Columns exist: user_col, item_col, rating_col.
-        - Data types: user_col and item_col must be IntegerType (or LongType).
-        - Rating column must be FloatType or DoubleType.
+        Xác minh DataFrame đầu vào tuân thủ các yêu cầu của Spark ALS:
+        - Các cột bắt buộc tồn tại: user_col, item_col, rating_col.
+        - Kiểu dữ liệu: user_col và item_col phải là IntegerType (hoặc LongType).
+        - Cột rating phải là FloatType hoặc DoubleType.
         """
         fields = {field.name: field.dataType for field in df.schema.fields}
         for col_name in [self.config.user_col, self.config.item_col, self.config.rating_col]:
@@ -163,13 +162,13 @@ class ALSTrainer:
 
     def fit(self, train_df: DataFrame) -> ALSModel:
         """
-        Fit PySpark ALS on explicit feedback ratings.
+        Huấn luyện PySpark ALS trên ratings hiện (explicit feedback).
         
         Args:
-            train_df: Distributed DataFrame with columns (userId, movieId, rating).
+            train_df: DataFrame phân tán với các cột (userId, movieId, rating).
             
         Returns:
-            Fitted ALSModel.
+            Mô hình ALSModel đã khớp.
         """
         self.validate_training_dataframe(train_df)
 
