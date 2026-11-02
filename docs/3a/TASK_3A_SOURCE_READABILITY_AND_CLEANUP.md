@@ -69,11 +69,11 @@ Nhiệm vụ tập trung nâng cao khả năng bảo trì, đọc hiểu và bà
 - `test_toy_als.py`: 13 tests kiểm toán Golden Example, NumPy reference, ALS loss.
 - `test_als_trainer.py`: 14 tests kiểm toán ALSConfig, fit, factor audit, save/load.
 - `test_candidates.py`: 21 tests kiểm tra Exact Filter-Before-Top-K, tie-breaking, argpartition.
-- `test_evaluator.py`: 18 tests kiểm tra TopNEvaluator, Leave-1-Last, multi-K.
+- `test_evaluator.py`: 21 tests kiểm tra TopNEvaluator, Leave-1-Last, multi-K.
 - `test_popularity.py`: 22 tests kiểm toán Count, Weighted Average, tie-breaking, seen filtering.
 - `test_tuner.py`: 15 tests kiểm toán screening cohort, experiment registry, model selection.
 - `test_benchmark.py`: 11 tests kiểm toán Preflight audit, Frozen Test split, single-hit precision.
-- `test_diagnostics.py`: 18 tests kiểm toán ItemSupportBins, factor reliability, score distribution.
+- `test_diagnostics.py`: 15 tests kiểm toán ItemSupportBins, factor reliability, score distribution.
 - `test_delivery.py`: 24 tests kiểm toán Delivery API, CSR seen index, real catalog union.
 - `test_hermes_memory.py`: 9 tests kiểm toán HERMES CRUD, FTS5 search, obsolete detection.
 
@@ -177,8 +177,8 @@ python scripts/audit_m10_release.py
 - **Audit 1 (Machine Artifacts & CSR Index):** 9/9 artifacts xác minh tính toàn vẹn và dung lượng. PASS.
 - **Audit 2 (Quality Gates):** 25/25 cổng chất lượng đạt PASS.
 - **Audit 3 (M08 Frozen Metric Lock):** Khóa cứng số liệu Test benchmark:
-  - Popularity Count: HR@10 = 0.05357, NDCG@10 = 0.02693.
-  - Popularity Weighted (m=10): HR@10 = 0.01884, NDCG@10 = 0.00947.
+  - Popularity Count: HR@10 = 0.05357, NDCG@10 = 0.02721.
+  - Popularity Weighted (m=10): HR@10 = 0.01884, NDCG@10 = 0.00742.
   - ALS Frozen Champion: Đạt đúng 1 hit duy nhất tại Rank 2 (HR@10 = 8.991916e-06, NDCG@10 = 5.673268e-06, MRR@10 = 4.495958e-06). 100% VERIFIED PASS.
 - **Audit 4 (Train-Seen History Provenance):** 24.675.013 tương tác, 162.541 người dùng bảo đảm nguồn gốc. PASS.
 - **Audit 5 (Typography Compliance):** 0 ký tự dollar, 0 cú pháp LaTeX thô trong tài liệu. PASS.
@@ -224,3 +224,4 @@ Kho mã nguồn Task 3A của dự án MoodGraph đã hoàn thành toàn diện 
 - Kho lưu trữ đã được dọn sạch các tệp rác và sẵn sàng hoàn toàn cho quá trình tích hợp PR/Merge vào nhánh chính.
 
 **XÁC NHẬN CHÍNH THỨC:** `TASK_3A_READABILITY_CLEANUP_PASS`
+
