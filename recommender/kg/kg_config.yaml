@@ -1,0 +1,22 @@
+model:
+  name: "KG_PATH_BASED"
+  version: "1.0.0"
+  description: "Path-based Weighted Evidence Scorer (P1 Genre, P2 Genome, P3 Collab)"
+
+weights:
+  alpha_genre: 0.35      # P1 Genre path contribution
+  beta_genome: 0.45      # P2 Tag Genome path contribution
+  gamma_collab: 0.20     # P3 Collaborative path contribution
+
+scoring:
+  min_liked_rating: 3.5  # Positive rating threshold w(r) > 0
+  weight_formula: "max(0, (r - 3.0) / 2.0)"
+  top_m_genome: 20       # Top-M tags per movie policy (relevance DESC, tagId ASC)
+  max_neighbors_k: 50    # Neighborhood pruning for P3 collaborative paths
+  min_common_movies: 2   # Threshold of shared liked movies for neighbor filtering
+
+evaluation:
+  protocol: "User-wise Leave-1-Last"
+  candidate_pool: "Full Catalog (excluding train & val seen items)"
+  positive_val_threshold: 3.5
+  top_k_metrics: [5, 10, 20]
