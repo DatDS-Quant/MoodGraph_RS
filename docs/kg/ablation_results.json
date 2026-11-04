@@ -1,0 +1,62 @@
+[
+  {
+    "config_name": "Genre-only (P1)",
+    "total_evaluated_users": 100,
+    "positive_cohort_denominator": 71,
+    "scoreable_users": 71,
+    "score_availability": 1.0,
+    "duration_seconds": 2042.2,
+    "metrics": {
+      "HR@5": 0.0,
+      "NDCG@5": 0.0,
+      "MRR@5": 0.0,
+      "HR@10": 0.0,
+      "NDCG@10": 0.0,
+      "MRR@10": 0.0,
+      "HR@20": 0.0,
+      "NDCG@20": 0.0,
+      "MRR@20": 0.0,
+      "Catalog_Coverage@10": 145
+    }
+  },
+  {
+    "config_name": "Genre+Genome (P1+P2)",
+    "total_evaluated_users": 100,
+    "positive_cohort_denominator": 71,
+    "scoreable_users": 71,
+    "score_availability": 1.0,
+    "duration_seconds": 1931.56,
+    "metrics": {
+      "HR@5": 0.0,
+      "NDCG@5": 0.0,
+      "MRR@5": 0.0,
+      "HR@10": 0.0,
+      "NDCG@10": 0.0,
+      "MRR@10": 0.0,
+      "HR@20": 0.0,
+      "NDCG@20": 0.0,
+      "MRR@20": 0.0,
+      "Catalog_Coverage@10": 346
+    }
+  },
+  {
+    "config_name": "Full Path-based (P1+P2+P3)",
+    "total_evaluated_users": 100,
+    "positive_cohort_denominator": 71,
+    "scoreable_users": 71,
+    "score_availability": 1.0,
+    "duration_seconds": 2841.48,
+    "metrics": {
+      "HR@5": 0.0,
+      "NDCG@5": 0.0,
+      "MRR@5": 0.0,
+      "HR@10": 0.0,
+      "NDCG@10": 0.0,
+      "MRR@10": 0.0,
+      "HR@20": 0.0,
+      "NDCG@20": 0.0,
+      "MRR@20": 0.0,
+      "Catalog_Coverage@10": 276
+    }
+  }
+]
