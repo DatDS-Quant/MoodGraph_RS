@@ -27,8 +27,29 @@ def get_default_graph(config: Optional[KGConfig] = None) -> Any:
         driver.close()
         _CACHED_GRAPH = Neo4jGraph(cfg.neo4j_uri, auth=(cfg.neo4j_user, cfg.neo4j_password), database=cfg.neo4j_database)
         return _CACHED_GRAPH
-    except Exception:
-        # Fallback sang InMemoryGraph với synthetic fixture
+    except Exception as exc:
+        # Kiểm tra chính sách fallback: tuyệt đối cấm âm thầm đưa synthetic graph vào production
+        import os
+        allow_fallback = (
+            cfg.import_mode == "synthetic"
+            or os.getenv("KG_ALLOW_SYNTHETIC_FALLBACK", "false").lower() in ("true", "1", "yes")
+        )
+        if not allow_fallback:
+            raise ConnectionError(
+                f"Không thể kết nối cơ sở dữ liệu Neo4j tại '{cfg.neo4j_uri}' "
+                f"(database='{cfg.neo4j_database}'): {exc}. "
+                "Cơ chế fallback sang synthetic graph bị vô hiệu hóa trong môi trường production/pilot "
+                "để ngăn ngừa hiện tượng suy giảm âm thầm (silent degradation). Vui lòng kiểm tra "
+                "kết nối Neo4j hoặc thiết lập KG_ALLOW_SYNTHETIC_FALLBACK=true cho môi trường kiểm thử (dev)."
+            ) from exc
+
+        import warnings
+        warnings.warn(
+            f"Neo4j offline ({exc}). Fallback sang InMemoryGraph với synthetic fixture "
+            "(chỉ dành cho môi trường phát triển / unit test).",
+            UserWarning,
+            stacklevel=2
+        )
         g = InMemoryGraph()
         import_synthetic_data(g)
         _CACHED_GRAPH = g

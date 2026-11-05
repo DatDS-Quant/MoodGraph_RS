@@ -64,13 +64,16 @@ Quá trình đánh giá được thực thi trực tiếp trên tập pilot 100 
 - **Mẫu số đánh giá (Positive Denominator):** **71 users** có rating Validation $\ge 3.5$.
 - **Độ sẵn sàng (Score Availability):** **100.0%** (71/71 users đều sinh được khuyến nghị).
 
-### Bảng ma trận đối chứng (Ablation Matrix):
+### Bảng ma trận đối chứng (Ablation Matrix - Đo Lường Chuẩn Hóa Sau Khi Sửa Lỗi Evaluator):
 
-| Cấu hình thử nghiệm | Metapaths kích hoạt | Score Availability | Catalog Coverage@10 | HR@10 | NDCG@10 | Thời gian đo (s) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1. Genre-only (P1)** | $P1$ | **100.0%** (71/71) | 145 phim | 0.0000 | 0.0000 | 86.95s |
-| **2. Genre + Genome (P1 + P2)** | $P1 + P2$ | **100.0%** (71/71) | **346 phim** | 0.0000 | 0.0000 | 119.66s |
-| **3. Full Path-based (P1 + P2 + P3)** | $P1 + P2 + P3$ | **100.0%** (71/71) | 276 phim | 0.0000 | 0.0000 | 108.17s |
+| Cấu hình thử nghiệm | Metapaths kích hoạt | Score Availability | Catalog Coverage@10 | HR@5 | HR@10 | HR@20 | NDCG@10 | NDCG@20 | MRR@20 | Thời gian đo (s) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. Genre-only (P1)** | P1 | **100.0%** (71/71) | 145 phim | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 70.98s |
+| **2. Genre + Genome (P1 + P2)** | P1 + P2 | **100.0%** (71/71) | **344 phim** | 0.0563 | 0.0563 | 0.1127 | 0.0389 | 0.0529 | 0.0366 | 112.18s |
+| **3. Full Path-based (P1 + P2 + P3)** | P1 + P2 + P3 | **100.0%** (71/71) | 276 phim | **0.0986** | **0.0986** | **0.1549** | **0.0460** | **0.0595** | **0.0324** | 115.20s |
+
+> [!NOTE]
+> **Hiệu chỉnh Evaluator (Audit Resolution):** Phiên bản trước đây vô tình truyền `exclude_movie_ids={target_mid}` trong vòng lặp đánh giá khiến phim mục tiêu ground-truth bị loại trừ trước khi xếp hạng, dẫn đến HR/NDCG bị ép về 0 giả tạo. Sau khi hiệu chỉnh đúng giao thức (giữ nguyên target item trong candidate pool và chỉ loại trừ lịch sử Train), kết quả thực nghiệm khẳng định đường P2 (Genome) mang lại mức tăng vọt Hit Rate từ 0% lên 11.27% (@20), và đường P3 (Collaborative) tiếp tục nâng Hit Rate lên **15.49% (@20)** và NDCG@20 đạt **0.0595**.
 
 ---
 

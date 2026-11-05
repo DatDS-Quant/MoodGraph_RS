@@ -52,3 +52,46 @@ def test_kg17_git_hygiene():
         assert not path.endswith(".parquet"), f"Phát hiện file parquet trong git status: {path}"
         assert not path.endswith(".zip"), f"Phát hiện file zip trong git status: {path}"
 
+def test_kg18_evaluator_ground_truth_inclusion_regression():
+    """
+    KG-18: Regression test cho lỗi P0 trong Validation Evaluator.
+    Đảm bảo mục tiêu ground-truth (target_mid) KHÔNG bị loại trừ khỏi candidate pool,
+    và đạt Hit Rate chính xác khi ứng viên nằm trong Top-K.
+    """
+    from recommender.kg.import_graph import InMemoryGraph, import_synthetic_data
+    from recommender.kg.evaluate import ValidationEvaluator
+    from recommender.kg.recommend import recommend_kg
+
+    graph = InMemoryGraph()
+    import_synthetic_data(graph)
+
+    # Giả lập evaluator với user 1 có ground-truth validation target là movie 3 (rating 5.0)
+    # Movie 3 có liên kết mạnh với lịch sử của User 1 (Movie 1, Movie 2) qua cả P1, P2, P3
+    evaluator = ValidationEvaluator(data_root=Path("."), positive_threshold=3.5)
+    evaluator.val_data = {
+        1: {"movieId": 3, "rating": 5.0}
+    }
+
+    # 1. Đánh giá cấu hình với mã nguồn đã sửa (không exclude target_mid)
+    res = evaluator.evaluate_configuration(
+        graph=graph,
+        user_cohort=[1],
+        config_name="Test_Regression_Fix",
+        enable_p1=True,
+        enable_p2=True,
+        enable_p3=True,
+        top_k_list=[5, 10, 20]
+    )
+
+    # Movie 3 bắt buộc phải đạt hit tại Top-5 (thực tế xếp hạng 1 với raw_score = 1.0)
+    assert res["positive_cohort_denominator"] == 1
+    assert res["scoreable_users"] == 1
+    assert res["metrics"]["HR@5"] == 1.0, "Target Movie 3 không đạt hit dù là ứng viên hàng đầu!"
+    assert res["metrics"]["NDCG@5"] > 0.0
+    assert res["metrics"]["MRR@5"] == 1.0
+
+    # 2. Khẳng định ngược lại: nếu cố tình truyền exclude_movie_ids={3} (lỗi cũ) thì HR@K bị ép về 0
+    recs_buggy = recommend_kg(user_id=1, top_n=5, exclude_movie_ids={3}, graph=graph)
+    buggy_ids = [r["movieId"] for r in recs_buggy]
+    assert 3 not in buggy_ids, "Khi bị exclude, movie 3 không được xuất hiện"
+

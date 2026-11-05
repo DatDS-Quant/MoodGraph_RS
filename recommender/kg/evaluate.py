@@ -97,11 +97,13 @@ class ValidationEvaluator:
         t0 = time.time()
         for uid in positive_cohort:
             target_mid = self.val_data[uid]["movieId"]
-            # Exclude movie trong val khỏi candidate pool theo protocol
+            # Phim đã xem trong Train đã được đồ thị tự động loại trừ bên trong recommend_kg().
+            # Phim target_mid trong Validation là mục tiêu ground-truth để xếp hạng đánh giá,
+            # TUYỆT ĐỐI KHÔNG loại trừ target_mid khỏi candidate pool.
             recs = recommend_kg(
                 user_id=uid,
                 top_n=max(top_k_list),
-                exclude_movie_ids={target_mid},  # Val item chỉ được dùng để so khớp, không là candidate
+                exclude_movie_ids=None,
                 graph=graph,
                 enable_p1=enable_p1,
                 enable_p2=enable_p2,

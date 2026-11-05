@@ -36,14 +36,28 @@ def load_kg_config() -> KGConfig:
     except ImportError:
         pass
 
-    # Xác định data root
-    raw_data_root = os.getenv("MOODGRAPH_DATA_ROOT", "data/moodgraph_processed_v1.0")
-    data_root = Path(raw_data_root)
-    if not data_root.exists():
-        # Fallback thử kiểm tra data/processed
-        alt_root = Path("data/processed")
-        if alt_root.exists():
-            data_root = alt_root
+    # Xác định data root độc lập với thư mục chạy (CWD)
+    project_root = Path(__file__).resolve().parent.parent.parent
+    raw_data_root = os.getenv("MOODGRAPH_DATA_ROOT")
+    if raw_data_root:
+        data_root = Path(raw_data_root)
+        if not data_root.is_absolute():
+            # Thử resolve tương đối theo project root hoặc CWD
+            candidate = (project_root / data_root).resolve()
+            data_root = candidate if candidate.exists() else data_root.resolve()
+    else:
+        # Tự động tìm thư mục data đã tiền xử lý theo thứ tự ưu tiên
+        candidate_paths = [
+            project_root / "data" / "processed",
+            project_root / "data" / "moodgraph_processed_v1.0",
+            (Path("data") / "processed").resolve(),
+            (Path("data") / "moodgraph_processed_v1.0").resolve(),
+        ]
+        data_root = candidate_paths[0]
+        for cp in candidate_paths:
+            if cp.exists():
+                data_root = cp
+                break
 
     # Neo4j settings
     neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")

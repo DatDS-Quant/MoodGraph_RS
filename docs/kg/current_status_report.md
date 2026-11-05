@@ -40,12 +40,12 @@ EXPLANATION EXAMPLE (Truy xuất thật từ Graph):
   - Path 3 [GENOME]: sourceMovieId=1 ("Toy Story Clone"), sharedEntity={GenomeTag #2: "family friendly"}, contribution=0.4292
   - Path 4 [COLLAB]: anchorMovieId=1, neighborUserId=2, userRating=5.0, neighborRating=4.0, contribution=0.2500
 TESTS: passed=17, failed=0, not_run=0 (Bộ kiểm thử KG-01 -> KG-17 đạt 100% trong 7.85 giây)
-VALIDATION (GATE 4 ABLATION - 100 USERS COHORT):
+VALIDATION (GATE 4 ABLATION - 100 USERS COHORT - HIỆU CHỈNH CHUẨN XÁC):
   - Positive Denominator : 71 users (có Val rating >= 3.5)
   - Score Availability   : 100.0% (toàn bộ 71/71 users đều nhận được khuyến nghị)
-  - Genre-only (P1)      : Coverage@10 = 145 phim, Thời gian: 86.95s
-  - Genre+Genome (P1+P2) : Coverage@10 = 346 phim (+138.6%), Thời gian: 119.66s
-  - Full (P1+P2+P3)      : Coverage@10 = 276 phim, Thời gian: 108.17s
+  - Genre-only (P1)      : Coverage@10 = 145 phim | HR@10 = 0.0000 | HR@20 = 0.0000 | NDCG@10 = 0.0000 (70.98s)
+  - Genre+Genome (P1+P2) : Coverage@10 = 344 phim | HR@10 = 0.0563 | HR@20 = 0.1127 | NDCG@10 = 0.0389 (112.18s)
+  - Full (P1+P2+P3)      : Coverage@10 = 276 phim | HR@10 = 0.0986 | HR@20 = 0.1549 | NDCG@10 = 0.0460 (115.20s)
 PERFORMANCE (SCALING 100 -> 5,000 USERS):
   - 100 users   : 13k ratings  | 194k edges | import 6.56s  | throughput 39.2k rec/s | RSS 596 MB | latency 2.1s
   - 500 users   : 61k ratings  | 303k edges | import 14.17s | throughput 25.9k rec/s | RSS 527 MB | latency 1.8s
