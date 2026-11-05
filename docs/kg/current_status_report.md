@@ -71,11 +71,11 @@ Quá trình đánh giá được thực thi trực tiếp bằng `scripts/kg_eva
 
 ### Bảng kết quả so sánh đối chứng (Ablation Matrix):
 
-| Cấu hình (Model Variant) | Đóng góp Metapaths | Score Availability | Catalog Coverage@10 | HR@10 | NDCG@10 | Thời gian đo (s) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1. Genre-only (P1)** | $P1$ | **100.0%** (71/71) | 145 phim | 0.0000 | 0.0000 | 86.95s |
-| **2. Genre + Genome (P1 + P2)** | $P1 + P2$ | **100.0%** (71/71) | **346 phim** | 0.0000 | 0.0000 | 119.66s |
-| **3. Full Path-based (P1 + P2 + P3)** | $P1 + P2 + P3$ | **100.0%** (71/71) | 276 phim | 0.0000 | 0.0000 | 108.17s |
+| Cấu hình (Model Variant) | Đóng góp Metapaths | Score Availability | Catalog Coverage@10 | HR@10 | HR@20 | NDCG@10 | NDCG@20 | Tổng thời gian (s) | Runtime (ms/user) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1. Genre-only (P1)** | P1 | **100.0%** (71/71) | 145 phim | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 163.45 s | 2302.1 ms/user |
+| **2. Genre + Genome (P1 + P2)** | P1 + P2 | **100.0%** (71/71) | **344 phim** | 0.0563 | 0.1127 | 0.0389 | 0.0529 | 121.38 s | 1709.6 ms/user |
+| **3. Full Path-based (P1 + P2 + P3)** | P1 + P2 + P3 | **100.0%** (71/71) | 276 phim | **0.0986** | **0.1549** | **0.0460** | **0.0595** | 103.82 s | 1462.3 ms/user |
 
 ### Phân tích Khoa học & Bằng chứng Kỹ thuật:
 1. **Đóng góp rõ rệt của Tag Genome (P2):**
