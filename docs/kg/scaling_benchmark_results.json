@@ -1,0 +1,122 @@
+[
+  {
+    "num_users": 100,
+    "top_m": 20,
+    "import_duration_s": 6.56,
+    "import_throughput_records_s": 39274.7,
+    "process_peak_rss_mb": 596.3,
+    "memory_consumed_mb": 501.3,
+    "system_available_ram_mb": 1122.1,
+    "system_ram_used_pct": 85.8,
+    "avg_recommendation_latency_ms": 2150.9,
+    "nodes": {
+      "users": 100,
+      "movies": 62423,
+      "genres": 19,
+      "genome_tags": 1128,
+      "total_nodes": 63670
+    },
+    "edges": {
+      "rated": 13096,
+      "in_genre": 107245,
+      "has_genome_tag": 73720,
+      "total_edges": 194061
+    }
+  },
+  {
+    "num_users": 500,
+    "top_m": 20,
+    "import_duration_s": 14.17,
+    "import_throughput_records_s": 25953.6,
+    "process_peak_rss_mb": 527.1,
+    "memory_consumed_mb": 441.7,
+    "system_available_ram_mb": 1065.9,
+    "system_ram_used_pct": 86.5,
+    "avg_recommendation_latency_ms": 1857.4,
+    "nodes": {
+      "users": 500,
+      "movies": 62423,
+      "genres": 19,
+      "genome_tags": 1128,
+      "total_nodes": 64070
+    },
+    "edges": {
+      "rated": 61834,
+      "in_genre": 107245,
+      "has_genome_tag": 134600,
+      "total_edges": 303679
+    }
+  },
+  {
+    "num_users": 1000,
+    "top_m": 20,
+    "import_duration_s": 24.24,
+    "import_throughput_records_s": 21171.1,
+    "process_peak_rss_mb": 502.1,
+    "memory_consumed_mb": 402.1,
+    "system_available_ram_mb": 1265.3,
+    "system_ram_used_pct": 84.0,
+    "avg_recommendation_latency_ms": 3403.7,
+    "nodes": {
+      "users": 1000,
+      "movies": 62423,
+      "genres": 19,
+      "genome_tags": 1128,
+      "total_nodes": 64570
+    },
+    "edges": {
+      "rated": 141565,
+      "in_genre": 107245,
+      "has_genome_tag": 199739,
+      "total_edges": 448549
+    }
+  },
+  {
+    "num_users": 2000,
+    "top_m": 20,
+    "import_duration_s": 57.91,
+    "import_throughput_records_s": 11845.1,
+    "process_peak_rss_mb": 596.9,
+    "memory_consumed_mb": 477.8,
+    "system_available_ram_mb": 981.8,
+    "system_ram_used_pct": 87.5,
+    "avg_recommendation_latency_ms": 3298.3,
+    "nodes": {
+      "users": 2000,
+      "movies": 62423,
+      "genres": 19,
+      "genome_tags": 1128,
+      "total_nodes": 65570
+    },
+    "edges": {
+      "rated": 283699,
+      "in_genre": 107245,
+      "has_genome_tag": 229460,
+      "total_edges": 620404
+    }
+  },
+  {
+    "num_users": 5000,
+    "top_m": 20,
+    "import_duration_s": 35.17,
+    "import_throughput_records_s": 33114.1,
+    "process_peak_rss_mb": 501.8,
+    "memory_consumed_mb": 381.3,
+    "system_available_ram_mb": 1019.5,
+    "system_ram_used_pct": 87.1,
+    "avg_recommendation_latency_ms": 5248.0,
+    "nodes": {
+      "users": 5000,
+      "movies": 62423,
+      "genres": 19,
+      "genome_tags": 1128,
+      "total_nodes": 68570
+    },
+    "edges": {
+      "rated": 723155,
+      "in_genre": 107245,
+      "has_genome_tag": 265500,
+      "total_edges": 1095900
+    }
+  }
+]
