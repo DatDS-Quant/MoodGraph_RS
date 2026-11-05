@@ -5,7 +5,7 @@
     "positive_cohort_denominator": 71,
     "scoreable_users": 71,
     "score_availability": 1.0,
-    "duration_seconds": 70.98,
+    "duration_seconds": 163.45,
     "metrics": {
       "HR@5": 0.0,
       "NDCG@5": 0.0,
@@ -25,7 +25,7 @@
     "positive_cohort_denominator": 71,
     "scoreable_users": 71,
     "score_availability": 1.0,
-    "duration_seconds": 112.18,
+    "duration_seconds": 121.38,
     "metrics": {
       "HR@5": 0.0563,
       "NDCG@5": 0.0389,
@@ -45,7 +45,7 @@
     "positive_cohort_denominator": 71,
     "scoreable_users": 71,
     "score_availability": 1.0,
-    "duration_seconds": 115.2,
+    "duration_seconds": 103.82,
     "metrics": {
       "HR@5": 0.0986,
       "NDCG@5": 0.046,

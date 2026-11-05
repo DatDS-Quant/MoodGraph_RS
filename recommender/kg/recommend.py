@@ -3,6 +3,8 @@ Facade gợi ý phim độc lập dựa trên Đồ thị tri thức (Knowledge 
 Điểm giao tiếp chính với Khối 4 Hybrid Recommender và Serving API.
 """
 
+import os
+import warnings
 from typing import List, Dict, Any, Set, Optional
 from recommender.kg.config import load_kg_config, KGConfig
 from recommender.kg.scorer import PathBasedScorer
@@ -29,23 +31,25 @@ def get_default_graph(config: Optional[KGConfig] = None) -> Any:
         return _CACHED_GRAPH
     except Exception as exc:
         # Kiểm tra chính sách fallback: tuyệt đối cấm âm thầm đưa synthetic graph vào production
-        import os
         allow_fallback = (
             cfg.import_mode == "synthetic"
             or os.getenv("KG_ALLOW_SYNTHETIC_FALLBACK", "false").lower() in ("true", "1", "yes")
         )
+        safe_exc = str(exc)
+        if cfg.neo4j_password and cfg.neo4j_password in safe_exc:
+            safe_exc = safe_exc.replace(cfg.neo4j_password, "******")
+
         if not allow_fallback:
             raise ConnectionError(
                 f"Không thể kết nối cơ sở dữ liệu Neo4j tại '{cfg.neo4j_uri}' "
-                f"(database='{cfg.neo4j_database}'): {exc}. "
+                f"(database='{cfg.neo4j_database}'): {safe_exc}. "
                 "Cơ chế fallback sang synthetic graph bị vô hiệu hóa trong môi trường production/pilot "
                 "để ngăn ngừa hiện tượng suy giảm âm thầm (silent degradation). Vui lòng kiểm tra "
                 "kết nối Neo4j hoặc thiết lập KG_ALLOW_SYNTHETIC_FALLBACK=true cho môi trường kiểm thử (dev)."
             ) from exc
 
-        import warnings
         warnings.warn(
-            f"Neo4j offline ({exc}). Fallback sang InMemoryGraph với synthetic fixture "
+            f"Neo4j offline ({safe_exc}). Fallback sang InMemoryGraph với synthetic fixture "
             "(chỉ dành cho môi trường phát triển / unit test).",
             UserWarning,
             stacklevel=2
@@ -60,6 +64,12 @@ def set_cached_graph(graph: Any):
     """Gán trực tiếp graph instance (dùng cho testing hoặc sau khi import pilot)."""
     global _CACHED_GRAPH
     _CACHED_GRAPH = graph
+
+
+def reset_cached_graph():
+    """Đặt lại singleton cached graph (dùng để dọn dẹp môi trường kiểm thử)."""
+    global _CACHED_GRAPH
+    _CACHED_GRAPH = None
 
 
 def recommend_kg(
@@ -88,6 +98,11 @@ def recommend_kg(
     Returns:
         Danh sách dict chứa các gợi ý Top-N kèm theo evidence truy vết từ đồ thị.
     """
+    if not isinstance(user_id, int) or user_id <= 0:
+        raise ValueError(f"user_id phải là số nguyên dương, nhận: {user_id}")
+    if not isinstance(top_n, int) or top_n <= 0:
+        raise ValueError(f"top_n phải là số nguyên dương >= 1, nhận: {top_n}")
+
     cfg = config or load_kg_config()
     target_graph = graph or get_default_graph(cfg)
 

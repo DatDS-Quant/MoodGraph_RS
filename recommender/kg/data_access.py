@@ -71,48 +71,45 @@ class DataAccess:
     ) -> Generator[List[Dict[str, Any]], None, None]:
         """
         Đọc core/genome_scores và lọc Top-M theo relevance DESC, tagId ASC cho từng phim.
-        Nếu movie_ids được chỉ định, chỉ đọc các phim trong danh sách.
+        Sử dụng min-heap kích thước cố định top_m cho mỗi phim để đảm bảo bộ nhớ hữu hạn (<30MB)
+        và tránh tuyệt đối hiện tượng cắt tỉa non (premature eviction) khi một phim trải dài qua nhiều chunks.
         """
+        import heapq
         path = self._resolve_dataset_path("core/genome_scores")
         dataset = ds.dataset(str(path), format="parquet")
         
-        # Nếu có tập movie_ids, tạo filter expression
         filter_expr = ds.field("movieId").isin(list(movie_ids)) if movie_ids else None
-        
-        # Nhóm theo movieId để lấy Top-M
-        # Do genome_scores có 15.5M dòng, ta đọc từng chunk, gom theo movie và lọc
-        movie_scores: Dict[int, List[Dict[str, Any]]] = {}
-        buffer: List[Dict[str, Any]] = []
+        movie_heaps: Dict[int, List[Tuple[float, int]]] = {}
 
         scanner = dataset.scanner(columns=["movieId", "tagId", "relevance"], filter=filter_expr, batch_size=batch_size * 4)
         for record_batch in scanner.to_batches():
             pydict = record_batch.to_pydict()
+            m_ids = pydict["movieId"]
+            t_ids = pydict["tagId"]
+            rels = pydict["relevance"]
             for i in range(record_batch.num_rows):
-                m_id = int(pydict["movieId"][i])
-                t_id = int(pydict["tagId"][i])
-                rel = float(pydict["relevance"][i])
-                if m_id not in movie_scores:
-                    movie_scores[m_id] = []
-                movie_scores[m_id].append({"movieId": m_id, "tagId": t_id, "relevance": rel})
+                m_id = int(m_ids[i])
+                t_id = int(t_ids[i])
+                rel = float(rels[i])
+                if m_id not in movie_heaps:
+                    movie_heaps[m_id] = []
+                h = movie_heaps[m_id]
+                item = (rel, -t_id)
+                if len(h) < top_m:
+                    heapq.heappush(h, item)
+                elif item > h[0]:
+                    heapq.heapreplace(h, item)
 
-            # Khi movie_scores có nhiều phim đã gom xong
-            # Để an toàn cho bộ nhớ, nếu movie_scores vượt quá 2000 phim thì xuất bớt
-            if len(movie_scores) >= 2000:
-                # Xuất các phim
-                for m_id, tags in list(movie_scores.items()):
-                    # Sort theo relevance desc, tagId asc
-                    tags.sort(key=lambda x: (-x["relevance"], x["tagId"]))
-                    buffer.extend(tags[:top_m])
-                    del movie_scores[m_id]
-
-                    if len(buffer) >= batch_size:
-                        yield buffer[:batch_size]
-                        buffer = buffer[batch_size:]
-
-        # Xử lý các phim còn lại
-        for m_id, tags in movie_scores.items():
-            tags.sort(key=lambda x: (-x["relevance"], x["tagId"]))
-            buffer.extend(tags[:top_m])
+        buffer: List[Dict[str, Any]] = []
+        for m_id in sorted(movie_heaps.keys()):
+            tags = sorted(
+                [{"movieId": m_id, "tagId": -t_neg, "relevance": rel} for rel, t_neg in movie_heaps[m_id]],
+                key=lambda x: (-x["relevance"], x["tagId"])
+            )
+            buffer.extend(tags)
+            if len(buffer) >= batch_size:
+                yield buffer[:batch_size]
+                buffer = buffer[batch_size:]
 
         while len(buffer) > 0:
             yield buffer[:batch_size]

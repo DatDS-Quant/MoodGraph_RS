@@ -71,10 +71,14 @@ def test_kg08_scoring_fixture_hand_calculated():
     assert not math.isnan(top_cand["raw_score"])
     assert not math.isinf(top_cand["raw_score"])
     assert 0.0 <= top_cand["raw_score"] <= 1.0
+    # Đối chiếu chính xác giá trị tính tay từ lý thuyết oracle: Movie 3 = 1.0
+    assert abs(top_cand["raw_score"] - 1.0) < 1e-4
 
     # Movie 6 là cold start item chỉ có P1
     assert second_cand["movieId"] == 6
     assert second_cand["raw_score"] < top_cand["raw_score"]
+    # Đối chiếu chính xác giá trị tính tay từ lý thuyết oracle: Movie 6 = 0.35
+    assert abs(second_cand["raw_score"] - 0.35) < 1e-4
 
 
 def test_kg09_mutation_test():

@@ -183,7 +183,7 @@ class PathBasedScorer:
                 sim = len(shared_mids) / math.sqrt(user_liked_count * n_liked_count)
                 neighbor_sims.append((n_uid, sim, shared_mids))
 
-            neighbor_sims.sort(key=lambda x: x[1], reverse=True)
+            neighbor_sims.sort(key=lambda x: (-x[1], x[0]))
             top_neighbors = neighbor_sims[:self.max_neighbors]
 
             for n_uid, sim, shared_mids in top_neighbors:
@@ -252,11 +252,12 @@ class PathBasedScorer:
     def _normalize_scores(self, scores: List[float]) -> List[float]:
         if not scores:
             return []
-        min_v = min(scores)
-        max_v = max(scores)
+        clean_scores = [0.0 if not math.isfinite(s) else s for s in scores]
+        min_v = min(clean_scores)
+        max_v = max(clean_scores)
         if max_v - min_v < 1e-9:
-            return [1.0 if max_v > 0 else 0.0 for _ in scores]
-        return [(s - min_v) / (max_v - min_v) for s in scores]
+            return [1.0 if max_v > 0 else 0.0 for _ in clean_scores]
+        return [(s - min_v) / (max_v - min_v) for s in clean_scores]
 
     def _extract_evidence_for_candidates(
         self,
