@@ -88,8 +88,8 @@ def reciprocal_rank_fusion(
         als_item = als_map.get(mid)
         kg_item = kg_map.get(mid)
 
-        als_rank: Optional[int] = int(als_item["rank"]) if als_item and "rank" in als_item else None
-        kg_rank: Optional[int] = int(kg_item["rank"]) if kg_item and "rank" in kg_item else None
+        als_rank: Optional[int] = int(als_item["rank"]) if (als_item and als_item.get("rank") is not None) else None
+        kg_rank: Optional[int] = int(kg_item["rank"]) if (kg_item and kg_item.get("rank") is not None) else None
 
         score = 0.0
         if als_rank is not None:
@@ -206,14 +206,14 @@ def weighted_score_fusion(
     if strat == "neutral":
         impute_als = 0.5
         impute_kg = 0.5
+    elif strat == "source_aware":
+        # Với ALS: Top-K truncation từ toàn bộ catalog -> gán sàn kỳ vọng 0.2 (rank 51+ vẫn có latent affinity)
+        impute_als = 0.2
+        # Với KG: không có đường đi liên kết trong đồ thị -> điểm thực chất bằng 0.0
+        impute_kg = 0.0
     elif strat == "min":
         impute_als = min(als_norm_list) if als_norm_list else 0.0
         impute_kg = min(kg_norm_list) if kg_norm_list else 0.0
-    elif strat == "source_aware":
-        # Với ALS: Top-K truncation -> giá trị tiệm cận đáy danh sách
-        impute_als = max(0.0, min(als_norm_list) * 0.5) if als_norm_list else 0.0
-        # Với KG: không có đường đi liên kết -> điểm thực chất bằng 0.0
-        impute_kg = 0.0
     else:  # "zero" (mặc định)
         impute_als = 0.0
         impute_kg = 0.0

@@ -160,26 +160,30 @@ def run_expanded_benchmark(num_users: int = 200, top_m: int = 20) -> Dict[str, A
         # Precompute ALS cross-scores for KG candidates
         cross_als_candidates: List[Dict[str, Any]] = list(als_recs)
         existing_als_mids = set(als_mids)
-        user_factors = getattr(als_service.generator, "user_factors", None)
-        item_factors = getattr(als_service.generator.catalog, "factors", None)
-        user_id_map = getattr(als_service.generator, "user_id_map", {})
-        item_id_map = getattr(als_service.generator.catalog, "item_id_map", {})
+        user_container = getattr(als_service.generator, "user_factors", None)
+        catalog_container = getattr(als_service.generator, "catalog", None)
 
-        if user_factors is not None and item_factors is not None and uid in user_id_map:
-            u_idx = user_id_map[uid]
-            u_vec = user_factors[u_idx]
-            for kg_item in kg_recs:
-                k_mid = kg_item["movieId"]
-                if k_mid not in existing_als_mids and k_mid in item_id_map:
-                    m_idx = item_id_map[k_mid]
-                    m_vec = item_factors[m_idx]
-                    dot_score = float(u_vec @ m_vec)
-                    cross_als_candidates.append({
-                        "movieId": k_mid,
-                        "title": kg_item.get("title", f"Movie {k_mid}"),
-                        "score": dot_score,
-                        "rank": None,
-                    })
+        if user_container is not None and catalog_container is not None:
+            user_to_idx = getattr(user_container, "user_to_idx", {})
+            movie_to_idx = getattr(catalog_container, "movie_to_idx", {})
+            u_factors = getattr(user_container, "factors", None)
+            m_factors = getattr(catalog_container, "factors", None)
+
+            if uid in user_to_idx and u_factors is not None and m_factors is not None:
+                u_idx = user_to_idx[uid]
+                u_vec = u_factors[u_idx]
+                for kg_item in kg_recs:
+                    k_mid = kg_item["movieId"]
+                    if k_mid not in existing_als_mids and k_mid in movie_to_idx:
+                        m_idx = movie_to_idx[k_mid]
+                        m_vec = m_factors[m_idx]
+                        dot_score = float(u_vec @ m_vec)
+                        cross_als_candidates.append({
+                            "movieId": k_mid,
+                            "title": kg_item.get("title", f"Movie {k_mid}"),
+                            "raw_score": dot_score,
+                            "rank": None,
+                        })
         user_cand_kg_cross[uid] = cross_als_candidates
 
         if idx % 25 == 0 or idx == positive_denom:

@@ -93,17 +93,38 @@ def test_06_api_cache_clear(api_client):
     assert resp.json()["status"] == "success"
 
 
-def test_07_api_filter_seen_false_restricted(api_client):
+def test_07_api_filter_seen_false_restricted(api_client, monkeypatch):
     """
-    Kiểm tra bảo vệ an toàn:
-    Yêu cầu filter_seen=False mà không bật allow_unfiltered=True phải bị từ chối bằng HTTP 400.
+    Kiểm tra bảo vệ an ninh chẩn đoán:
+    1. Yêu cầu filter_seen=False từ client thông thường (không token) phải bị từ chối 403 Forbidden.
+    2. Yêu cầu có allow_unfiltered=true nhưng không có token cũng bị từ chối 403 Forbidden.
+    3. Yêu cầu có token nhưng quên allow_unfiltered=true bị từ chối 400 Bad Request.
+    4. Yêu cầu có token hợp lệ VÀ allow_unfiltered=true được chấp nhận 200 OK.
     """
-    resp = api_client.get("/api/recommendations/1?filter_seen=false")
-    assert resp.status_code == 400
-    assert "allow_unfiltered=true" in resp.json()["detail"]
+    monkeypatch.setenv("ADMIN_API_KEY", "diag_admin_key_999")
 
-    # Khi bật allow_unfiltered=True, request được chấp nhận
-    resp_ok = api_client.get("/api/recommendations/1?filter_seen=false&allow_unfiltered=true")
+    # 1. Không có token -> 403
+    resp_no_token = api_client.get("/api/recommendations/1?filter_seen=false")
+    assert resp_no_token.status_code == 403
+    assert "Admin Token" in resp_no_token.json()["detail"]
+
+    # 2. allow_unfiltered=true nhưng không có token -> vẫn 403
+    resp_unauth = api_client.get("/api/recommendations/1?filter_seen=false&allow_unfiltered=true")
+    assert resp_unauth.status_code == 403
+
+    # 3. Có token nhưng không có allow_unfiltered=true -> 400
+    resp_need_flag = api_client.get(
+        "/api/recommendations/1?filter_seen=false",
+        headers={"X-Admin-Token": "diag_admin_key_999"}
+    )
+    assert resp_need_flag.status_code == 400
+    assert "allow_unfiltered=true" in resp_need_flag.json()["detail"]
+
+    # 4. Có token VÀ có allow_unfiltered=true -> 200 OK
+    resp_ok = api_client.get(
+        "/api/recommendations/1?filter_seen=false&allow_unfiltered=true",
+        headers={"X-Admin-Token": "diag_admin_key_999"}
+    )
     assert resp_ok.status_code == 200
 
 

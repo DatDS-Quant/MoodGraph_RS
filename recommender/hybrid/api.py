@@ -137,22 +137,33 @@ def get_recommendations(
     allow_unfiltered: bool = Query(False, description="Chỉ cho phép tắt lọc phim đã xem khi phục vụ chẩn đoán nội bộ"),
     cross_score_als: Optional[bool] = Query(None, description="Kích hoạt ALS cross-scoring cho ứng viên KG"),
     use_cache: bool = Query(True, description="Sử dụng bộ nhớ đệm tăng tốc"),
+    x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
+    admin_token: Optional[str] = Query(None, description="Admin token cho chế độ chẩn đoán unfiltered"),
 ) -> RecommendationResponseSchema:
     """
     Sinh danh sách gợi ý phim cá nhân hóa theo thời gian thực.
     Bảo vệ sản xuất: Tự động cưỡng chế lọc phim đã xem (filter_seen=True)
-    trừ khi có cờ allow_unfiltered=True phục vụ chẩn đoán hệ thống.
+    trừ khi có quyền quản trị máy chủ (Admin Token) và cờ allow_unfiltered=True.
     """
     service = get_api_service()
 
     # Ràng buộc an toàn: Không cho phép vô hiệu hóa lọc phim đã xem trên endpoint phục vụ công cộng
     effective_filter_seen = filter_seen
-    if not filter_seen and not allow_unfiltered:
-        raise HTTPException(
-            status_code=400,
-            detail="Tắt lọc phim đã xem (filter_seen=false) bị hạn chế trong môi trường phục vụ công cộng. "
-                   "Để phục vụ mục đích kiểm thử hoặc chẩn đoán, vui lòng thiết lập allow_unfiltered=true.",
-        )
+    if not filter_seen:
+        admin_key = os.getenv("ADMIN_API_KEY") or os.getenv("HYBRID_ADMIN_TOKEN", "moodgraph-admin-secret")
+        provided_token = x_admin_token or admin_token
+        if not provided_token or provided_token != admin_key:
+            raise HTTPException(
+                status_code=403,
+                detail="Truy cập bị từ chối: Tắt lọc phim đã xem (filter_seen=false) là tính năng chẩn đoán đặc quyền, "
+                       "yêu cầu Admin Token hợp lệ qua header X-Admin-Token hoặc tham số admin_token.",
+            )
+        if not allow_unfiltered:
+            raise HTTPException(
+                status_code=400,
+                detail="Tắt lọc phim đã xem (filter_seen=false) bị hạn chế trong môi trường phục vụ công cộng. "
+                       "Để phục vụ mục đích kiểm thử hoặc chẩn đoán, vui lòng thiết lập allow_unfiltered=true kèm Admin Token.",
+            )
 
     # Ánh xạ tham số mô hình sang chiến lược dung hợp
     model_lower = model.lower()

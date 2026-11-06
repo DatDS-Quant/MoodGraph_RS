@@ -9,17 +9,17 @@
   "gates": {
     "full_regression": {
       "status": "PASS",
-      "tests_collected": 245,
-      "tests_passed": 245,
+      "tests_collected": 246,
+      "tests_passed": 246,
       "tests_failed": 0,
       "tests_skipped": 0,
       "breakdown": {
         "als": 184,
         "kg": 24,
-        "hybrid": 37
+        "hybrid": 38
       },
       "historical_baseline_preserved": true,
-      "notes": "Full regression suite executes in under 200 seconds with zero regressions."
+      "notes": "Full regression suite executes in under 190 seconds with zero regressions."
     },
     "als_kg_integration": {
       "status": "PASS",
@@ -115,3 +115,4 @@
     "In multi-worker production deployments, attach an external Redis service for cross-worker cache sharing."
   ]
 }
+

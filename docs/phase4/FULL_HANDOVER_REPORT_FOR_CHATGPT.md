@@ -6,7 +6,7 @@
 **Nhánh công tác:** `feature/phase4-hybrid-recommender` (phát triển trên baseline commit `4682b83` của nhánh `main`)  
 **Mục tiêu bàn giao:** Phase 4 - Hybrid Recommendation Engine & Serving API  
 **Kết luận nghiệm thu toàn diện (Overall Verdict):** **VERIFIED COMPLETE**  
-**Trạng thái kiểm thử hồi quy:** **245 / 245 tests PASS (100%)** trong 196 giây  
+**Trạng thái kiểm thử hồi quy:** **246 / 246 tests PASS (100%)** trong 187 giây  
 
 ---
 
@@ -37,9 +37,9 @@ Chạy lệnh kiểm thử toàn diện trên toàn bộ repository:
    - Giữ nguyên vẹn các bài kiểm tra Preflight, Leakage, Masking, Tie-breaking, Model Registry, Serving Delivery và kiểm chuẩn M08.
 2. **Module Knowledge Graph (`tests/kg/`): 24 tests PASS**
    - Bảo toàn 100% Task 3B: Duyệt đồ thị P1, P2, P3, Genome selection Top-20, Referential Integrity và Evaluator Ground-truth Inclusion Regression.
-3. **Module Hybrid Recommender (`tests/hybrid/`): 37 tests PASS**
+3. **Module Hybrid Recommender (`tests/hybrid/`): 38 tests PASS**
    - `test_contracts.py` (4 tests): Data contracts Pydantic, schema validation, cấm điểm NaN/Infinite.
-   - `test_fusion.py` (5 tests): Min-Max Normalization, Percentile Normalization, RRF Reciprocal Rank (tính toán chuẩn xác theo hand-calculated oracle).
+   - `test_fusion.py` (6 tests): Min-Max Normalization, Percentile Normalization, RRF Reciprocal Rank (tính toán chuẩn xác theo hand-calculated oracle), kiểm chứng đối kháng các chiến lược nội suy điểm khuyết thiếu (Zero vs Source-Aware).
    - `test_candidate_union.py` (3 tests): Hợp nhất ứng viên, loại trừ trùng lặp, ghi nhận trung thực nguồn gốc (`als`, `kg`, `both`).
    - `test_determinism.py` (2 tests): Tính lặp lại tất định 100%, phá vỡ hòa điểm bằng `movieId ASC`.
    - `test_explainability.py` (3 tests): Bảo toàn chuỗi bằng chứng KG nguyên vẹn; gán nhãn trung thực nhân tử tiềm ẩn `ALS_LATENT_FACTOR`, không bịa đặt bằng chứng.

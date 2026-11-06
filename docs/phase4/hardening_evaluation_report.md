@@ -89,3 +89,4 @@ Mặc dù KG-only đạt NDCG cao nhất trên các phim trúng đích, nhưng:
      * **Trực quan và dễ bảo trì:** Không đòi hỏi tinh chỉnh trọng số cố định trong môi trường luân chuyển dữ liệu.
 2. **Chiến lược Dự phòng (Fallback Policy):**
    - Khi một trong hai nguồn gặp sự cố hoặc đối với người dùng hoàn toàn mới (Cold-start), hệ thống tự động giáng cấp mượt mà (Graceful Degradation) sang nguồn còn lại hoặc Popularity mà không làm đứt gãy luồng phục vụ.
+

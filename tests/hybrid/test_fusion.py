@@ -126,3 +126,54 @@ def test_05_rrf_empty_inputs():
     assert fused[0]["movieId"] == 1
     assert fused[0]["source"] == "ALS"
 
+
+def test_06_imputation_strategy_adversarial_differences():
+    """
+    Kiểm chứng thực nghiệm đối kháng (Adversarial Fixture):
+    Chứng minh các chính sách nội suy điểm khuyết thiếu (Zero vs Source-Aware vs Neutral)
+    thực sự thi hành các logic xếp hạng hoàn toàn khác biệt.
+    """
+    als = [
+        {"movieId": 1, "raw_score": 10.0, "rank": 1},
+        {"movieId": 2, "raw_score": 5.0, "rank": 2},
+    ]
+    kg = [
+        {"movieId": 3, "raw_score": 10.0, "rank": 1},
+        {"movieId": 4, "raw_score": 5.0, "rank": 2},
+    ]
+
+    # Chính sách 1: "zero" (impute_als=0.0, impute_kg=0.0)
+    # mid 1: 0.50, mid 3: 0.50 (tie-break mid 1 < 3) -> Thứ tự: [1, 3, 2, 4]
+    fused_zero = weighted_score_fusion(
+        candidates_als=als,
+        candidates_kg=kg,
+        weight_als=0.5,
+        weight_kg=0.5,
+        imputation_strategy="zero",
+    )
+    order_zero = [item["movieId"] for item in fused_zero]
+    assert order_zero == [1, 3, 2, 4]
+    assert math.isclose(fused_zero[0]["hybrid_score"], 0.50)
+    assert math.isclose(fused_zero[1]["hybrid_score"], 0.50)
+
+    # Chính sách 2: "source_aware" (impute_als=0.2, impute_kg=0.0)
+    # mid 3 nhận thêm 0.5*0.2 = 0.10 -> score mid 3 = 0.60 > mid 1 (0.50)
+    # Thứ tự: [3, 1, 4, 2]
+    fused_source = weighted_score_fusion(
+        candidates_als=als,
+        candidates_kg=kg,
+        weight_als=0.5,
+        weight_kg=0.5,
+        imputation_strategy="source_aware",
+    )
+    order_source = [item["movieId"] for item in fused_source]
+    assert order_source == [3, 1, 4, 2]
+    assert math.isclose(fused_source[0]["hybrid_score"], 0.60)
+    assert math.isclose(fused_source[1]["hybrid_score"], 0.50)
+    assert math.isclose(fused_source[2]["hybrid_score"], 0.10)
+    assert math.isclose(fused_source[3]["hybrid_score"], 0.00)
+
+    # Khẳng định hai chính sách sinh ra kết quả xếp hạng khác biệt
+    assert order_zero != order_source
+
+
