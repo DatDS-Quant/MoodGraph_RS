@@ -23,3 +23,4 @@
 1. **Pre-computed Graph Embeddings**: Sử dụng thuật toán Node2Vec, TransE hoặc Graph Convolutional Networks (GCN) để nhúng toàn bộ đồ thị tri thức thành các vector dense cố định. Khi đó, việc tính điểm KG sẽ chuyển thành phép nhân vô hướng dot-product tốc độ cao tương tự như ALS (< 1ms).
 2. **Adaptive Context-aware Weighting**: Huấn luyện một mạng nơ-ron định tuyến trọng số (Gating Network) dựa trên số lượng đánh giá của người dùng để tự động phân bổ `w_ALS(u)` và `w_KG(u)`.
 3. **Neo4j Enterprise Cluster & Distributed Graph Traversal**: Kết nối cụm Neo4j chuyên dụng với Neo4j Graph Data Science (GDS) library để tăng tốc độ truy vấn đồ thị phân tán.
+

@@ -35,3 +35,4 @@
 - Kết quả thu thập: **81 tests collected** (24 ALS delivery + 24 KG + 33 Hybrid)
 - Kết quả thực thi: **81 PASSED, 0 FAILED (100% PASS)** trong thời gian **20.5 giây**.
 - Xác nhận: Toàn bộ module Khối 3A (Spark ALS) và Khối 3B (Knowledge Graph) không hề bị suy thoái hay phá vỡ khi tích hợp Khối 4.
+

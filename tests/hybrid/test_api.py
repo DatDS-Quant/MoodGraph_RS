@@ -91,3 +91,37 @@ def test_06_api_cache_clear(api_client):
     resp = api_client.post("/api/cache/clear")
     assert resp.status_code == 200
     assert resp.json()["status"] == "success"
+
+
+def test_07_api_filter_seen_false_restricted(api_client):
+    """
+    Kiểm tra bảo vệ an toàn:
+    Yêu cầu filter_seen=False mà không bật allow_unfiltered=True phải bị từ chối bằng HTTP 400.
+    """
+    resp = api_client.get("/api/recommendations/1?filter_seen=false")
+    assert resp.status_code == 400
+    assert "allow_unfiltered=true" in resp.json()["detail"]
+
+    # Khi bật allow_unfiltered=True, request được chấp nhận
+    resp_ok = api_client.get("/api/recommendations/1?filter_seen=false&allow_unfiltered=true")
+    assert resp_ok.status_code == 200
+
+
+def test_08_api_cache_clear_admin_protection(api_client, monkeypatch):
+    """Kiểm tra bảo vệ endpoint clear cache khi cấu hình ADMIN_API_KEY."""
+    monkeypatch.setenv("ADMIN_API_KEY", "secret_admin_token_123")
+
+    # Không truyền token -> 403 Forbidden
+    resp_no_token = api_client.post("/api/cache/clear")
+    assert resp_no_token.status_code == 403
+
+    # Sai token -> 403 Forbidden
+    resp_wrong = api_client.post("/api/cache/clear", headers={"X-Admin-Token": "wrong_token"})
+    assert resp_wrong.status_code == 403
+
+    # Đúng token qua header -> 200 OK
+    resp_ok = api_client.post("/api/cache/clear", headers={"X-Admin-Token": "secret_admin_token_123"})
+    assert resp_ok.status_code == 200
+    assert resp_ok.json()["status"] == "success"
+
+

@@ -45,3 +45,4 @@ def test_02_deterministic_repeatability():
         run = reciprocal_rank_fusion(als, kg, rrf_k=60)
         run_order = [(item["movieId"], item["hybrid_score"], item["rank"]) for item in run]
         assert run_order == base_order
+

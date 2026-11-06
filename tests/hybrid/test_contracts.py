@@ -114,3 +114,4 @@ def test_04_hybrid_response_to_dict():
     assert d["userId"] == 1
     assert len(d["recommendations"]) == 1
     assert d["metadata"]["latency_ms"] == 12.5
+

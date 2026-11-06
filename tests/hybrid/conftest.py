@@ -99,3 +99,4 @@ def test_hybrid_config() -> HybridConfig:
         cache_max_size=100,
         cache_ttl_seconds=60,
     )
+

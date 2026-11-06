@@ -69,3 +69,52 @@ def test_04_cache_concurrency_thread_safety():
     stats = cache.stats()
     assert stats["size"] <= 500
     assert stats["hits"] > 0
+
+
+def test_05_cache_isolation_filter_seen():
+    """
+    Kiểm chứng ngăn chặn Cache Contamination:
+    Yêu cầu filter_seen=True và filter_seen=False cho cùng một người dùng
+    bắt buộc phải có Cache Key khác nhau, không được dùng chung kết quả.
+    """
+    from recommender.hybrid.engine import HybridRecommenderService
+    from recommender.hybrid.config import HybridConfig
+    from recommender.kg.import_graph import InMemoryGraph
+
+    class ContaminationMockALS:
+        def recommend(self, user_id, top_n, stage="production", custom_seen=None):
+            # Nếu custom_seen có movie 10 (seen), loại bỏ nó
+            pool = [
+                {"movieId": 10, "raw_score": 5.0, "rank": 1},
+                {"movieId": 20, "raw_score": 4.0, "rank": 2},
+            ]
+            seen = custom_seen or set()
+            return [c for c in pool if c["movieId"] not in seen][:top_n]
+
+        def get_seen_history(self, user_ids, stage="production"):
+            return {1: {10}}
+
+    svc = HybridRecommenderService(
+        als_service=ContaminationMockALS(),
+        kg_graph=InMemoryGraph(),
+        config=HybridConfig(cache_enabled=True),
+    )
+
+    # 1. Gọi với filter_seen=True (lọc movie 10)
+    resp_filtered = svc.recommend(user_id=1, top_n=2, filter_seen=True)
+    mids_filtered = [r.movieId for r in resp_filtered.recommendations]
+    assert 10 not in mids_filtered
+    assert 20 in mids_filtered
+
+    # 2. Gọi với filter_seen=False (không lọc movie 10)
+    resp_unfiltered = svc.recommend(user_id=1, top_n=2, filter_seen=False)
+    mids_unfiltered = [r.movieId for r in resp_unfiltered.recommendations]
+    assert 10 in mids_unfiltered
+    assert resp_unfiltered.metadata["cache_hit"] is False  # Không được hit cache của filtered!
+
+    # 3. Gọi lại filter_seen=True -> phải hit cache của filtered
+    resp_filtered_again = svc.recommend(user_id=1, top_n=2, filter_seen=True)
+    assert resp_filtered_again.metadata["cache_hit"] is True
+    assert 10 not in [r.movieId for r in resp_filtered_again.recommendations]
+
+

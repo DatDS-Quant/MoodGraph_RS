@@ -46,3 +46,4 @@ def test_03_disjoint_candidate_sets():
     assert len(fused) == 2
     assert {f["movieId"] for f in fused} == {1, 2}
     assert all(f["source"] in ("ALS", "KG") for f in fused)
+

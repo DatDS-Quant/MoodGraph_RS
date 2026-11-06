@@ -125,3 +125,4 @@ def test_05_rrf_empty_inputs():
     assert len(fused) == 1
     assert fused[0]["movieId"] == 1
     assert fused[0]["source"] == "ALS"
+

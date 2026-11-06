@@ -99,3 +99,4 @@ class HybridRecommendationResponse:
             "recommendations": [item.to_dict() for item in self.recommendations],
             "metadata": dict(self.metadata),
         }
+

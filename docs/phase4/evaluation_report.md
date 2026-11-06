@@ -44,3 +44,4 @@
 - **Chiến lược Reciprocal Rank Fusion (RRF k=60)**:
   * RRF hoạt động như một cơ chế làm mịn cân bằng: đạt **HR@10 = 9.86%** và Catalog Coverage@10 = **152 phim** (gấp 3.38 lần Popularity).
   * Ưu điểm vượt trội của RRF là tính miễn nhiễm hoàn toàn với thang đo điểm (scale-invariance), không cần phải hiệu chỉnh min-max hay nội suy thủ công khi mở rộng sang các hệ thống dữ liệu mới.
+

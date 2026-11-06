@@ -22,6 +22,7 @@ class HybridConfig:
     default_top_n: int = 10
     normalize_method: str = "min_max"
     imputation_strategy: str = "zero"
+    cross_score_als: bool = False
     cache_enabled: bool = True
     cache_max_size: int = 10000
     cache_ttl_seconds: int = 3600
@@ -57,6 +58,7 @@ def load_hybrid_config() -> HybridConfig:
     top_n = int(os.getenv("HYBRID_DEFAULT_TOP_N", "10"))
     norm_method = os.getenv("HYBRID_NORMALIZE_METHOD", "min_max").lower()
     impute = os.getenv("HYBRID_IMPUTATION_STRATEGY", "zero").lower()
+    cross_score = os.getenv("HYBRID_CROSS_SCORE_ALS", "false").lower() in ("true", "1", "yes")
     cache_enabled = os.getenv("HYBRID_CACHE_ENABLED", "true").lower() in ("true", "1", "yes")
     cache_max = int(os.getenv("HYBRID_CACHE_MAX_SIZE", "10000"))
     cache_ttl = int(os.getenv("HYBRID_CACHE_TTL_SECONDS", "3600"))
@@ -77,7 +79,9 @@ def load_hybrid_config() -> HybridConfig:
         default_top_n=top_n,
         normalize_method=norm_method,
         imputation_strategy=impute,
+        cross_score_als=cross_score,
         cache_enabled=cache_enabled,
         cache_max_size=cache_max,
         cache_ttl_seconds=cache_ttl,
     )
+

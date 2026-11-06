@@ -82,6 +82,7 @@ class HybridRecommenderService:
         stage: str = "production",
         custom_seen: Optional[Set[int]] = None,
         use_cache: Optional[bool] = None,
+        cross_score_als: Optional[bool] = None,
     ) -> HybridRecommendationResponse:
         """
         Sinh gợi ý lai ghép cho một người dùng với kiểm tra bộ nhớ đệm và đo đạc độ trễ thời gian thực.
@@ -92,10 +93,25 @@ class HybridRecommenderService:
         effective_w_als = weight_als if weight_als is not None else self.config.weight_als
         effective_w_kg = weight_kg if weight_kg is not None else self.config.weight_kg
         effective_rrf_k = rrf_k if rrf_k is not None else self.config.rrf_k
+        effective_cross_score = cross_score_als if cross_score_als is not None else self.config.cross_score_als
 
-        # Kiểm tra Cache Key
+        # Kiểm tra Cache Key bao hàm đầy đủ các chiều phụ thuộc (tránh Cache Contamination)
         should_cache = (use_cache is not False) and (self.cache is not None) and (custom_seen is None)
-        cache_key = (user_id, effective_top_n, effective_strategy, effective_w_als, effective_w_kg, effective_rrf_k, stage)
+        cache_key = (
+            user_id,
+            effective_top_n,
+            effective_strategy,
+            effective_w_als,
+            effective_w_kg,
+            effective_rrf_k,
+            stage,
+            filter_seen,
+            self.config.top_k_candidates_als,
+            self.config.top_k_candidates_kg,
+            self.config.normalize_method,
+            self.config.imputation_strategy,
+            bool(effective_cross_score),
+        )
 
         if should_cache and self.cache is not None:
             cached_resp = self.cache.get(cache_key)
@@ -160,6 +176,35 @@ class HybridRecommenderService:
                 is_cold_kg = True
         except Exception:
             is_cold_kg = True
+
+        # 3.5. ALS Cross-scoring cho các ứng viên KG (nếu được kích hoạt)
+        if effective_cross_score and cand_kg and not is_cold_als:
+            try:
+                gen = getattr(self.als_service, "generator", None)
+                if gen and hasattr(gen, "user_factors") and hasattr(gen, "catalog"):
+                    u_factors = gen.user_factors
+                    catalog = gen.catalog
+                    if user_id in u_factors.user_to_idx:
+                        u_idx = u_factors.user_to_idx[user_id]
+                        u_vec = u_factors.factors[u_idx]
+                        existing_als_mids = {int(c["movieId"]) for c in cand_als}
+                        import numpy as np
+                        for k_item in cand_kg:
+                            mid = int(k_item["movieId"])
+                            if mid not in existing_als_mids and mid in catalog.movie_to_idx:
+                                m_idx = catalog.movie_to_idx[mid]
+                                raw_als = float(np.dot(u_vec, catalog.factors[m_idx]))
+                                cand_als.append({
+                                    "userId": user_id,
+                                    "movieId": mid,
+                                    "raw_score": raw_als,
+                                    "rank": None,
+                                    "model_name": "ALS_CROSS_SCORE",
+                                    "model_version": getattr(self.als_service, "model_version", "ALS_R8_REG0.3_ITER10"),
+                                    "title": k_item.get("title"),
+                                })
+            except Exception:
+                pass
 
         # 4. Kiểm tra Cold-Start cả 2 hệ thống
         if is_cold_als and is_cold_kg and not cand_als and not cand_kg:
@@ -287,6 +332,7 @@ class HybridRecommenderService:
                 "cache_hit": False,
                 "fusion_strategy": effective_strategy,
                 "is_cold_start": False,
+                "cross_score_als": bool(effective_cross_score),
                 "candidate_count_als": len(cand_als),
                 "candidate_count_kg": len(cand_kg),
                 "candidate_count_union": union_count,

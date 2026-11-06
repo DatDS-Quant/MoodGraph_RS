@@ -43,3 +43,4 @@ def test_03_kg_only_has_no_als_latent_factor(mock_als_candidates, mock_kg_candid
     path_types = [ev["path_type"] for ev in item_106["evidence"]]
     assert "ALS_LATENT_FACTOR" not in path_types
     assert "GENOME" in path_types
+

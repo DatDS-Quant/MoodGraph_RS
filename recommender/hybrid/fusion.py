@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 def normalize_min_max(
     scores: Sequence[float],
+    constant_value: float = 1.0,
 ) -> List[float]:
     """
     Chuẩn hóa Min-Max tuyến tính về khoảng [0.0, 1.0].
@@ -33,7 +34,7 @@ def normalize_min_max(
     max_v = max(clean)
     diff = max_v - min_v
     if diff < 1e-12:
-        return [1.0 if max_v > 0 else 0.5 for _ in clean]
+        return [constant_value if max_v > 0 else 0.0 for _ in clean]
     return [(s - min_v) / diff for s in clean]
 
 
@@ -200,7 +201,22 @@ def weighted_score_fusion(
         kg_norm_list = normalize_min_max(kg_raw_scores)
     kg_norm_map: Dict[int, float] = {mid: s for mid, s in zip(kg_mids_ordered, kg_norm_list)}
 
-    impute_val = 0.0
+    # Xác định giá trị nội suy theo chiến lược
+    strat = (imputation_strategy or "zero").lower()
+    if strat == "neutral":
+        impute_als = 0.5
+        impute_kg = 0.5
+    elif strat == "min":
+        impute_als = min(als_norm_list) if als_norm_list else 0.0
+        impute_kg = min(kg_norm_list) if kg_norm_list else 0.0
+    elif strat == "source_aware":
+        # Với ALS: Top-K truncation -> giá trị tiệm cận đáy danh sách
+        impute_als = max(0.0, min(als_norm_list) * 0.5) if als_norm_list else 0.0
+        # Với KG: không có đường đi liên kết -> điểm thực chất bằng 0.0
+        impute_kg = 0.0
+    else:  # "zero" (mặc định)
+        impute_als = 0.0
+        impute_kg = 0.0
 
     fused_items: List[Dict[str, Any]] = []
 
@@ -208,8 +224,8 @@ def weighted_score_fusion(
         als_item = als_map.get(mid)
         kg_item = kg_map.get(mid)
 
-        norm_als = als_norm_map.get(mid, impute_val)
-        norm_kg = kg_norm_map.get(mid, impute_val)
+        norm_als = als_norm_map.get(mid, impute_als)
+        norm_kg = kg_norm_map.get(mid, impute_kg)
 
         score = w_als * norm_als + w_kg * norm_kg
 
@@ -229,12 +245,15 @@ def weighted_score_fusion(
         evidence = []
         if kg_item and kg_item.get("evidence"):
             evidence.extend(kg_item["evidence"])
+        als_rank_val = int(als_item["rank"]) if (als_item and als_item.get("rank") is not None) else None
+        kg_rank_val = int(kg_item["rank"]) if (kg_item and kg_item.get("rank") is not None) else None
+
         if als_item is not None:
             evidence.append({
                 "path_type": "ALS_LATENT_FACTOR",
                 "model_version": als_item.get("model_version", "ALS_R8_REG0.3_ITER10"),
                 "raw_score": float(als_item["raw_score"]) if "raw_score" in als_item else None,
-                "als_rank": int(als_item["rank"]) if "rank" in als_item else None,
+                "als_rank": als_rank_val,
                 "description": "High collaborative affinity in latent matrix factorization space",
             })
 
@@ -246,10 +265,10 @@ def weighted_score_fusion(
             "fusion_method": "weighted",
             "als_raw_score": float(als_item["raw_score"]) if als_item and "raw_score" in als_item else None,
             "als_normalized_score": norm_als if als_item is not None else None,
-            "als_rank": int(als_item["rank"]) if als_item and "rank" in als_item else None,
+            "als_rank": als_rank_val,
             "kg_raw_score": float(kg_item["raw_score"]) if kg_item and "raw_score" in kg_item else None,
             "kg_normalized_score": norm_kg if kg_item is not None else None,
-            "kg_rank": int(kg_item["rank"]) if kg_item and "rank" in kg_item else None,
+            "kg_rank": kg_rank_val,
             "evidence": evidence,
         })
 
@@ -261,3 +280,4 @@ def weighted_score_fusion(
     if top_n is not None and top_n > 0:
         return fused_items[:top_n]
     return fused_items
+

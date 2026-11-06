@@ -1,0 +1,346 @@
+{
+  "candidate_recall_at_50": {
+    "als_recall_at_50": 0.0,
+    "kg_recall_at_50": 0.2045,
+    "union_recall_at_50": 0.2045,
+    "als_hits": 0,
+    "kg_hits": 27,
+    "union_hits": 27,
+    "positive_denom": 132
+  },
+  "models": [
+    {
+      "model_name": "Popularity Count (M03 Baseline)",
+      "strategy": "popularity",
+      "params": {},
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.009,
+      "latency_ms_per_user": 0.068,
+      "hit_counts": {
+        "5": 5,
+        "10": 11,
+        "20": 15
+      },
+      "metrics": {
+        "HR@5": 0.0379,
+        "NDCG@5": 0.0294,
+        "MRR@5": 0.0268,
+        "HR@10": 0.0833,
+        "NDCG@10": 0.0437,
+        "MRR@10": 0.0324,
+        "HR@20": 0.1136,
+        "NDCG@20": 0.0512,
+        "MRR@20": 0.0343,
+        "Catalog_Coverage@10": 55,
+        "Catalog_Coverage@20": 90
+      }
+    },
+    {
+      "model_name": "Spark ALS Champion (ALS_R8_REG0.3_ITER10)",
+      "strategy": "als_only",
+      "params": {},
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.0022,
+      "latency_ms_per_user": 0.017,
+      "hit_counts": {
+        "5": 0,
+        "10": 0,
+        "20": 0
+      },
+      "metrics": {
+        "HR@5": 0.0,
+        "NDCG@5": 0.0,
+        "MRR@5": 0.0,
+        "HR@10": 0.0,
+        "NDCG@10": 0.0,
+        "MRR@10": 0.0,
+        "HR@20": 0.0,
+        "NDCG@20": 0.0,
+        "MRR@20": 0.0,
+        "Catalog_Coverage@10": 14,
+        "Catalog_Coverage@20": 32
+      }
+    },
+    {
+      "model_name": "Knowledge Graph (P1+P2+P3)",
+      "strategy": "kg_only",
+      "params": {},
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.0021,
+      "latency_ms_per_user": 0.016,
+      "hit_counts": {
+        "5": 11,
+        "10": 13,
+        "20": 19
+      },
+      "metrics": {
+        "HR@5": 0.0833,
+        "NDCG@5": 0.0447,
+        "MRR@5": 0.0318,
+        "HR@10": 0.0985,
+        "NDCG@10": 0.0497,
+        "MRR@10": 0.0339,
+        "HR@20": 0.1439,
+        "NDCG@20": 0.0609,
+        "MRR@20": 0.0369,
+        "Catalog_Coverage@10": 414,
+        "Catalog_Coverage@20": 693
+      }
+    },
+    {
+      "model_name": "Hybrid RRF (k=60)",
+      "strategy": "rrf",
+      "params": {
+        "rrf_k": 60
+      },
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.038,
+      "latency_ms_per_user": 0.288,
+      "hit_counts": {
+        "5": 8,
+        "10": 11,
+        "20": 13
+      },
+      "metrics": {
+        "HR@5": 0.0606,
+        "NDCG@5": 0.0277,
+        "MRR@5": 0.0172,
+        "HR@10": 0.0833,
+        "NDCG@10": 0.0351,
+        "MRR@10": 0.0202,
+        "HR@20": 0.0985,
+        "NDCG@20": 0.039,
+        "MRR@20": 0.0213,
+        "Catalog_Coverage@10": 239,
+        "Catalog_Coverage@20": 428
+      }
+    },
+    {
+      "model_name": "Hybrid Weighted (w_ALS=0.5, w_KG=0.5, Impute Zero)",
+      "strategy": "weighted",
+      "params": {
+        "weight_als": 0.5,
+        "weight_kg": 0.5,
+        "imputation_strategy": "zero"
+      },
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.0399,
+      "latency_ms_per_user": 0.302,
+      "hit_counts": {
+        "5": 8,
+        "10": 12,
+        "20": 15
+      },
+      "metrics": {
+        "HR@5": 0.0606,
+        "NDCG@5": 0.027,
+        "MRR@5": 0.0163,
+        "HR@10": 0.0909,
+        "NDCG@10": 0.0367,
+        "MRR@10": 0.0202,
+        "HR@20": 0.1136,
+        "NDCG@20": 0.0422,
+        "MRR@20": 0.0216,
+        "Catalog_Coverage@10": 295,
+        "Catalog_Coverage@20": 539
+      }
+    },
+    {
+      "model_name": "Hybrid Weighted (w_ALS=0.5, w_KG=0.5, Impute Min)",
+      "strategy": "weighted",
+      "params": {
+        "weight_als": 0.5,
+        "weight_kg": 0.5,
+        "imputation_strategy": "min"
+      },
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.042,
+      "latency_ms_per_user": 0.318,
+      "hit_counts": {
+        "5": 8,
+        "10": 12,
+        "20": 15
+      },
+      "metrics": {
+        "HR@5": 0.0606,
+        "NDCG@5": 0.027,
+        "MRR@5": 0.0163,
+        "HR@10": 0.0909,
+        "NDCG@10": 0.0367,
+        "MRR@10": 0.0202,
+        "HR@20": 0.1136,
+        "NDCG@20": 0.0422,
+        "MRR@20": 0.0216,
+        "Catalog_Coverage@10": 295,
+        "Catalog_Coverage@20": 539
+      }
+    },
+    {
+      "model_name": "Hybrid Weighted (w_ALS=0.5, w_KG=0.5, Impute Neutral)",
+      "strategy": "weighted",
+      "params": {
+        "weight_als": 0.5,
+        "weight_kg": 0.5,
+        "imputation_strategy": "neutral"
+      },
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.0371,
+      "latency_ms_per_user": 0.281,
+      "hit_counts": {
+        "5": 8,
+        "10": 12,
+        "20": 15
+      },
+      "metrics": {
+        "HR@5": 0.0606,
+        "NDCG@5": 0.027,
+        "MRR@5": 0.0163,
+        "HR@10": 0.0909,
+        "NDCG@10": 0.0367,
+        "MRR@10": 0.0202,
+        "HR@20": 0.1136,
+        "NDCG@20": 0.0422,
+        "MRR@20": 0.0216,
+        "Catalog_Coverage@10": 295,
+        "Catalog_Coverage@20": 539
+      }
+    },
+    {
+      "model_name": "Hybrid Weighted (w_ALS=0.5, w_KG=0.5, Impute Source-Aware)",
+      "strategy": "weighted",
+      "params": {
+        "weight_als": 0.5,
+        "weight_kg": 0.5,
+        "imputation_strategy": "source_aware"
+      },
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.0358,
+      "latency_ms_per_user": 0.271,
+      "hit_counts": {
+        "5": 8,
+        "10": 12,
+        "20": 15
+      },
+      "metrics": {
+        "HR@5": 0.0606,
+        "NDCG@5": 0.027,
+        "MRR@5": 0.0163,
+        "HR@10": 0.0909,
+        "NDCG@10": 0.0367,
+        "MRR@10": 0.0202,
+        "HR@20": 0.1136,
+        "NDCG@20": 0.0422,
+        "MRR@20": 0.0216,
+        "Catalog_Coverage@10": 295,
+        "Catalog_Coverage@20": 539
+      }
+    },
+    {
+      "model_name": "Hybrid Weighted Cross-Scored (w_ALS=0.5, w_KG=0.5)",
+      "strategy": "weighted_cross",
+      "params": {
+        "weight_als": 0.5,
+        "weight_kg": 0.5,
+        "imputation_strategy": "neutral"
+      },
+      "total_users": 200,
+      "positive_denominator": 132,
+      "scoreable_users": 132,
+      "score_availability": 1.0,
+      "total_duration_sec": 0.0365,
+      "latency_ms_per_user": 0.277,
+      "hit_counts": {
+        "5": 8,
+        "10": 12,
+        "20": 15
+      },
+      "metrics": {
+        "HR@5": 0.0606,
+        "NDCG@5": 0.027,
+        "MRR@5": 0.0163,
+        "HR@10": 0.0909,
+        "NDCG@10": 0.0367,
+        "MRR@10": 0.0202,
+        "HR@20": 0.1136,
+        "NDCG@20": 0.0422,
+        "MRR@20": 0.0216,
+        "Catalog_Coverage@10": 295,
+        "Catalog_Coverage@20": 539
+      }
+    }
+  ],
+  "paired_comparisons": {
+    "RRF_vs_Popularity Count (M03 Baseline)": {
+      "wins": 10,
+      "losses": 10,
+      "ties": 112,
+      "win_rate": 0.0758
+    },
+    "RRF_vs_Spark ALS Champion (ALS_R8_REG0.3_ITER10)": {
+      "wins": 11,
+      "losses": 0,
+      "ties": 121,
+      "win_rate": 0.0833
+    },
+    "RRF_vs_Knowledge Graph (P1+P2+P3)": {
+      "wins": 0,
+      "losses": 13,
+      "ties": 119,
+      "win_rate": 0.0
+    },
+    "RRF_vs_Hybrid Weighted (w_ALS=0.5, w_KG=0.5, Impute Zero)": {
+      "wins": 3,
+      "losses": 4,
+      "ties": 125,
+      "win_rate": 0.0227
+    },
+    "RRF_vs_Hybrid Weighted (w_ALS=0.5, w_KG=0.5, Impute Min)": {
+      "wins": 3,
+      "losses": 4,
+      "ties": 125,
+      "win_rate": 0.0227
+    },
+    "RRF_vs_Hybrid Weighted (w_ALS=0.5, w_KG=0.5, Impute Neutral)": {
+      "wins": 3,
+      "losses": 4,
+      "ties": 125,
+      "win_rate": 0.0227
+    },
+    "RRF_vs_Hybrid Weighted (w_ALS=0.5, w_KG=0.5, Impute Source-Aware)": {
+      "wins": 3,
+      "losses": 4,
+      "ties": 125,
+      "win_rate": 0.0227
+    },
+    "RRF_vs_Hybrid Weighted Cross-Scored (w_ALS=0.5, w_KG=0.5)": {
+      "wins": 3,
+      "losses": 4,
+      "ties": 125,
+      "win_rate": 0.0227
+    }
+  }
+}

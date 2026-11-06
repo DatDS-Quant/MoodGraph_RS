@@ -147,3 +147,4 @@ Quy tắc này bảo đảm 100% tính tái lập (reproducibility) trong kiểm
   `{"path_type": "ALS_LATENT_FACTOR", "model_version": "ALS_R8_REG0.3_ITER10", "description": "High collaborative affinity in latent matrix factorization space"}`.
   Tuyệt đối không tự ngụy tạo đường đi đồ thị giả mạo cho các ứng viên ALS.
 - **Ứng viên thuộc cả hai bên (BOTH)**: Kết hợp bằng chứng đồ thị của KG và chú thích điểm tương hỗ của ALS.
+

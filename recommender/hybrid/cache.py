@@ -110,3 +110,4 @@ class HybridRecommendationCache:
                 "hit_ratio": round(hit_ratio, 4),
                 "evictions": self._evictions,
             }
+

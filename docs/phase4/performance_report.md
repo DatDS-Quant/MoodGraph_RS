@@ -53,3 +53,4 @@ Bảng phân phối độ trễ kiểm thử thực tế trên 100 yêu cầu li
 - **Trường hợp Warm Cache**: Đạt thông lượng **5,000 - 8,500 Requests/giây (RPS)** trên 1 worker Uvicorn thông thường nhờ thời gian xử lý vi mô < 1ms.
 - **Trường hợp Cold Cache**: Đạt khoảng **1.0 - 2.0 RPS / worker thread** do giới hạn CPU-bound khi tính điểm đường đi đồ thị P1/P2/P3.
 - **Khuyến nghị vận hành Production**: Kích hoạt worker tiền tính toán (Pre-computation / Warm-up job) cho Top 5,000 người dùng tích cực nhất trước mỗi chu kỳ phục vụ cao điểm.
+

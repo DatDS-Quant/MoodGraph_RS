@@ -12,7 +12,8 @@ from __future__ import annotations
 
 import time
 from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, HTTPException, Query, Path as FPath
+from fastapi import FastAPI, HTTPException, Query, Path as FPath, Header
+import os
 from pydantic import BaseModel, Field
 
 from recommender.hybrid.engine import HybridRecommenderService, get_hybrid_service
@@ -133,12 +134,25 @@ def get_recommendations(
     w_kg: float = Query(0.5, description="Trọng số KG (dùng cho weighted)", ge=0.0, le=1.0),
     rrf_k: int = Query(60, description="Hằng số làm mịn RRF k", ge=1),
     filter_seen: bool = Query(True, description="Lọc các phim đã tương tác trong lịch sử"),
+    allow_unfiltered: bool = Query(False, description="Chỉ cho phép tắt lọc phim đã xem khi phục vụ chẩn đoán nội bộ"),
+    cross_score_als: Optional[bool] = Query(None, description="Kích hoạt ALS cross-scoring cho ứng viên KG"),
     use_cache: bool = Query(True, description="Sử dụng bộ nhớ đệm tăng tốc"),
 ) -> RecommendationResponseSchema:
     """
     Sinh danh sách gợi ý phim cá nhân hóa theo thời gian thực.
+    Bảo vệ sản xuất: Tự động cưỡng chế lọc phim đã xem (filter_seen=True)
+    trừ khi có cờ allow_unfiltered=True phục vụ chẩn đoán hệ thống.
     """
     service = get_api_service()
+
+    # Ràng buộc an toàn: Không cho phép vô hiệu hóa lọc phim đã xem trên endpoint phục vụ công cộng
+    effective_filter_seen = filter_seen
+    if not filter_seen and not allow_unfiltered:
+        raise HTTPException(
+            status_code=400,
+            detail="Tắt lọc phim đã xem (filter_seen=false) bị hạn chế trong môi trường phục vụ công cộng. "
+                   "Để phục vụ mục đích kiểm thử hoặc chẩn đoán, vui lòng thiết lập allow_unfiltered=true.",
+        )
 
     # Ánh xạ tham số mô hình sang chiến lược dung hợp
     model_lower = model.lower()
@@ -159,8 +173,9 @@ def get_recommendations(
             weight_als=w_als,
             weight_kg=w_kg,
             rrf_k=rrf_k,
-            filter_seen=filter_seen,
+            filter_seen=effective_filter_seen,
             use_cache=use_cache,
+            cross_score_als=cross_score_als,
         )
         return RecommendationResponseSchema(
             userId=response.userId,
@@ -174,10 +189,20 @@ def get_recommendations(
 
 
 @app.post("/api/cache/clear")
-def clear_cache() -> Dict[str, Any]:
-    """Xóa bộ nhớ đệm phục vụ thử nghiệm và đánh giá độ trễ."""
+def clear_cache(
+    x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
+    token: Optional[str] = Query(None, description="Admin token nếu gọi qua query string"),
+) -> Dict[str, Any]:
+    """Xóa bộ nhớ đệm phục vụ thử nghiệm và đánh giá độ trễ (yêu cầu xác thực nếu cấu hình ADMIN_API_KEY)."""
+    admin_key = os.getenv("ADMIN_API_KEY")
+    if admin_key:
+        provided = x_admin_token or token
+        if not provided or provided != admin_key:
+            raise HTTPException(status_code=403, detail="Xác thực quản trị thất bại: Token không hợp lệ.")
+
     service = get_api_service()
     if service.cache:
         service.cache.clear()
         return {"status": "success", "message": "Cache successfully cleared."}
     return {"status": "ignored", "message": "Cache is disabled."}
+

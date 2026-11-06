@@ -60,3 +60,4 @@ Hệ thống được kiểm định nghiêm ngặt qua 33 bài test tự độn
 - **Group I (FastAPI Serving Endpoints)**: 6 tests kiểm tra các mã phản hồi HTTP 200, 422 và kiểm tra JSON schema.
 
 **Kết quả thực thi**: **33/33 tests PASS 100%** trong thời gian 2.27 giây.
+
