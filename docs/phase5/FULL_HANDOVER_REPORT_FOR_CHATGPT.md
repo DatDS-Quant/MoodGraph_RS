@@ -4,7 +4,7 @@
 **Dự án:** MoodGraph — Hệ thống Gợi ý Phim Cá nhân hóa Dựa trên Knowledge Graph & Apache Spark  
 **Repository:** https://github.com/DatDS-Quant/MoodGraph_RS  
 **Nhánh Phát triển (Development Branch):** `feature/phase5-backend-platform`  
-**Commit Nghiệm thu Phase 5 (Verified Commit SHA):** `39efde316a697675e7f57f79632b5cf3388da775`  
+**Commit Nghiệm thu Phase 5 (Verified Commit SHA):** `eca4f16a0ee233cf9da1b17b6a4805ef96cb62d5`  
 **Commit Cơ sở Main (Base Commit):** `03e30fd5a919d6f0fc17b67895b8f3202ff363a0` (Merged Phase 4)  
 **Tập Dữ liệu Huấn luyện & Đánh giá:** MovieLens 25M (25,000,095 ratings, 62,423 movies, 162,541 users)  
 **Quyết định Nghiệm thu Cuối cùng (Final Gate Verdict):** **PHASE 5 VERIFIED — READY FOR MERGE**  
