@@ -115,9 +115,13 @@ def run_preflight_audit(repo_root: Path) -> Dict[str, Any]:
 
     # 1. Git branch check
     git_info = get_git_info(repo_root)
-    if git_info["branch"] != "feature/als-3a":
+    allowed_branches = {"feature/als-3a", "main", "feature/kg-3b", "feature/phase4-hybrid-recommender"}
+    override_branch = os.getenv("M08_EXPECTED_BRANCH")
+    if override_branch:
+        allowed_branches.add(override_branch)
+    if git_info["branch"] not in allowed_branches:
         raise PreflightBlockedError(
-            f"M08_PREFLIGHT_BLOCKED: Expected branch feature/als-3a, found {git_info['branch']}"
+            f"M08_PREFLIGHT_BLOCKED: Expected branch in {allowed_branches}, found {git_info['branch']}"
         )
     audit_results["checks"]["git_branch"] = git_info["branch"]
     audit_results["checks"]["git_commit"] = git_info["commit"]

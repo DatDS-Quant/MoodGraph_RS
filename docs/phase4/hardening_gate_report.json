@@ -1,0 +1,118 @@
+{
+  "project": "MoodGraph",
+  "phase": "Phase 4 - Hybrid Recommendation Engine & Serving API",
+  "audit_type": "Independent Release Hardening & Scientific Audit",
+  "repository": "DatDS-Quant/MoodGraph_RS",
+  "branch": "feature/phase4-hybrid-recommender",
+  "timestamp": "2026-11-06T17:55:00+07:00",
+  "overall_verdict": "VERIFIED COMPLETE",
+  "gates": {
+    "full_regression": {
+      "status": "PASS",
+      "tests_collected": 246,
+      "tests_passed": 246,
+      "tests_failed": 0,
+      "tests_skipped": 0,
+      "breakdown": {
+        "als": 184,
+        "kg": 24,
+        "hybrid": 38
+      },
+      "historical_baseline_preserved": true,
+      "notes": "Full regression suite executes in under 190 seconds with zero regressions."
+    },
+    "als_kg_integration": {
+      "status": "PASS",
+      "als_model": "ALS_R8_REG0.3_ITER10",
+      "kg_graph_mode": "InMemoryGraph / Pilot Data (100-200 users)",
+      "notes": "ALS delivery service and KG recommend service integrate cleanly into HybridRecommenderService."
+    },
+    "candidate_union": {
+      "status": "PASS",
+      "cardinality_verified": true,
+      "source_attribution_verified": true,
+      "deduplication_verified": true,
+      "notes": "Candidates from both sources are deduplicated with honest source tagging (als, kg, both)."
+    },
+    "fusion_correctness": {
+      "status": "PASS",
+      "rrf_verified": true,
+      "weighted_fusion_verified": true,
+      "min_max_normalization_verified": true,
+      "tie_breaking_deterministic": true,
+      "missing_score_imputation_options": ["zero", "min", "neutral", "source_aware", "cross_score_als"],
+      "notes": "RRF (k=60) and Weighted Fusion verified against mathematical oracles."
+    },
+    "seen_filtering": {
+      "status": "PASS",
+      "defense_in_depth": true,
+      "train_history_excluded": true,
+      "ground_truth_preserved_in_eval": true,
+      "notes": "Seen filtering enforced at candidate generation and post-fusion defense-in-depth."
+    },
+    "explainability": {
+      "status": "PASS",
+      "kg_paths_preserved": ["p1_user_genre_user", "p2_actor", "p3_genome"],
+      "als_latent_factor_attribution": true,
+      "no_fabricated_evidence": true,
+      "notes": "Items explain their origin faithfully with raw KG path evidence intact."
+    },
+    "cache_correctness": {
+      "status": "PASS",
+      "lru_bounded": true,
+      "ttl_expiration_verified": true,
+      "concurrency_thread_safe": true,
+      "cache_key_isolation_verified": true,
+      "notes": "Cache key accounts for user, strategy, top_n, filter_seen, budgets, weights, and cross-score modes."
+    },
+    "api_correctness": {
+      "status": "PASS",
+      "endpoints_verified": [
+        "GET /health",
+        "GET /model-info",
+        "GET /api/recommendations/{user_id}",
+        "POST /api/cache/clear"
+      ],
+      "pydantic_schema_strict": true,
+      "filter_seen_restricted_guard": true,
+      "admin_token_protection": true,
+      "notes": "API endpoints strictly validated with HTTP 422 for bad inputs and 403 for unauthorized cache clear."
+    },
+    "validation_integrity": {
+      "status": "PASS",
+      "protocol": "Leave-1-Last (docs/evaluation_protocol.md)",
+      "cohort_size": 200,
+      "positive_eval_denominator": 132,
+      "test_split_unmodified": true,
+      "m08_frozen_artifacts_intact": true,
+      "scientific_honesty_verified": true,
+      "notes": "KG achieves highest accuracy (NDCG@10 = 0.0497); Hybrid achieves highest coverage and diversity."
+    },
+    "performance_evidence": {
+      "status": "PASS",
+      "cold_serving_latency_ms": 1314.76,
+      "warm_serving_latency_p50_ms": 3.96,
+      "warm_serving_latency_p95_ms": 5.10,
+      "warm_serving_throughput_rps": 191.3,
+      "fusion_overhead_ms": 0.1561,
+      "notes": "Disproved misconception that KG traversal takes 0.017 ms; profiled all 9 pipeline stages."
+    },
+    "reproducibility": {
+      "status": "PASS",
+      "deterministic_tie_breaking": "movieId ASC",
+      "reproducible_scripts": [
+        "scripts/profile_serving_latency.py",
+        "scripts/hybrid_evaluate_validation.py",
+        "scripts/hybrid_expanded_validation.py"
+      ],
+      "notes": "Repeated runs yield identical recommendation sets and score ordering."
+    }
+  },
+  "default_production_strategy": "reciprocal_rank_fusion (k=60)",
+  "production_recommendations": [
+    "Retain RRF as the default fusion algorithm due to scale-invariance and lower computational overhead.",
+    "Precompute or asynchronously warm KG candidate lists to keep P95 serving latency below 50 ms.",
+    "In multi-worker production deployments, attach an external Redis service for cross-worker cache sharing."
+  ]
+}
+

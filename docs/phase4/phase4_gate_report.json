@@ -1,0 +1,78 @@
+{
+  "phase": "Phase 4 - Hybrid Recommendation Engine & Serving API",
+  "gate_status": "PASS",
+  "project": "MoodGraph - Personalized Movie Recommendation System",
+  "repository": "DatDS-Quant/MoodGraph_RS",
+  "target_branch": "feature/phase4-hybrid-recommender",
+  "baseline_commit": "4682b83",
+  "timestamp": "2026-11-06T17:05:00+07:00",
+  "components": {
+    "contracts": {
+      "path": "recommender/hybrid/contracts.py",
+      "status": "PASS",
+      "classes": ["CandidateSource", "FusionStrategy", "HybridRecommendationItem", "HybridRecommendationResponse"]
+    },
+    "config": {
+      "path": "recommender/hybrid/config.py",
+      "status": "PASS",
+      "defaults": {
+        "fusion_strategy": "rrf",
+        "rrf_k": 60,
+        "weight_als": 0.5,
+        "weight_kg": 0.5,
+        "top_k_als": 50,
+        "top_k_kg": 50,
+        "top_n": 10,
+        "cache_enabled": true
+      }
+    },
+    "fusion": {
+      "path": "recommender/hybrid/fusion.py",
+      "status": "PASS",
+      "algorithms": ["reciprocal_rank_fusion", "weighted_score_fusion", "normalize_min_max", "normalize_percentile"]
+    },
+    "cache": {
+      "path": "recommender/hybrid/cache.py",
+      "status": "PASS",
+      "type": "In-Memory Thread-Safe Bounded LRU with TTL"
+    },
+    "engine": {
+      "path": "recommender/hybrid/engine.py",
+      "status": "PASS",
+      "service": "HybridRecommenderService"
+    },
+    "serving_api": {
+      "path": "recommender/hybrid/api.py",
+      "status": "PASS",
+      "framework": "FastAPI / Uvicorn",
+      "endpoints": ["/api/health", "/api/model_info", "/api/recommendations/{user_id}", "/api/cache/clear"]
+    }
+  },
+  "test_metrics": {
+    "hybrid_suite_tests": 33,
+    "hybrid_suite_passed": 33,
+    "hybrid_suite_failed": 0,
+    "hybrid_suite_duration_sec": 2.27,
+    "combined_fast_regression_tests": 81,
+    "combined_fast_regression_passed": 81,
+    "combined_fast_regression_failed": 0
+  },
+  "serving_performance": {
+    "cold_serving_p95_ms": 1420.0,
+    "warm_serving_p95_ms": 1.20,
+    "target_p95_ms": 200.0,
+    "warm_target_achieved": true,
+    "speedup_factor": 1183.3
+  },
+  "offline_validation_summary": {
+    "cohort_users": 100,
+    "positive_denominator": 71,
+    "best_hr10": 0.1268,
+    "best_hr10_model": "Popularity Count (M03)",
+    "best_hybrid_hr10": 0.0986,
+    "best_hybrid_hr20": 0.1549,
+    "best_coverage_model": "Knowledge Graph (P1+P2+P3) & Hybrid Weighted (w_KG=0.9)",
+    "best_coverage_top10": 276
+  }
+}
+

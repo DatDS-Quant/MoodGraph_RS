@@ -1,0 +1,28 @@
+{
+  "loading": {
+    "als_load_ms": 534.44,
+    "kg_load_ms": 9967.92
+  },
+  "als_candidate_generation_ms": {
+    "mean": 16.017,
+    "p95": 183.029
+  },
+  "kg_candidate_generation_ms": {
+    "mean": 1565.9,
+    "p95": 6172.3
+  },
+  "candidate_union_ms": 0.0133,
+  "fusion_overhead_ms": {
+    "rrf_mean": 0.1561,
+    "weighted_mean": 0.2101
+  },
+  "serialization_ms": 0.1122,
+  "api_latency_ms": {
+    "cold_p95": 1314.76,
+    "warm_p50": 3.96,
+    "warm_p90": 4.821,
+    "warm_p95": 5.102,
+    "warm_p99": 89.012
+  },
+  "throughput_rps": 191.3
+}
