@@ -54,6 +54,7 @@ class UserInteractionService:
     def remove_movie_from_list(self, user_id: str, movie_id: int, list_type: str = "watchlist") -> Dict[str, Any]:
         """Removes a movie from user's watchlist."""
         removed = self.sqlite_repo.remove_saved_movie(user_id=user_id, movie_id=movie_id, list_type=list_type)
+        self._invalidate_user_cache(user_id)
         return {"success": removed, "user_id": user_id, "movie_id": movie_id, "list_type": list_type}
 
     def get_saved_movies(self, user_id: str, list_type: Optional[str] = "watchlist") -> List[Dict[str, Any]]:

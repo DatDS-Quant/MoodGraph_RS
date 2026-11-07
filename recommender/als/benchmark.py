@@ -115,7 +115,13 @@ def run_preflight_audit(repo_root: Path) -> Dict[str, Any]:
 
     # 1. Git branch check
     git_info = get_git_info(repo_root)
-    allowed_branches = {"feature/als-3a", "main", "feature/kg-3b", "feature/phase4-hybrid-recommender"}
+    allowed_branches = {
+        "feature/als-3a",
+        "main",
+        "feature/kg-3b",
+        "feature/phase4-hybrid-recommender",
+        "feature/phase5-backend-platform",
+    }
     override_branch = os.getenv("M08_EXPECTED_BRANCH")
     if override_branch:
         allowed_branches.add(override_branch)

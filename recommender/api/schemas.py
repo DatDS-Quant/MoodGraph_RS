@@ -148,16 +148,17 @@ class RegisteredModelsResponse(BaseModel):
 
 
 class LabCompareRequest(BaseModel):
-    user_id: int = Field(..., ge=1, description="Target user ID")
+    user_id: int = Field(..., ge=1, le=10_000_000, description="Target user ID")
     models: List[str] = Field(
         default=["als", "kg", "hybrid_rrf", "hybrid_weighted"],
         description="Models to evaluate side-by-side",
+        max_length=10,
     )
     top_n: int = Field(10, ge=1, le=50)
     filter_seen: bool = True
-    rrf_k: int = 60
-    weight_als: float = 0.5
-    weight_kg: float = 0.5
+    rrf_k: int = Field(60, ge=1, le=1000, description="RRF smoothing constant k")
+    weight_als: float = Field(0.5, ge=0.0, le=1.0, description="Weight for ALS candidate scoring")
+    weight_kg: float = Field(0.5, ge=0.0, le=1.0, description="Weight for KG candidate scoring")
 
 
 class ModelRunResult(BaseModel):

@@ -7,8 +7,9 @@ real-time personalized recommendations, and explainability breakdowns.
 from __future__ import annotations
 
 import logging
+import os
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Path as FPath, Query, status
 
 from recommender.api.dependencies import (
     get_catalog_service,
@@ -40,8 +41,8 @@ router = APIRouter(prefix="/api", tags=["Mode A - Movie Discovery"])
 
 @router.get("/movies", response_model=MovieSearchResponse)
 def list_and_search_movies(
-    query: Optional[str] = Query(None, description="Search keyword in movie title"),
-    genre: Optional[str] = Query(None, description="Filter by genre"),
+    query: Optional[str] = Query(None, max_length=200, description="Search keyword in movie title"),
+    genre: Optional[str] = Query(None, max_length=50, description="Filter by genre"),
     year_min: Optional[int] = Query(None, ge=1870, le=2050, description="Minimum release year"),
     year_max: Optional[int] = Query(None, ge=1870, le=2050, description="Maximum release year"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -64,9 +65,9 @@ def list_and_search_movies(
 
 @router.get("/movies/search", response_model=MovieSearchResponse)
 def search_movies_alias(
-    q: Optional[str] = Query(None, description="Search keyword alias"),
-    query: Optional[str] = Query(None, description="Search keyword in movie title"),
-    genre: Optional[str] = Query(None, description="Filter by genre"),
+    q: Optional[str] = Query(None, max_length=200, description="Search keyword alias"),
+    query: Optional[str] = Query(None, max_length=200, description="Search keyword in movie title"),
+    genre: Optional[str] = Query(None, max_length=50, description="Filter by genre"),
     year_min: Optional[int] = Query(None, ge=1870, le=2050),
     year_max: Optional[int] = Query(None, ge=1870, le=2050),
     page: int = Query(1, ge=1),
@@ -129,7 +130,7 @@ def list_sample_users(
 
 @router.get("/users/{user_id}/profile", response_model=UserProfileResponse)
 def get_user_profile(
-    user_id: int,
+    user_id: int = FPath(..., ge=1, le=10_000_000, description="User ID (positive integer)"),
     user_svc: UserProfileService = Depends(get_user_profile_service),
 ) -> UserProfileResponse:
     """
@@ -142,7 +143,7 @@ def get_user_profile(
 
 @router.get("/users/{user_id}/history", response_model=UserHistoryResponse)
 def get_user_history(
-    user_id: int,
+    user_id: int = FPath(..., ge=1, le=10_000_000, description="User ID (positive integer)"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     min_rating: Optional[float] = Query(None, ge=0.5, le=5.0),
@@ -167,11 +168,14 @@ def get_user_history(
 
 @router.get("/recommendations/{user_id}")
 def get_recommendations(
-    user_id: int,
+    user_id: int = FPath(..., ge=1, le=10_000_000, description="Target user ID"),
     top_n: int = Query(10, ge=1, le=50),
     strategy: Optional[str] = Query(None, pattern="^(rrf|weighted|als_only|kg_only)$"),
     filter_seen: bool = Query(True),
+    allow_unfiltered: bool = Query(False, description="Allow disabling seen filtering for diagnostics"),
     use_cache: bool = Query(True),
+    x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
+    admin_token: Optional[str] = Query(None, description="Admin token if passed as query parameter"),
     hybrid_engine=Depends(get_hybrid_engine),
 ):
     """
@@ -183,6 +187,21 @@ def get_recommendations(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Hybrid recommender engine is not initialized or still warming up.",
         )
+
+    # Diagnostic security check if client requests disabling seen filtering
+    if not filter_seen:
+        admin_key = os.getenv("ADMIN_API_KEY") or os.getenv("HYBRID_ADMIN_TOKEN", "moodgraph-admin-secret")
+        provided_token = x_admin_token or admin_token
+        if not provided_token or provided_token != admin_key:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: Disabling seen filtering (filter_seen=false) is a privileged diagnostic feature requiring a valid Admin Token via X-Admin-Token or admin_token parameter.",
+            )
+        if not allow_unfiltered:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Disabling seen filtering is restricted. Please pass allow_unfiltered=true along with the valid Admin Token for diagnostic evaluations.",
+            )
 
     try:
         resp = hybrid_engine.recommend(
@@ -207,8 +226,8 @@ def get_recommendations(
 
 @router.get("/explanations/{user_id}/{movie_id}", response_model=ExplanationDetailResponse)
 def get_recommendation_explanation(
-    user_id: int,
-    movie_id: int,
+    user_id: int = FPath(..., ge=1, le=10_000_000, description="Target user ID"),
+    movie_id: int = FPath(..., ge=1, le=10_000_000, description="Target movie ID"),
     explain_svc: ExplainabilityService = Depends(get_explainability_service),
 ) -> ExplanationDetailResponse:
     """

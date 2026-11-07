@@ -189,22 +189,48 @@ class LabService:
                 list_a = results[m_a]["recommendations"]
                 list_b = results[m_b]["recommendations"]
 
-                set_a = {it["movieId"] for it in list_a}
-                set_b = {it["movieId"] for it in list_b}
+                # Deduplicate candidates while preserving first occurrence and rank order
+                seen_a: Set[int] = set()
+                ordered_a: List[Dict[str, Any]] = []
+                for it in list_a:
+                    mid = it.get("movieId")
+                    if mid is not None and mid not in seen_a:
+                        seen_a.add(mid)
+                        ordered_a.append(it)
+
+                seen_b: Set[int] = set()
+                ordered_b: List[Dict[str, Any]] = []
+                for it in list_b:
+                    mid = it.get("movieId")
+                    if mid is not None and mid not in seen_b:
+                        seen_b.add(mid)
+                        ordered_b.append(it)
+
+                set_a = seen_a
+                set_b = seen_b
 
                 intersection = set_a & set_b
                 union = set_a | set_b
                 jaccard = len(intersection) / float(len(union)) if union else 0.0
 
-                rank_map_a = {it["movieId"]: it["rank"] for it in list_a}
-                rank_map_b = {it["movieId"]: it["rank"] for it in list_b}
-
-                # Compute Spearman rank correlation on common items
+                # Compute Spearman rank correlation strictly on relative order of common items
+                # Semantics:
+                # - For k < 2 (0 or 1 common movie): rank correlation is undefined (return None).
+                # - For k >= 2: we extract the common movies in their relative rank order in Model A and Model B.
+                #   Assigning relative ranks 1..k ensures rho is mathematically well-defined and strictly in [-1.0, 1.0].
                 spearman_corr = None
-                if len(intersection) >= 3:
-                    diff_sq_sum = sum((rank_map_a[mid] - rank_map_b[mid]) ** 2 for mid in intersection)
-                    k = len(intersection)
-                    spearman_corr = 1.0 - (6.0 * diff_sq_sum) / (k * (k ** 2 - 1))
+                k = len(intersection)
+                if k >= 2:
+                    # Filter items in intersection preserving order in list A and list B
+                    common_in_a = [it["movieId"] for it in ordered_a if it["movieId"] in intersection]
+                    common_in_b = [it["movieId"] for it in ordered_b if it["movieId"] in intersection]
+
+                    rel_rank_a = {mid: idx + 1 for idx, mid in enumerate(common_in_a)}
+                    rel_rank_b = {mid: idx + 1 for idx, mid in enumerate(common_in_b)}
+
+                    diff_sq_sum = sum((rel_rank_a[mid] - rel_rank_b[mid]) ** 2 for mid in intersection)
+                    raw_spearman = 1.0 - (6.0 * diff_sq_sum) / float(k * (k ** 2 - 1))
+                    spearman_corr = max(-1.0, min(1.0, raw_spearman))
 
                 pairwise_overlaps.append({
                     "model_a": m_a,
