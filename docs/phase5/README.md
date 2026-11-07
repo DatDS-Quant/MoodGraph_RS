@@ -67,3 +67,4 @@ MoodGraph/
 3. **Scientific Honesty**: Bao toan ket luan khoa hoc thuc te rang tren tap cohort 200 users o tap Validation, KG-only dat do chinh xac xep hang cao hon ALS va Hybrid RRF.
 4. **Pre-warmed Lifespan**: Nap truoc danh muc phim va chi muc CSR khi server khoi dong, triet tieu do tre khoi dong lanh xuong duoi 5ms o cache hit.
 5. **No LaTeX / Dollar Signs**: Tuan thu chat che quy chuan Typography, de doc va hien thi hoan hao tren moi giao dien Markdown.
+

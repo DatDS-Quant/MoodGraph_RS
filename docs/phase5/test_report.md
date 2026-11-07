@@ -54,3 +54,4 @@ He thong kiem thu tu dong cua MoodGraph bao phu 100% cac phan tang tu Matrix Fac
 
 ## 3. Ket luan Kiem thu
 Toan bo 108 bai kiem thu tu dong vuot qua 100%, khong co bat ky loi hoi quy nao so voi baseline Phase 4.
+

@@ -21,3 +21,4 @@ __all__ = [
     "UserInteractionService",
     "get_user_interaction_service",
 ]
+

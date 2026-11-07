@@ -101,3 +101,4 @@ He thong Backend cua MoodGraph duoc to chuc theo mo hinh phan lop mot chieu nghi
   * Train Seen CSR Index (24.6M interactions, ~50 MB) nạp mảng offsets và movie_ids trong ~80ms.
   * Hybrid Engine pre-warmed và sẵn sàng phục vụ.
 - Ket qua: Khong con hien tuong spike do tre o request dau tien, 100% cac truy van tra ve on dinh.
+

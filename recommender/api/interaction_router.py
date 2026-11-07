@@ -128,3 +128,4 @@ def get_user_preferences(
 ) -> Optional[Dict[str, Any]]:
     """Retrieves saved user preferences."""
     return interaction_svc.get_preferences(user_id=user_id)
+

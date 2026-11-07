@@ -51,3 +51,4 @@ def clear_cache(
             cleared = len(hybrid_engine.cache._cache)
             hybrid_engine.cache._cache.clear()
     return CacheClearResponse(success=True, cleared_entries_count=cleared)
+

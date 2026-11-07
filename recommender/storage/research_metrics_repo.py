@@ -266,3 +266,4 @@ def get_research_metrics_repository(workspace_root: Optional[Path] = None) -> Re
     if _global_metrics_repo is None:
         _global_metrics_repo = ResearchMetricsRepository(workspace_root)
     return _global_metrics_repo
+

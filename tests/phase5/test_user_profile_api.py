@@ -70,3 +70,4 @@ def test_user_history_zero_leakage(client):
     expected_train_seen = history_repo.get_user_seen_movie_ids(1)
 
     assert returned_movie_ids == expected_train_seen
+

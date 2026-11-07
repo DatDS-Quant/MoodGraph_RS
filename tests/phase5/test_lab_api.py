@@ -70,3 +70,4 @@ def test_get_lab_metadata(client):
     assert data["total_ratings"] == 25000095
     assert data["catalog_size"] == 62423
     assert data["als_model"]["factors_dim"] == 8
+

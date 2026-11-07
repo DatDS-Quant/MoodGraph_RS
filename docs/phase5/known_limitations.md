@@ -24,3 +24,4 @@
    - Tich hop mo hinh LightGCN hoac PinSage de hoc bieu dien ket hop giua cau truc do thi va ma tran tuong tac.
 3. **Containerization & CI/CD:**
    - Dong goi toan bo he thong thanh Docker container da tang (FastAPI, SQLite, Nginx reverse proxy).
+

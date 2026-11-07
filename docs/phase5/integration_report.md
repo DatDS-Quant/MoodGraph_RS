@@ -52,3 +52,4 @@ MOODGRAPH PHASE 4/5: REAL-ARTIFACT END-TO-END INTEGRATION GATE
 
 ## 3. Ket luan Tich hop
 Moi thanh phan backend deu tuong thich lien mach voi cac hien vat duoc san sinh boi Big Data Spark va Knowledge Graph pipeline.
+

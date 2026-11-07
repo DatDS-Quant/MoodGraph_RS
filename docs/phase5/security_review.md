@@ -37,3 +37,4 @@ He thong Backend MoodGraph Phase 5 da duoc kiem dinh nghiem ngat qua cac tieu ch
 ## 3. Ket luan Audit An toan
 - **Xep hang rui ro tong the:** **LOW (An toan)**.
 - **Ket qua kiem dinh:** 100% cac test case an ninh va hop dong bien vuot qua thanh cong (PASS).
+

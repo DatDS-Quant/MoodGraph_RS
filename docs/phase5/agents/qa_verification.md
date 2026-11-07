@@ -39,3 +39,4 @@
 
 ## 3. Ket luan QA Gate
 Tat ca cac chi tieu nghiem thu kiem thu phan mem cua Phase 5 deu dat chuan 100%. He thong san sang de ban giao.
+

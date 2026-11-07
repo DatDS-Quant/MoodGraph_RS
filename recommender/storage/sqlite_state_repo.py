@@ -281,3 +281,4 @@ def get_sqlite_state_repository(db_path: Optional[Path] = None) -> SQLiteStateRe
     if _global_sqlite_repo is None or db_path is not None:
         _global_sqlite_repo = SQLiteStateRepository(db_path)
     return _global_sqlite_repo
+

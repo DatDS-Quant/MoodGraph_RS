@@ -89,3 +89,4 @@ def test_user_preferences_workflow(client):
     data = resp_get.json()
     assert "Sci-Fi" in data["genres"]
     assert data["min_year"] == 1980
+

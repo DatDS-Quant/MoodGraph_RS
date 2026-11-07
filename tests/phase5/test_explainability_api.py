@@ -28,3 +28,4 @@ def test_get_recommendation_explanation(client):
     # Check that at least one metapath is present
     metapaths = [e["metapath"] for e in data["graph_explanations"]]
     assert any("P" in m for m in metapaths)
+

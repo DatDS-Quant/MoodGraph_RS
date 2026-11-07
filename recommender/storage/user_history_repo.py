@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 import numpy as np
+import pyarrow as pa
 import pyarrow.dataset as ds
 
 
@@ -102,6 +103,9 @@ class UserHistoryRepository:
 
         # Sắp xếp theo thời gian tăng dần
         ratings_list.sort(key=lambda r: (r["timestamp"], r["movieId"]))
+        del scanner
+        del train_ds
+        pa.default_memory_pool().release_unused()
 
         with self._lock:
             self._user_ratings_cache[user_id] = ratings_list
@@ -188,3 +192,4 @@ def get_user_history_repository(
         _USER_HISTORY_REPO_INSTANCE = UserHistoryRepository(data_root=data_root, csr_path=csr_path)
         _USER_HISTORY_REPO_INSTANCE.warmup_index()
     return _USER_HISTORY_REPO_INSTANCE
+

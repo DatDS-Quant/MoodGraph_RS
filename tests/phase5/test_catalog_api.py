@@ -75,3 +75,4 @@ def test_get_movie_detail_not_found(client):
     resp = client.get("/api/movies/99999999")
     assert resp.status_code == 404
     assert "not found" in resp.json()["detail"].lower()
+

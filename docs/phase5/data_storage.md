@@ -68,3 +68,4 @@ MoodGraph phuc vu 25 trieu dong danh gia tu MovieLens 25M. De dam bao do tin cay
 - Thu vien `neo4j` hien tai khong duoc cai dat trong runtime moi truong local va port `bolt://localhost:7687` offline.
 - He thong su dung backend van hanh chuan hoa la `InMemoryGraph` duoc khoi tao tu cac tep Parquet Pilot.
 - `InMemoryGraph` duy tri day du cac chi muc hai chieu giua Users, Movies, Genres va GenomeTags (Top-20 relevance), cung cap toc do duyet do thi duoi 5ms ma khong lam tang do phuc tap van hanh.
+

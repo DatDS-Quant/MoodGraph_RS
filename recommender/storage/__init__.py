@@ -12,22 +12,14 @@ from recommender.storage.user_history_repo import UserHistoryRepository, get_use
 from recommender.storage.research_metrics_repo import ResearchMetricsRepository, get_research_metrics_repository
 from recommender.storage.sqlite_state_repo import SQLiteStateRepository, get_sqlite_state_repository
 
-get_catalog_repo = get_catalog_repository
-get_user_history_repo = get_user_history_repository
-get_research_metrics_repo = get_research_metrics_repository
-get_sqlite_state_repo = get_sqlite_state_repository
-
 __all__ = [
     "MovieCatalogRepository",
     "get_catalog_repository",
-    "get_catalog_repo",
     "UserHistoryRepository",
     "get_user_history_repository",
-    "get_user_history_repo",
     "ResearchMetricsRepository",
     "get_research_metrics_repository",
-    "get_research_metrics_repo",
     "SQLiteStateRepository",
     "get_sqlite_state_repository",
-    "get_sqlite_state_repo",
 ]
+

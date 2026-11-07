@@ -36,9 +36,6 @@ class MovieCatalogRepository:
         self._title_index: List[Tuple[str, int]] = []
         self._genre_index: Dict[str, List[int]] = {}
         self._distinct_genres: List[str] = []
-        self._sorted_movies_by_title: List[Dict[str, Any]] = []
-        self._sorted_movies_by_id: List[Dict[str, Any]] = []
-        self._sorted_movies_by_year: List[Dict[str, Any]] = []
 
     def load_and_index(self) -> None:
         """Tải và lập chỉ mục toàn bộ danh mục phim vào RAM."""
@@ -120,9 +117,6 @@ class MovieCatalogRepository:
             self._title_index = title_index
             self._genre_index = genre_index
             self._distinct_genres = sorted_genres
-            self._sorted_movies_by_title = sorted(movies_by_id.values(), key=lambda m: (m["title"].lower(), m["movieId"]))
-            self._sorted_movies_by_id = [movies_by_id[mid] for mid in all_movie_ids]
-            self._sorted_movies_by_year = sorted(movies_by_id.values(), key=lambda m: (m["release_year"] or 0, m["title"], m["movieId"]), reverse=True)
             self._is_loaded = True
 
     def ensure_loaded(self) -> None:
@@ -155,8 +149,6 @@ class MovieCatalogRepository:
         self.ensure_loaded()
         return list(self._distinct_genres)
 
-    get_distinct_genres = list_genres
-
     def search_movies(
         self,
         query: Optional[str] = None,
@@ -186,19 +178,6 @@ class MovieCatalogRepository:
         if page < 1:
             page = 1
         page_size = max(1, min(page_size, 100))
-
-        # Đường dẫn nhanh (Fast Path) khi duyệt danh mục không dùng bộ lọc
-        if not query and not genre and year_min is None and year_max is None:
-            if sort_by == "year":
-                base_list = self._sorted_movies_by_year
-            elif sort_by == "movieId":
-                base_list = self._sorted_movies_by_id
-            else:
-                base_list = self._sorted_movies_by_title
-            total_count = len(base_list)
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-            return base_list[start_idx:end_idx], total_count
 
         # 1. Xác định tập ứng viên ban đầu
         if genre and genre in self._genre_index:
@@ -255,3 +234,4 @@ def get_catalog_repository(data_root: Optional[Path] = None) -> MovieCatalogRepo
         _CATALOG_REPO_INSTANCE = MovieCatalogRepository(data_root=data_root)
         _CATALOG_REPO_INSTANCE.load_and_index()
     return _CATALOG_REPO_INSTANCE
+

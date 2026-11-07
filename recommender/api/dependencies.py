@@ -43,3 +43,4 @@ def get_interaction_service(request: Request) -> UserInteractionService:
 def get_hybrid_engine(request: Request) -> Any:
     """Retrieves HybridRecommenderService from app state."""
     return getattr(request.app.state, "hybrid_engine", None)
+

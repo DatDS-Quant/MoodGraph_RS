@@ -71,3 +71,4 @@ def test_sql_injection_resilience(client):
     items = resp_get.json()
     assert len(items) == 1
     assert items[0]["movieId"] == 10
+

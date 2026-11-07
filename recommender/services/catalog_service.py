@@ -150,3 +150,4 @@ def get_catalog_service(catalog_repo: Optional[MovieCatalogRepository] = None) -
     if _global_catalog_service is None or catalog_repo is not None:
         _global_catalog_service = CatalogService(catalog_repo)
     return _global_catalog_service
+

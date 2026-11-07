@@ -40,3 +40,4 @@ Dua tren ket qua danh gia Leave-1-Last duoc ghi nhan trong `docs/phase4/expanded
 ## 3. Cach Phase 5 truyen tai Thong tin nay tren API
 - Endpoint `GET /api/lab/metrics` cong khai toan bo cac con so nay ma khong giau giem.
 - Truong `scientific_note` trong response cung cap loi giai thich ro rang, giup hoi dong danh gia va nguoi dung danh gia cao tinh trung thuc va chuyen sau cua du an.
+
