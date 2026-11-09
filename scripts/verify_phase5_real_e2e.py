@@ -90,15 +90,24 @@ def run_e2e_verification():
         log_step("1.4 Hybrid Recommendations", True, f"Top 1: {top_rec['title']} (movieId={top_rec['movieId']}, score={top_rec['hybrid_score']:.4f}) in {t_rec:.2f}ms")
         results.append(("1.4 Hybrid Recommendations", True))
 
-        # 1.5 Multi-Perspective Explanation
+        # 1.5 Multi-Perspective Explanation Provenance
         rec_mid = top_rec["movieId"]
         resp = client.get(f"/api/explanations/1/{rec_mid}")
         assert resp.status_code == 200
         expl_data = resp.json()
         assert expl_data["movieId"] == rec_mid
         assert "graph_explanations" in expl_data
-        log_step("1.5 Multi-Perspective Explanation", True, f"Movie: '{expl_data['movie_title']}', Source: {expl_data['overall_recommendation_source']}, Graph Paths: {len(expl_data['graph_explanations'])}")
-        results.append(("1.5 Multi-Perspective Explanation", True))
+        for g_exp in expl_data["graph_explanations"]:
+            assert "evidence_type" in g_exp
+            assert "verification_status" in g_exp
+            assert "source_model" in g_exp
+        log_step(
+            "1.5 Multi-Perspective Explanation & Provenance",
+            True,
+            f"Movie: '{expl_data['movie_title']}', Source: {expl_data['overall_recommendation_source']}, "
+            f"P1 Status: {expl_data['graph_explanations'][0]['verification_status']} ({expl_data['graph_explanations'][0]['evidence_type']})"
+        )
+        results.append(("1.5 Multi-Perspective Explanation Provenance", True))
 
         # -------------------------------------------------------------
         # JOURNEY 2: RECOMMENDATION LAB (MODE B)
@@ -238,12 +247,48 @@ def run_e2e_verification():
         log_step("5.2 Boundary Guard (Oversized top_n)", True, f"Successfully blocked oversized request (status {resp.status_code})")
         results.append(("5.2 Boundary Guard Oversized", True))
 
-        # 5.3 Diagnostic Endpoint Cache Clearing
-        resp = client.post("/api/system/cache/clear")
-        assert resp.status_code == 200
-        assert resp.json()["success"] is True
-        log_step("5.3 System Diagnostic Cache Clear", True, f"Successfully cleared cache ({resp.json()['cleared_entries_count']} entries cleared)")
-        results.append(("5.3 System Cache Clear", True))
+        # 5.3 Administrative Security Gate for /api/system/cache/clear
+        import os
+        admin_test_secret = "moodgraph-e2e-admin-secret-2026"
+        os.environ["ADMIN_API_KEY"] = admin_test_secret
+
+        # Missing token -> 403
+        resp_no_token = client.post("/api/system/cache/clear")
+        assert resp_no_token.status_code == 403, f"Expected 403 for missing token, got {resp_no_token.status_code}"
+
+        # Invalid token -> 403
+        resp_bad_token = client.post("/api/system/cache/clear", headers={"X-Admin-Token": "bad_token"})
+        assert resp_bad_token.status_code == 403, f"Expected 403 for bad token, got {resp_bad_token.status_code}"
+
+        # Query parameter token -> 403 (query token rejected)
+        resp_query_token = client.post(f"/api/system/cache/clear?token={admin_test_secret}")
+        assert resp_query_token.status_code == 403, f"Expected 403 for query token, got {resp_query_token.status_code}"
+
+        # Valid header token -> 200
+        resp_valid = client.post("/api/system/cache/clear", headers={"X-Admin-Token": admin_test_secret})
+        assert resp_valid.status_code == 200
+        assert resp_valid.json()["success"] is True
+        log_step("5.3 Administrative Security Gate (Cache Clear)", True, "Missing/invalid/query token correctly denied (403); valid X-Admin-Token authorized (200)")
+        results.append(("5.3 Admin Security Cache Clear", True))
+
+        # 5.4 Diagnostic Endpoint Security (filter_seen=false)
+        # Without token -> 403
+        resp_fs_no_token = client.get("/api/recommendations/1?filter_seen=false")
+        assert resp_fs_no_token.status_code == 403
+
+        # With query token -> 403
+        resp_fs_query = client.get(f"/api/recommendations/1?filter_seen=false&admin_token={admin_test_secret}")
+        assert resp_fs_query.status_code == 403
+
+        # With valid header but missing allow_unfiltered -> 400
+        resp_fs_no_allow = client.get("/api/recommendations/1?filter_seen=false", headers={"X-Admin-Token": admin_test_secret})
+        assert resp_fs_no_allow.status_code == 400
+
+        # With valid header and allow_unfiltered=true -> 200
+        resp_fs_valid = client.get("/api/recommendations/1?filter_seen=false&allow_unfiltered=true", headers={"X-Admin-Token": admin_test_secret})
+        assert resp_fs_valid.status_code == 200
+        log_step("5.4 Diagnostic filter_seen=false Security", True, "Unauthorized requests denied (403); missing allow_unfiltered rejected (400); authorized executed (200)")
+        results.append(("5.4 Diagnostic filter_seen Security", True))
 
     print("\n" + "=" * 80)
     all_passed = all(p for _, p in results)

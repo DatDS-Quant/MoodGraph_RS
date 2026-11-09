@@ -105,16 +105,62 @@ class UserHistoryResponse(BaseModel):
 
 class MetapathExplanation(BaseModel):
     metapath: str
-    score_contribution: float
-    connecting_entities: List[Dict[str, Any]]
+    evidence_type: str = Field(
+        ...,
+        description="Type of evidence: DIRECT_GRAPH_TRAVERSAL or STRUCTURAL_HEURISTIC",
+    )
+    verification_status: str = Field(
+        ...,
+        description="Audit verification status: VERIFIED_GROUND_TRUTH or HEURISTIC_ESTIMATE",
+    )
+    source_model: str = Field(
+        ...,
+        description="Originating model or component generating this explanation",
+    )
+    score_contribution: Optional[float] = Field(
+        None,
+        description="Verified score contribution, or null if explanation is heuristic",
+    )
+    connecting_entities: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="Verified connecting graph nodes, or empty if heuristic",
+    )
     verbal_explanation: str
+    is_heuristic: bool = Field(
+        default=False,
+        description="Flag indicating whether this explanation is a heuristic approximation",
+    )
+    provenance: str = Field(
+        default="verified_graph_traversal",
+        description="Detailed provenance of the evidence",
+    )
 
 
 class LatentFactorExplanation(BaseModel):
+    evidence_type: str = Field(
+        default="LATENT_FACTOR_AFFINITY",
+        description="Type of evidence: LATENT_FACTOR_AFFINITY",
+    )
+    verification_status: str = Field(
+        default="VERIFIED_NUMERICAL_PROJECTION",
+        description="Audit status: VERIFIED_NUMERICAL_PROJECTION",
+    )
+    source_model: str = Field(
+        default="SPARK_ALS_FACTOR_PROJECTION",
+        description="Originating factor model: SPARK_ALS_FACTOR_PROJECTION",
+    )
     dot_product_score: float
     model_version: str
     percentile_alignment: float
     verbal_explanation: str
+    is_heuristic: bool = Field(
+        default=False,
+        description="Flag indicating whether this explanation is heuristic",
+    )
+    provenance: str = Field(
+        default="verified_spark_als_latent_factor",
+        description="Detailed provenance of the factor alignment",
+    )
 
 
 class ExplanationDetailResponse(BaseModel):

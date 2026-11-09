@@ -10,7 +10,11 @@ import os
 from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 
-from recommender.api.dependencies import get_catalog_service, get_hybrid_engine
+from recommender.api.dependencies import (
+    get_catalog_service,
+    get_hybrid_engine,
+    verify_admin_header_token,
+)
 from recommender.api.schemas import CacheClearResponse, HealthResponse
 from recommender.services.catalog_service import CatalogService
 
@@ -44,20 +48,14 @@ def health_check(
 
 @router.post("/api/system/cache/clear", response_model=CacheClearResponse)
 def clear_cache(
-    x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
-    token: Optional[str] = Query(None, description="Admin token if passed as query parameter"),
+    admin_auth: str = Depends(verify_admin_header_token),
     hybrid_engine=Depends(get_hybrid_engine),
 ) -> CacheClearResponse:
-    """Clears in-memory recommendation cache (guarded by ADMIN_API_KEY when configured)."""
-    admin_key = os.getenv("ADMIN_API_KEY")
-    if admin_key:
-        provided = x_admin_token or token
-        if not provided or provided != admin_key:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin authorization failed: Invalid admin token.",
-            )
-
+    """
+    Clears in-memory recommendation cache.
+    Strictly guarded by server-side ADMIN_API_KEY and X-Admin-Token header.
+    Query-string tokens are rejected; unconfigured tokens fail closed.
+    """
     cleared = 0
     if hybrid_engine and hasattr(hybrid_engine, "cache") and hybrid_engine.cache:
         with hybrid_engine.cache._lock:

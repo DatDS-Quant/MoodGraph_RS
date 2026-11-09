@@ -6,9 +6,10 @@ real-time personalized recommendations, and explainability breakdowns.
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Path as FPath, Query, status
 
 from recommender.api.dependencies import (
@@ -16,6 +17,7 @@ from recommender.api.dependencies import (
     get_explainability_service,
     get_hybrid_engine,
     get_user_profile_service,
+    verify_admin_header_token,
 )
 from recommender.api.schemas import (
     ExplanationDetailResponse,
@@ -175,12 +177,12 @@ def get_recommendations(
     allow_unfiltered: bool = Query(False, description="Allow disabling seen filtering for diagnostics"),
     use_cache: bool = Query(True),
     x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
-    admin_token: Optional[str] = Query(None, description="Admin token if passed as query parameter"),
     hybrid_engine=Depends(get_hybrid_engine),
 ):
     """
     Generates personalized recommendations using Hybrid Recommender Engine.
     Fully backwards-compatible with Phase 4 response contracts.
+    Enforces strict admin token header verification when disabling seen filtering.
     """
     if hybrid_engine is None:
         raise HTTPException(
@@ -188,20 +190,31 @@ def get_recommendations(
             detail="Hybrid recommender engine is not initialized or still warming up.",
         )
 
-    # Diagnostic security check if client requests disabling seen filtering
+    # Diagnostic security check if client requests disabling seen filtering (fail-closed policy)
     if not filter_seen:
-        admin_key = os.getenv("ADMIN_API_KEY") or os.getenv("HYBRID_ADMIN_TOKEN", "moodgraph-admin-secret")
-        provided_token = x_admin_token or admin_token
-        if not provided_token or provided_token != admin_key:
+        admin_key = os.getenv("ADMIN_API_KEY")
+        if not admin_key or not admin_key.strip():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: Disabling seen filtering (filter_seen=false) is a privileged diagnostic feature requiring a valid Admin Token via X-Admin-Token or admin_token parameter.",
+                detail="Administrative access denied: Server administrator token is unconfigured (fail-closed policy).",
+            )
+        if not x_admin_token:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Administrative authorization required: Missing X-Admin-Token header.",
+            )
+        if not hmac.compare_digest(x_admin_token.strip(), admin_key.strip()):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Administrative authorization failed: Invalid administrator token.",
             )
         if not allow_unfiltered:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Disabling seen filtering is restricted. Please pass allow_unfiltered=true along with the valid Admin Token for diagnostic evaluations.",
+                detail="Disabling seen filtering is restricted. Please pass allow_unfiltered=true along with the valid X-Admin-Token header for diagnostic evaluations.",
             )
+        # Enforce complete cache isolation for diagnostic mode: bypass and do not pollute user cache
+        use_cache = False
 
     try:
         resp = hybrid_engine.recommend(

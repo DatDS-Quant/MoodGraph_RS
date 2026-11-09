@@ -180,3 +180,4 @@ def test_duplicate_movie_ids_deduplication():
     # In dedup B: 10 (1), 30 (2), 20 (3)
     # d = [0, -1, 1], sum d^2 = 2. rho = 1 - 6*2 / (3*8) = 1 - 0.5 = 0.5
     assert pairwise["rank_correlation_spearman"] == 0.5
+
