@@ -152,6 +152,7 @@ desktop.ini
 *.sqlite3
 *.db
 docs/agent_memory/*.db
+.agents/
 
 # Whitelist Git Keepers
 # ==========================================

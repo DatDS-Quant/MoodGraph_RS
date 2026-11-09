@@ -1,0 +1,23 @@
+{
+  "environment": {
+    "os": "Windows 11 (AMD64)",
+    "python": "3.12.3",
+    "cpu_cores": 12,
+    "total_ram_gb": 15.38
+  },
+  "memory": {
+    "baseline_rss_mb": 119.64,
+    "post_startup_rss_mb": 396.09,
+    "raw_data_buffers_mb": 97.25,
+    "rss_after_1000_reqs_mb": 493.25,
+    "growth_500_to_1000_mb": 0.0,
+    "memory_plateau_confirmed": true
+  },
+  "latency": {
+    "lifespan_startup_seconds": 2.424,
+    "cold_first_request_ms": 570.49,
+    "warm_http_p50_ms": 2.725,
+    "warm_http_p95_ms": 3.76,
+    "warm_http_p99_ms": 4.257
+  }
+}
