@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoodGraph — Tạp Chí & Phòng Thí Nghiệm Hệ Gợi Ý Phim Điện Ảnh</title>
+  
+  <!-- Phông chữ Google Fonts Editorial / Claude -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN với bảng màu Dark Charcoal & Warm Amber -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'app-bg': '#0B0F14',
+            'canvas-bg': '#0F141C',
+            'card-surface': '#141A24',
+            'elevated-surface': '#1B2230',
+            'subtle-surface': '#111620',
+            'amber-primary': '#D97706',
+            'amber-light': '#F59E0B',
+            'amber-hover': '#B45309',
+            'amber-pale': '#FDE68A',
+            'emerald-success': '#10B981',
+            'coral-accent': '#E11D48',
+            'model-als': '#0284C7',
+            'model-kg': '#059669',
+            'model-rrf': '#D97706',
+            'model-weighted': '#EA580C',
+            'model-popularity': '#78716C'
+          },
+          fontFamily: {
+            serif: ['Newsreader', 'Source Serif 4', 'Georgia', 'serif'],
+            sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Three.js CDN & OrbitControls cho Không gian Nhúng 3D -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- Stylesheet Tùy Biến Độc Lập Chuẩn Editorial -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#0B0F14] text-[#E2E8F0] antialiased selection:bg-[#D97706] selection:text-white">
+
+  <!-- =========================================================================
+       1. UNIVERSAL HEADER & NAVIGATION BAR
+       ========================================================================= -->
+  <header class="sticky top-0 z-50 glass-header px-4 lg:px-8 py-3 transition-all duration-200">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      
+      <!-- Logo MoodGraph & Định danh học thuật -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="MoodGraphApp.switchMode('modeA')">
+        <div class="brand-logo-icon">
+          <!-- Icon Đồ Thị Điện Ảnh SVG viền Hổ phách -->
+          <svg class="w-5 h-5 text-[#F59E0B]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="6" r="3" fill="#D97706" stroke="none"></circle>
+            <circle cx="18" cy="6" r="3" fill="#059669" stroke="none"></circle>
+            <circle cx="12" cy="18" r="3" fill="#0284C7" stroke="none"></circle>
+            <line x1="8.5" y1="7" x2="15.5" y2="7" stroke="rgba(255,255,255,0.4)"></line>
+            <line x1="7.5" y1="8.5" x2="10.5" y2="15.5" stroke="rgba(255,255,255,0.4)"></line>
+            <line x1="16.5" y1="8.5" x2="13.5" y2="15.5" stroke="rgba(255,255,255,0.4)"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl font-medium tracking-tight text-white font-serif">MoodGraph</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1B2230] text-[#FDE68A] border border-[rgba(217,119,6,0.35)]">HỌC THUẬT</span>
+          </div>
+          <p class="text-[11px] text-[#94A3B8] hidden sm:block">MovieLens 25M • Hệ Gợi Ý Phim Chuẩn Nghiên Cứu</p>
+        </div>
+      </div>
+
+      <!-- Segmented Mode Switcher (Zero-Reload Chuyển 2 Trang) -->
+      <nav class="view-switcher-track">
+        <button id="nav-btn-mode-a" 
+                onclick="MoodGraphApp.switchMode('modeA')" 
+                class="mode-tab-btn active">
+          <!-- Icon Phim Cuộn -->
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+            <line x1="7" y1="2" x2="7" y2="22"></line>
+            <line x1="17" y1="2" x2="17" y2="22"></line>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <line x1="2" y1="7" x2="7" y2="7"></line>
+            <line x1="2" y1="17" x2="7" y2="17"></line>
+            <line x1="17" y1="17" x2="22" y2="17"></line>
+            <line x1="17" y1="7" x2="22" y2="7"></line>
+          </svg>
+          <span>Trải Nghiệm Điện Ảnh</span>
+        </button>
+
+        <button id="nav-btn-mode-b" 
+                onclick="MoodGraphApp.switchMode('modeB')" 
+                class="mode-tab-btn">
+          <!-- Icon Không Gian 3D / Thí Nghiệm -->
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+          <span>Phòng Thí Nghiệm Học Thuật</span>
+        </button>
+      </nav>
+
+      <!-- Tiện ích bên phải: Tìm kiếm, Watchlist, User Profile -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- Ô Tìm Kiếm Nhanh -->
+        <div class="relative hidden md:block">
+          <input type="text" 
+                 id="global-search-input" 
+                 placeholder="Tìm phim, đạo diễn... (/)" 
+                 class="w-48 lg:w-60 bg-[#141A24] border border-[rgba(255,255,255,0.08)] rounded-lg px-3 py-1.5 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#D97706] transition-all">
+          <span class="absolute right-2.5 top-2 text-[10px] font-mono text-[#64748B] border border-[rgba(255,255,255,0.1)] px-1 rounded">/</span>
+        </div>
+
+        <!-- Nút Mở Watchlist (Danh Sách Xem) -->
+        <button id="open-watchlist-btn" 
+                onclick="MoodGraphApp.toggleWatchlist()" 
+                class="relative px-3 py-1.5 rounded-lg bg-[#141A24] hover:bg-[#1B2230] border border-[rgba(255,255,255,0.08)] hover:border-[#10B981] text-xs font-medium text-white flex items-center gap-1.5 transition-all">
+          <svg class="w-4 h-4 text-[#10B981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="hidden sm:inline">Danh Sách Xem</span>
+          <span id="watchlist-count-badge" class="px-1.5 py-0.2 rounded-full bg-[rgba(16,185,129,0.2)] text-[#10B981] font-mono text-[11px] font-semibold">0</span>
+        </button>
+
+        <!-- Bộ Chọn Persona Linh Hoạt Trên Header (Item 4) -->
+        <div class="relative flex items-center gap-1.5 bg-[#141A24] border border-[rgba(255,255,255,0.08)] hover:border-[#D97706] rounded-lg p-1 transition-all">
+          <span class="text-[10px] text-[#94A3B8] font-mono px-1.5 hidden lg:inline">Khán giả:</span>
+          <select id="header-persona-selector" 
+                  onchange="MoodGraphApp.switchPersona(this.value)" 
+                  class="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-1">
+            <option value="user1" class="bg-[#141A24] text-white">Alex Turner (Hình sự / Tâm lý)</option>
+            <option value="user2" class="bg-[#141A24] text-white">Sarah Jenkins (Viễn tưởng & Phiêu lưu)</option>
+            <option value="user_cold" class="bg-[#141A24] text-white">Khán giả mới (Cold-Start)</option>
+          </select>
+          <button onclick="MoodGraphApp.openUserProfileModal()" 
+                  id="header-user-avatar-btn"
+                  class="w-6 h-6 rounded-full bg-[#1B2230] border border-[rgba(217,119,6,0.4)] flex items-center justify-center text-[10px] font-bold text-[#F59E0B] hover:scale-105 transition-transform" 
+                  title="Xem chi tiết hồ sơ MovieLens">
+            <span id="header-user-avatar">A</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       2. MAIN VIEW CONTAINER
+       ========================================================================= -->
+  <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6">
+
+    <!-- =======================================================================
+         VIEW: MODE A (TRẢI NGHIỆM ĐIỆN ẢNH & GỢI Ý CÁ NHÂN HÓA)
+         ======================================================================= -->
+    <div id="mode-a-container" class="space-y-10">
+
+      <!-- Dải Chuyển Nhanh 3 Persona Thử Nghiệm Trực Quan (Item 4) -->
+      <section class="p-3.5 rounded-xl bg-[#141A24] border border-[rgba(255,255,255,0.08)] flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg">
+        <div class="flex items-center gap-2.5">
+          <div class="w-2.5 h-2.5 rounded-full bg-[#D97706] animate-pulse"></div>
+          <div>
+            <div class="text-xs font-semibold text-white flex items-center gap-1.5">
+              <span>Hồ Sơ Khán Giả Thử Nghiệm</span>
+              <span class="px-1.5 py-0.2 rounded text-[10px] bg-[rgba(217,119,6,0.15)] text-[#FDE68A] font-mono">1-Click Persona</span>
+            </div>
+            <div class="text-[11px] text-[#94A3B8] hidden sm:block">Khảo sát phản ứng thời gian thực của thuật toán khi chuyển đổi người dùng</div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="persona-buttons-track">
+          <!-- Nút Khán giả 1: Alex Turner -->
+          <button onclick="MoodGraphApp.switchPersona('user1')" 
+                  id="btn-persona-user1" 
+                  class="persona-btn active px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#D97706] text-white border border-[#F59E0B] transition-all shadow-md">
+            <span class="w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-[11px] font-bold">1</span>
+            <div class="text-left">
+              <div class="leading-tight font-semibold">Alex Turner</div>
+              <div class="text-[10px] opacity-85">Hình sự / Tâm lý kinh điển</div>
+            </div>
+          </button>
+
+          <!-- Nút Khán giả 2: Sarah Jenkins -->
+          <button onclick="MoodGraphApp.switchPersona('user2')" 
+                  id="btn-persona-user2" 
+                  class="persona-btn px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#0B0F14] text-[#94A3B8] hover:text-white border border-[rgba(255,255,255,0.08)] hover:border-[#F59E0B] transition-all">
+            <span class="w-6 h-6 rounded-full bg-[#1B2230] flex items-center justify-center text-[11px] font-bold text-[#F59E0B]">2</span>
+            <div class="text-left">
+              <div class="leading-tight font-semibold">Sarah Jenkins</div>
+              <div class="text-[10px] opacity-85">Viễn tưởng & Phiêu lưu</div>
+            </div>
+          </button>
+
+          <!-- Nút Khán giả 3: Khán giả mới Cold-Start -->
+          <button onclick="MoodGraphApp.switchPersona('user_cold')" 
+                  id="btn-persona-user-cold" 
+                  class="persona-btn px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#0B0F14] text-[#94A3B8] hover:text-white border border-[rgba(255,255,255,0.08)] hover:border-[#10B981] transition-all">
+            <span class="w-6 h-6 rounded-full bg-[#1B2230] flex items-center justify-center text-[11px] font-bold text-[#10B981]">0</span>
+            <div class="text-left">
+              <div class="leading-tight font-semibold">Khán Giả Mới</div>
+              <div class="text-[10px] opacity-85">0 tương tác (Cold-Start)</div>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- Hero Featured Banner (Phim Đề Xuất Top 1 Cá Nhân Hóa) -->
+      <section id="hero-banner-section" class="hero-banner-card">
+        <!-- Được kết xuất động bằng JavaScript -->
+        <div class="p-8 flex items-center justify-center min-h-[320px] text-[#94A3B8] font-mono text-xs">
+          Đang khởi tạo tác phẩm đề xuất đỉnh cao cho Khán giả 1...
+        </div>
+      </section>
+
+      <!-- Bộ Chọn Tâm Trạng Đa Chiều (Mood Selector - 7 Miền Cảm Xúc) -->
+      <section class="space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-xl font-medium text-white flex items-center gap-2 font-serif">
+              <span class="w-2 h-2 rounded-full bg-[#D97706]"></span>
+              Bạn Đang Trong Tâm Trạng Nào?
+            </h2>
+            <p class="text-xs text-[#94A3B8]">
+              Chọn 1 trong 7 miền cảm xúc để điều chỉnh trọng số không gian gợi ý tức thì
+            </p>
+          </div>
+          <div class="text-xs text-[#94A3B8] font-mono">
+            Đang lọc: <span id="active-mood-display" class="text-[#FBBF24] font-semibold">Tất cả tâm trạng</span>
+          </div>
+        </div>
+
+        <!-- Mảng Chip Tâm Trạng Cuộn Ngang -->
+        <div id="mood-chips-container" class="mood-chips-track">
+          <!-- Được kết xuất động bằng JavaScript -->
+        </div>
+      </section>
+
+      <!-- Bảng Điều Khiển Thử Nghiệm Đổi Gu Phim Thời Gian Thực (Live Preference Sliders) -->
+      <section class="preference-tuner-box space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.06)] pb-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[rgba(217,119,6,0.15)] text-[#FDE68A] border border-[rgba(217,119,6,0.35)] font-mono">
+                BỘ ĐIỀU CHỈNH THỜI GIAN THỰC
+              </span>
+              <h2 class="text-base font-semibold text-white tracking-tight">Thử Nghiệm Thay Đổi Gu Phim Của Bạn</h2>
+            </div>
+            <p class="text-xs text-[#94A3B8] mt-1">
+              Kéo các thanh trượt bên dưới để chứng kiến thuật toán Cosine Similarity và RRF tái xếp hạng danh sách gợi ý trong <strong class="text-[#F59E0B]">dưới 5ms (60 FPS)</strong>.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button onclick="MoodGraphApp.resetSliders()" class="btn-secondary text-xs px-3 py-1.5">
+              Đặt Lại Gu Ban Đầu
+            </button>
+            <div id="tuner-latency-badge" class="px-2.5 py-1 rounded bg-[#0B0F14] border border-[rgba(255,255,255,0.08)] text-[11px] font-mono text-[#10B981]">
+              Độ trễ: 1.8 ms
+            </div>
+          </div>
+        </div>
+
+        <!-- Lưới 4 Thanh Trượt Gu Điện Ảnh -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+          
+          <!-- Trục 1: Chiều Sâu Cốt Truyện -->
+          <div class="tuner-slider-group">
+            <div class="tuner-label-row">
+              <span class="tuner-name">Chiều Sâu Cốt Truyện</span>
+              <span id="val-depth" class="tuner-val-badge">75%</span>
+            </div>
+            <input type="range" id="slider-depth" min="0" max="100" value="75" class="editorial-slider" oninput="MoodGraphApp.onSliderChange('depth', this.value)">
+            <div class="flex justify-between text-[10px] text-[#64748B]">
+              <span>Giải trí nhẹ nhàng</span>
+              <span>Triết lý / Đa tầng</span>
+            </div>
+            <!-- Dòng mô tả ngữ nghĩa động Trục 1 (Item 3) -->
+            <div id="desc-depth" class="tuner-semantic-desc text-[11px] text-[#FDE68A] bg-[rgba(217,119,6,0.1)] px-2.5 py-1.5 rounded border border-[rgba(217,119,6,0.25)] mt-2 flex items-center gap-1.5 font-medium leading-snug">
+              <svg class="w-3.5 h-3.5 text-[#F59E0B] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span class="truncate">Đang ưu tiên kịch bản triết lý, đa tầng suy ngẫm</span>
+            </div>
+          </div>
+
+          <!-- Trục 2: Nhịp Độ Diễn Biến -->
+          <div class="tuner-slider-group">
+            <div class="tuner-label-row">
+              <span class="tuner-name">Nhịp Độ Diễn Biến</span>
+              <span id="val-pacing" class="tuner-val-badge">60%</span>
+            </div>
+            <input type="range" id="slider-pacing" min="0" max="100" value="60" class="editorial-slider" oninput="MoodGraphApp.onSliderChange('pacing', this.value)">
+            <div class="flex justify-between text-[10px] text-[#64748B]">
+              <span>Trầm mặc suy ngẫm</span>
+              <span>Dồn dập nghẹt thở</span>
+            </div>
+            <!-- Dòng mô tả ngữ nghĩa động Trục 2 (Item 3) -->
+            <div id="desc-pacing" class="tuner-semantic-desc text-[11px] text-[#FDE68A] bg-[rgba(217,119,6,0.1)] px-2.5 py-1.5 rounded border border-[rgba(217,119,6,0.25)] mt-2 flex items-center gap-1.5 font-medium leading-snug">
+              <svg class="w-3.5 h-3.5 text-[#F59E0B] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline>
+              </svg>
+              <span class="truncate">Nhịp phim vừa phải, đan xen kịch tính và chiều sâu</span>
+            </div>
+          </div>
+
+          <!-- Trục 3: Bản Sắc Tác Giả (Auteur) -->
+          <div class="tuner-slider-group">
+            <div class="tuner-label-row">
+              <span class="tuner-name">Bản Sắc Tác Giả (Auteur)</span>
+              <span id="val-auteur" class="tuner-val-badge">85%</span>
+            </div>
+            <input type="range" id="slider-auteur" min="0" max="100" value="85" class="editorial-slider" oninput="MoodGraphApp.onSliderChange('auteur', this.value)">
+            <div class="flex justify-between text-[10px] text-[#64748B]">
+              <span>Bom tấn đại chúng</span>
+              <span>Điện ảnh tác giả</span>
+            </div>
+            <!-- Dòng mô tả ngữ nghĩa động Trục 3 (Item 3) -->
+            <div id="desc-auteur" class="tuner-semantic-desc text-[11px] text-[#FDE68A] bg-[rgba(217,119,6,0.1)] px-2.5 py-1.5 rounded border border-[rgba(217,119,6,0.25)] mt-2 flex items-center gap-1.5 font-medium leading-snug">
+              <svg class="w-3.5 h-3.5 text-[#F59E0B] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+              </svg>
+              <span class="truncate">Đậm chất auteur cá tính, phong cách đạo diễn độc bản</span>
+            </div>
+          </div>
+
+          <!-- Trục 4: Sắc Thái Cảm Xúc -->
+          <div class="tuner-slider-group">
+            <div class="tuner-label-row">
+              <span class="tuner-name">Sắc Thái Cảm Xúc</span>
+              <span id="val-tone" class="tuner-val-badge">50%</span>
+            </div>
+            <input type="range" id="slider-tone" min="0" max="100" value="50" class="editorial-slider" oninput="MoodGraphApp.onSliderChange('tone', this.value)">
+            <div class="flex justify-between text-[10px] text-[#64748B]">
+              <span>U tối / Gai góc</span>
+              <span>Ấm áp / Lạc quan</span>
+            </div>
+            <!-- Dòng mô tả ngữ nghĩa động Trục 4 (Item 3) -->
+            <div id="desc-tone" class="tuner-semantic-desc text-[11px] text-[#FDE68A] bg-[rgba(217,119,6,0.1)] px-2.5 py-1.5 rounded border border-[rgba(217,119,6,0.25)] mt-2 flex items-center gap-1.5 font-medium leading-snug">
+              <svg class="w-3.5 h-3.5 text-[#F59E0B] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <span class="truncate">Cân bằng hiện thực sâu sắc, gam màu trung tính</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Gợi Ý Cá Nhân Hóa Thích Ứng (Adaptive Recommendations Grid) -->
+      <section class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[rgba(16,185,129,0.15)] text-[#A7F3D0] border border-[rgba(16,185,129,0.35)] font-mono">
+                ĐÃ KIỂM TOÁN NGUỒN GỐC
+              </span>
+              <h2 class="text-xl font-medium text-white tracking-tight font-serif">Gợi Ý Phù Hợp Nhất Dành Riêng Cho Bạn</h2>
+            </div>
+            <p class="text-xs text-[#94A3B8] mt-0.5">
+              Tích hợp 4 lớp minh chứng giải thích: <span class="text-[#FDE68A] font-medium">P1 Thể loại</span> • <span class="text-[#A7F3D0] font-medium">P2 Cảm xúc Genome</span> • <span class="text-[#FED7AA] font-medium">P3 Đồng tương tác</span> • <span class="text-[#BAE6FD] font-medium">ALS Không gian tiềm ẩn</span>
+            </p>
+          </div>
+          <div class="text-xs font-mono text-[#94A3B8]">
+            Hiển thị Top 10 đề xuất thích ứng
+          </div>
+        </div>
+
+        <!-- Lưới Thẻ Phim Gợi Ý -->
+        <div id="recommendations-grid" class="movie-grid">
+          <!-- Được kết xuất động bằng JavaScript -->
+        </div>
+      </section>
+
+      <!-- Khám Phá Kho Tàng Danh Mục 19 Thể Loại (Catalog Exploration) -->
+      <section class="space-y-4 pt-6 border-t border-[rgba(255,255,255,0.06)]">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-medium text-white tracking-tight font-serif">Kho Tàng 62,423 Bộ Phim Điện Ảnh</h2>
+            <p class="text-xs text-[#94A3B8]">Khám phá danh mục MovieLens 25M tiêu biểu đã chuẩn hóa tên tiếng Việt và tọa độ 3D</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="catalog-count-badge" class="text-xs font-mono px-2.5 py-1 rounded bg-[#141A24] border border-[rgba(255,255,255,0.08)] text-[#E2E8F0]">
+              Đang tải danh mục...
+            </span>
+          </div>
+        </div>
+
+        <!-- Thanh Lọc 19 Thể Loại Cuộn Ngang -->
+        <div id="genre-filter-track" class="flex items-center gap-2 overflow-x-auto py-1 scroll-smooth" style="scrollbar-width: none;">
+          <!-- Được kết xuất động bằng JavaScript -->
+        </div>
+
+        <!-- Lưới Toàn Bộ Phim Trong Catalog -->
+        <div id="catalog-grid" class="movie-grid">
+          <!-- Được kết xuất động bằng JavaScript -->
+        </div>
+
+        <!-- Trạng Thái Trống Khi Không Tìm Thấy -->
+        <div id="catalog-empty-state" class="hidden text-center py-16 px-4 bg-[#141A24] rounded-xl border border-[rgba(255,255,255,0.06)] space-y-3">
+          <div class="w-12 h-12 mx-auto rounded-full bg-[#1B2230] flex items-center justify-center text-[#94A3B8]">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+          <div class="text-base font-semibold text-white">Không tìm thấy tác phẩm phù hợp</div>
+          <p class="text-xs text-[#94A3B8] max-w-sm mx-auto">Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn thể loại khác trong danh mục trên.</p>
+          <button onclick="MoodGraphApp.resetFilters()" class="btn-primary text-xs px-4 py-2">
+            Đặt Lại Bộ Lọc
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- =======================================================================
+         VIEW: MODE B (PHÒNG THÍ NGHIỆM HỌC THUẬT & KHÔNG GIAN NHÚNG 3D)
+         ======================================================================= -->
+    <div id="mode-b-container" class="hidden space-y-8">
+      
+      <!-- Thanh Điều Khiển Phòng Thí Nghiệm & Thông Số Độ Trễ -->
+      <section class="glass-card p-5 space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#F59E0B] animate-pulse"></span>
+              <h1 class="text-xl font-medium text-white tracking-tight font-serif">Phòng Thí Nghiệm So Sánh Mô Hình Gợi Ý</h1>
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-[#1B2230] text-[#FDE68A] border border-[rgba(217,119,6,0.35)]">HỌC THUẬT</span>
+            </div>
+            <p class="text-xs text-[#94A3B8] mt-1">
+              Phân tích đối đầu song song 5 thuật toán, đo lường hệ số tương quan thứ hạng Spearman [-1.0, 1.0], tương đồng Jaccard và trực quan hóa không gian nhúng 3D.
+            </p>
+          </div>
+
+          <!-- Bộ Chọn Đoàn Hệ & Bộ Lọc Đồng Thuận -->
+          <div class="flex flex-wrap items-center gap-3">
+            
+            <!-- Bộ Chọn Người Dùng Đoàn Hệ -->
+            <div class="flex items-center gap-1.5 bg-[#0B0F14] border border-[rgba(255,255,255,0.08)] rounded-lg p-1">
+              <span class="text-[11px] text-[#94A3B8] px-2 font-medium">Người dùng:</span>
+              <select id="lab-user-selector" onchange="MoodGraphApp.changeLabUser(this.value)" class="bg-[#141A24] text-xs font-semibold text-white rounded px-2.5 py-1 border border-[rgba(255,255,255,0.08)] focus:outline-none focus:border-[#D97706]">
+                <option value="user1">Khán giả 1 (Alex Turner • Gu Nghệ Thuật)</option>
+                <option value="user2">Khán giả 2 (Elena Rostova • Khoa Học Viễn Tưởng)</option>
+                <option value="user3">Khán giả 3 (Marcus Vance • Phim Đen Tội Phạm)</option>
+                <option value="user42">Khán giả 42 (Cold-Start • Chưa Có Lịch Sử)</option>
+              </select>
+            </div>
+
+            <!-- Bộ Lọc Mức Độ Đồng Thuận -->
+            <div class="flex items-center bg-[#0B0F14] border border-[rgba(255,255,255,0.08)] rounded-lg p-1 text-xs">
+              <button id="filter-consensus-all" onclick="MoodGraphApp.setConsensusFilter('all')" class="px-2.5 py-1 rounded font-semibold bg-[#D97706] text-white">Tất cả Top-10</button>
+              <button id="filter-consensus-overlap" onclick="MoodGraphApp.setConsensusFilter('overlap')" class="px-2.5 py-1 rounded font-medium text-[#94A3B8] hover:text-white">Trùng >= 2 mô hình</button>
+              <button id="filter-consensus-unique" onclick="MoodGraphApp.setConsensusFilter('unique')" class="px-2.5 py-1 rounded font-medium text-[#94A3B8] hover:text-white">Phim độc bản</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Thẻ Đo Lường Độ Trễ Thực Nghiệm (P95 Latency) -->
+        <div class="pt-3 border-t border-[rgba(255,255,255,0.06)] flex flex-wrap items-center gap-2.5 text-xs font-mono">
+          <span class="text-[#94A3B8] font-sans text-[11px]">Độ trễ suy luận thực nghiệm (P95):</span>
+          <span class="px-2 py-0.5 rounded bg-[rgba(2,132,199,0.12)] border border-[rgba(2,132,199,0.35)] text-[#BAE6FD]">Spark ALS: 3.28 ms</span>
+          <span class="px-2 py-0.5 rounded bg-[rgba(5,150,105,0.12)] border border-[rgba(5,150,105,0.35)] text-[#A7F3D0]">Knowledge Graph: 3.63 ms</span>
+          <span class="px-2 py-0.5 rounded bg-[rgba(217,119,6,0.12)] border border-[rgba(217,119,6,0.35)] text-[#FDE68A]">Hybrid RRF: 3.08 ms</span>
+          <span class="px-2 py-0.5 rounded bg-[rgba(234,88,12,0.12)] border border-[rgba(234,88,12,0.35)] text-[#FED7AA]">Weighted: 2.88 ms</span>
+          <span class="px-2 py-0.5 rounded bg-[rgba(120,113,108,0.15)] border border-[rgba(120,113,108,0.35)] text-[#D6D3D1]">Popularity: 0.025 ms</span>
+        </div>
+      </section>
+
+      <!-- KHU VỰC 3D THREE.JS: KHÔNG GIAN NHÚNG VECTOR TIỀM ẨN & ĐỒ THỊ TRI THỨC -->
+      <section class="space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[rgba(217,119,6,0.15)] text-[#FDE68A] border border-[rgba(217,119,6,0.35)] font-mono">
+                THREE.JS & WEBGL 360°
+              </span>
+              <h2 class="text-lg font-medium text-white tracking-tight font-serif">
+                Trực Quan Hóa Không Gian Nhúng Vector Tiềm Ẩn (3D Latent Space)
+              </h2>
+            </div>
+            <p class="text-xs text-[#94A3B8]">
+              Dùng chuột kéo xoay 360 độ, cuộn phóng to/thu nhỏ. Khối cầu màu Vàng Hổ Phách phát xung biểu diễn vị trí Vector sở thích người dùng.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-[#10B981] font-mono flex items-center gap-1.5 bg-[#141A24] px-2.5 py-1 rounded border border-[rgba(255,255,255,0.08)]">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping"></span>
+              60 FPS Tự Nhiên
+            </span>
+          </div>
+        </div>
+
+        <!-- Nhãn Giải Thích Học Thuật Phép Chiếu PCA Bảo Toàn Phương Sai (Item 6) -->
+        <div class="p-3 rounded-xl bg-[#0F141C] border border-[rgba(217,119,6,0.3)] flex items-start sm:items-center gap-3 text-xs shadow-lg">
+          <div class="px-2 py-1 rounded bg-[rgba(217,119,6,0.15)] text-[#F59E0B] border border-[rgba(217,119,6,0.35)] font-mono text-[10px] font-bold shrink-0">
+            PCA 3D
+          </div>
+          <p class="text-[#CBD5E1] leading-relaxed">
+            <strong class="text-[#FDE68A]">Cơ sở học thuật:</strong> Không gian 3D được chuẩn hóa qua phép chiếu PCA (Principal Component Analysis) bảo toàn phương sai lớn nhất từ ma trận nhân tử tiềm ẩn ALS 8 chiều và KG embedding 64 chiều.
+          </p>
+        </div>
+
+        <!-- Khung Chứa Canvas 3D -->
+        <div class="canvas-3d-wrapper" id="threejs-container">
+          
+          <!-- Viewport Canvas Three.js -->
+          <canvas id="three-canvas" class="canvas-3d-viewport"></canvas>
+
+          <!-- Bảng Điều Khiển Nổi Trên Canvas 3D -->
+          <div class="canvas-3d-controls-overlay">
+            <button onclick="MoodGraphApp.reset3DCamera()" class="canvas-btn">
+              Đặt Lại Camera
+            </button>
+            <button onclick="MoodGraphApp.toggle3DRays()" class="canvas-btn">
+              Bật/Tắt Tia Gợi Ý
+            </button>
+            <button onclick="MoodGraphApp.toggle3DRotation()" class="canvas-btn">
+              Tự Động Xoay
+            </button>
+          </div>
+
+          <!-- Chú Giải Cụm Thể Loại Điện Ảnh Dưới Đáy Canvas -->
+          <div class="absolute bottom-3 right-3 hidden md:flex items-center gap-3 bg-[rgba(15,20,28,0.90)] backdrop-blur px-3 py-1.5 rounded-lg border border-[rgba(255,255,255,0.08)] text-[11px] font-mono z-10">
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span> Chính kịch</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#B45309]"></span> Tội phạm</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#0EA5E9]"></span> Viễn tưởng</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span> Hoạt hình</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#E11D48]"></span> Chiến tranh</span>
+            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#F43F5E]"></span> Lãng mạn</span>
+          </div>
+
+          <!-- Floating HUD Card (Hiện khi rê chuột hoặc nhấp vào node phim) -->
+          <div id="three-hud-card" class="canvas-3d-hud-card hidden">
+            <div class="text-[10px] font-mono text-[#F59E0B] font-bold uppercase tracking-wider mb-1">THÔNG SỐ VECTOR KHÔNG GIAN</div>
+            <div id="hud-movie-title" class="text-sm font-bold text-white leading-tight font-serif">Tên Phim</div>
+            <div id="hud-movie-meta" class="text-xs text-[#94A3B8] mt-0.5">Thể loại • Đạo diễn</div>
+            
+            <div class="grid grid-cols-2 gap-2 mt-2.5 pt-2 border-t border-[rgba(255,255,255,0.08)] text-[11px] font-mono">
+              <div>
+                <span class="text-[#64748B] block text-[10px]">Tọa Độ 3D:</span>
+                <span id="hud-coords" class="text-white">x: 0, y: 0, z: 0</span>
+              </div>
+              <div>
+                <span class="text-[#64748B] block text-[10px]">Độ Tương Đồng Cosine:</span>
+                <span id="hud-cosine" class="text-[#FBBF24] font-bold">0.942</span>
+              </div>
+            </div>
+
+            <div class="mt-2 text-[11px] text-[#CBD5E1] bg-[rgba(217,119,6,0.1)] p-1.5 rounded border border-[rgba(217,119,6,0.25)]" id="hud-explanation">
+              Lý do gợi ý không gian nhúng
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- SO SÁNH ĐỐI ĐẦU TOP-10 SONG SONG GIỮA 5 THUẬT TOÁN (HOVER INTERLOCK) -->
+      <section class="space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-lg font-medium text-white flex items-center gap-2 font-serif">
+              <span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
+              So Sánh Đối Đầu Top-10 Song Song Giữa 5 Mô Hình
+            </h2>
+            <p class="text-xs text-[#94A3B8]">
+              Tính năng <strong class="text-[#F59E0B] font-semibold">Hover Interlock</strong>: Rê chuột vào một bộ phim ở bất kỳ cột nào, phim đó trên các cột khác lập tức sáng rực với viền vàng hổ phách và nhãn vị trí.
+            </p>
+          </div>
+
+          <!-- Dynamic Interlock Info Banner -->
+          <div id="interlock-status-banner" class="hidden px-3 py-1.5 rounded-lg bg-[rgba(217,119,6,0.15)] border border-[rgba(217,119,6,0.4)] text-xs font-mono text-[#FDE68A] flex items-center gap-2 animate-pulse">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>
+            <span id="interlock-status-text">Đang đồng bộ thứ hạng...</span>
+          </div>
+        </div>
+
+        <!-- 5 Columns Container -->
+        <div id="head-to-head-columns" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          <!-- Được kết xuất động bằng JavaScript -->
+        </div>
+      </section>
+
+      <!-- MA TRẬN NHIỆT TƯƠNG QUAN THỨ HẠNG & ĐỘ TRỰC GIAO (5X5 HEATMAP MATRIX) -->
+      <section class="glass-card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-medium text-white flex items-center gap-2 font-serif">
+              <span class="w-2 h-2 rounded-full bg-[#D97706]"></span>
+              Ma Trận Tương Quan & Độ Trực Giao Thuật Toán (5x5 Matrix)
+            </h2>
+            <p class="text-xs text-[#94A3B8]">
+              Đo lường mức độ đồng điệu thứ hạng và giao thoa ứng viên. Nhấp vào ô ma trận để mở danh sách phim trùng cụ thể.
+            </p>
+          </div>
+
+          <!-- Bộ Chuyển Đổi Chỉ Số Spearman / Jaccard -->
+          <div class="flex items-center bg-[#0B0F14] border border-[rgba(255,255,255,0.08)] rounded-lg p-1 text-xs">
+            <button id="btn-metric-spearman" 
+                    onclick="MoodGraphApp.toggleHeatmapMetric('spearman')" 
+                    class="px-3 py-1.5 rounded font-semibold bg-[#D97706] text-white transition-all">
+              Hệ số Thứ hạng Spearman ρ [-1.0, 1.0]
+            </button>
+            <button id="btn-metric-jaccard" 
+                    onclick="MoodGraphApp.toggleHeatmapMetric('jaccard')" 
+                    class="px-3 py-1.5 rounded font-medium text-[#94A3B8] hover:text-white transition-all">
+              Độ Trùng Lặp Jaccard [0.0, 1.0]
+            </button>
+          </div>
+        </div>
+
+        <!-- Biểu Ngữ Quy Chuẩn Toán Học -->
+        <div class="p-3 rounded-lg bg-[#0F141C] border border-[rgba(255,255,255,0.08)] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-2 text-[#CBD5E1]">
+            <span class="text-[#F59E0B] font-bold">ℹ Quy chuẩn toán học:</span>
+            <span>Khi số phim chung giữa 2 mô hình <strong>k &lt; 2</strong>, hệ số Spearman không xác định và hiển thị chuẩn <strong>null</strong> (tuyệt đối không bịa số 0.0 giả tạo).</span>
+          </div>
+          <div id="heatmap-color-legend" class="flex items-center gap-2 text-[11px] font-mono">
+            <!-- Chú giải dải màu động -->
+          </div>
+        </div>
+
+        <!-- 5x5 Heatmap Container -->
+        <div class="overflow-x-auto pb-2">
+          <div id="heatmap-matrix-container" class="min-w-[620px]">
+            <!-- Được kết xuất động bằng JavaScript -->
+          </div>
+        </div>
+      </section>
+
+      <!-- BẢNG CHỈ SỐ KIỂM CHUẨN OFFLINE TOÀN DIỆN (OFFLINE BENCHMARKS) -->
+      <section class="glass-card p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[rgba(255,255,255,0.06)] pb-3">
+          <div>
+            <h2 class="text-lg font-medium text-white flex items-center gap-2 font-serif">
+              <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
+              Bảng Chỉ Số Kiểm Chuẩn Ngoại Tuyến (Offline Benchmarks)
+            </h2>
+            <p class="text-xs text-[#94A3B8]">
+              Đo lường trên đoàn hệ 132 người dùng có đánh giá tích cực theo phân rã thời gian (Temporal Leave-1-Last Split)
+            </p>
+          </div>
+          <span class="px-2.5 py-1 rounded bg-[#0B0F14] border border-[rgba(255,255,255,0.08)] text-xs font-mono text-[#F59E0B]">
+            Đoàn hệ: 132 Khán giả
+          </span>
+        </div>
+
+        <!-- Bảng Dữ Liệu Benchmark -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-[rgba(255,255,255,0.08)] text-[#94A3B8] font-mono">
+                <th class="py-2.5 px-3">Chỉ Số Đánh Giá</th>
+                <th class="py-2.5 px-3">Spark ALS</th>
+                <th class="py-2.5 px-3">Knowledge Graph</th>
+                <th class="py-2.5 px-3">Hybrid RRF (k=60)</th>
+                <th class="py-2.5 px-3">Hybrid Weighted</th>
+                <th class="py-2.5 px-3">Popularity Baseline</th>
+                <th class="py-2.5 px-3 text-right">Mô Hình Dẫn Đầu</th>
+              </tr>
+            </thead>
+            <tbody id="offline-benchmarks-tbody" class="divide-y divide-[rgba(255,255,255,0.04)] font-mono">
+              <!-- Được kết xuất động bằng JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Ghi Chú Học Thuật (Footnote) Giải Trình Hit Rate ALS & Động Lực Hybrid RRF (Item 7) -->
+        <div class="p-3.5 rounded-xl bg-[#0B0F14] border border-[rgba(2,132,199,0.3)] text-xs text-[#CBD5E1] flex items-start gap-3 mt-3 shadow-inner">
+          <div class="w-5 h-5 rounded-full bg-[rgba(2,132,199,0.15)] text-[#38BDF8] flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </div>
+          <div class="leading-relaxed">
+            <strong class="text-[#38BDF8] font-mono">Ghi chú học thuật:</strong> Thuật toán ALS đơn lẻ gặp thách thức ma trận cực thưa trên giao thức Temporal Leave-1-Last. Đây chính là động lực khoa học cốt lõi thúc đẩy phát triển Mô hình Lai Hybrid RRF (kết hợp Đồ thị tri thức KG), nâng Hit Rate@10 từ 0.0% lên 9.86% và mở rộng độ bao phủ danh mục lên 152 phim.
+          </div>
+        </div>
+      </section>
+
+      <!-- MÔ PHỎNG THÁCH THỨC THỰC TẾ: ĐỘ BỀN COLD-START & PHÂN PHỐI ĐUÔI DÀI LONG-TAIL -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Chẩn đoán 1: Độ Bền Người Dùng Mới (Cold-Start) -->
+        <div class="glass-card p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-3">
+            <div>
+              <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#E11D48]"></span>
+                Chống Chịu Độ Thưa Thớt (Cold-Start)
+              </h3>
+              <p class="text-xs text-[#94A3B8]">Suy giảm NDCG@10 khi lịch sử đánh giá giảm từ 50 về 0 lượt</p>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[rgba(225,29,72,0.15)] text-[#FDA4AF] border border-[rgba(225,29,72,0.35)]">
+              SPARSITY TEST
+            </span>
+          </div>
+
+          <!-- Đồ Thị Dạng Bảng Thanh Suy Giảm Hiệu Năng -->
+          <div id="cold-start-chart-container" class="space-y-3 font-mono text-xs">
+            <!-- Được kết xuất động bằng JavaScript -->
+          </div>
+
+          <div class="p-3 rounded bg-[#0B0F14] border border-[rgba(255,255,255,0.06)] text-xs text-[#CBD5E1] leading-relaxed">
+            <strong class="text-[#F59E0B]">Nhận định khoa học:</strong> Spark ALS sụp đổ về 0.000 khi N &le; 1 do ma trận suy biến. Knowledge Graph duy trì hiệu năng bền bỉ 0.041 - 0.046 nhờ bám vào mạng lưới thực thể tĩnh. Hybrid RRF tự động hạ cánh an toàn xuống điểm tựa của KG.
+          </div>
+        </div>
+
+        <!-- Chẩn đoán 2: Khai Phá Phim Đuôi Dài (Long-Tail Pareto & Gini Index) -->
+        <div class="glass-card p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-3">
+            <div>
+              <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
+                Khai Phá Phim Đuôi Dài (Long-Tail Pareto)
+              </h3>
+              <p class="text-xs text-[#94A3B8]">Độ bao phủ danh mục (Coverage@10) và tỷ lệ phim ngách</p>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#A7F3D0] border border-[rgba(16,185,129,0.35)]">
+              GINI DIVERSITY
+            </span>
+          </div>
+
+          <!-- So Sánh Đuôi Dài 5 Mô Hình -->
+          <div id="long-tail-chart-container" class="space-y-3 font-mono text-xs">
+            <!-- Được kết xuất động bằng JavaScript -->
+          </div>
+
+          <div class="p-3 rounded bg-[#0B0F14] border border-[rgba(255,255,255,0.06)] text-xs text-[#CBD5E1] leading-relaxed">
+            <strong class="text-[#10B981]">Tỷ lệ vàng đề xuất:</strong> Knowledge Graph đạt độ bao phủ gấp 7.5 lần Popularity (414 vs 55 phim độc bản). Hybrid RRF đạt tỷ lệ cân bằng tối ưu: 60% phim quen thuộc (Short-head) và 40% phim ngách mới lạ (Long-tail).
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- =========================================================================
+       3. WATCHLIST DRAWER (NGĂN KÉO DANH SÁCH XEM)
+       ========================================================================= -->
+  <div id="watchlist-backdrop" class="drawer-backdrop" onclick="MoodGraphApp.toggleWatchlist(false)"></div>
+  <aside id="watchlist-drawer" class="watchlist-drawer">
+    
+    <!-- Drawer Header -->
+    <div class="p-4 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between bg-[#141A24]">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-[#10B981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <h2 class="text-base font-semibold text-white font-serif">Danh Sách Phim Muốn Xem</h2>
+      </div>
+      <button onclick="MoodGraphApp.toggleWatchlist(false)" class="text-[#94A3B8] hover:text-white p-1 rounded">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Watchlist Items Track -->
+    <div id="watchlist-items-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+      <!-- Được kết xuất động bằng JavaScript -->
+      <div class="text-center py-12 text-[#94A3B8] text-xs">
+        Chưa có bộ phim nào trong danh sách xem của bạn.
+      </div>
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="p-4 border-t border-[rgba(255,255,255,0.08)] bg-[#141A24] space-y-2">
+      <button onclick="MoodGraphApp.clearWatchlist()" class="w-full btn-secondary text-xs py-2">
+        Xóa Toàn Bộ Danh Sách
+      </button>
+    </div>
+  </aside>
+
+  <!-- =========================================================================
+       4. MODAL DIALOGS: CHI TIẾT PHIM, HỒ SƠ USER & GIAO THOA MA TRẬN
+       ========================================================================= -->
+  
+  <!-- Modal 1: Chi Tiết Bộ Phim Điện Ảnh (Movie Detail Modal) -->
+  <div id="movie-detail-modal" class="modal-overlay" onclick="MoodGraphApp.closeMovieDetailModal(event)">
+    <div class="modal-content-card p-6" onclick="event.stopPropagation()">
+      <div id="movie-detail-content">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Hồ Sơ Dữ Liệu Người Dùng User 1 (Alex Turner Profile Modal) -->
+  <div id="user-profile-modal" class="modal-overlay" onclick="MoodGraphApp.closeUserProfileModal(event)">
+    <div class="modal-content-card p-6" onclick="event.stopPropagation()">
+      <div id="user-profile-content">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Phân Tích Giao Thoa 2 Mô Hình Khi Nhấp Ô Ma Trận (Matrix Overlap Modal) -->
+  <div id="matrix-overlap-modal" class="modal-overlay" onclick="MoodGraphApp.closeMatrixOverlapModal(event)">
+    <div class="modal-content-card p-6" onclick="event.stopPropagation()">
+      <div id="matrix-overlap-content">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container Tĩnh Sẵn Sàng Nhận Phản Hồi Động (Item 2) -->
+  <div id="toast-container" 
+       class="fixed bottom-5 right-5 z-[200] flex flex-col gap-2.5 max-w-sm pointer-events-none" 
+       aria-live="polite" 
+       aria-atomic="true">
+    <!-- Toast elements are dynamically injected here -->
+  </div>
+
+  <!-- =========================================================================
+       5. JAVASCRIPT LIBRARIES & CONTROLLERS
+       ========================================================================= -->
+  <!-- 1. Kho Dữ Liệu Tĩnh 50+ Phim & Thuật Toán Gợi Ý Client-Side -->
+  <script src="js/mock_data.js"></script>
+
+  <!-- 2. Bộ Điều Khiển Trang 1 (Khám Phá Điện Ảnh & Dynamic Tuner) -->
+  <script src="js/app.js"></script>
+
+  <!-- 3. Bộ Điều Khiển Trang 2 (Phòng Thí Nghiệm Học Thuật & 3D Three.js) -->
+  <script src="js/academic_lab.js"></script>
+
+</body>
+</html>

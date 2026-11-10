@@ -1,0 +1,887 @@
+/**
+ * MOODGRAPH EDITORIAL DESIGN SYSTEM & STYLESHEET
+ * File: css/styles.css
+ * 
+ * Phong cách: Editorial / Claude High-Academic Cinema Architecture
+ * Tông màu chủ đạo: Deep Charcoal (#0B0F14, #0F141C, #141A24) & Warm Amber / Antique Bronze (#D97706, #F59E0B)
+ * Typography: Newsreader (Serif học thuật) + Plus Jakarta Sans / Inter + JetBrains Mono (Tabular Nums)
+ * Không phụ thuộc thư viện UI ngoài, chạy độc lập 60 FPS offline.
+ */
+
+/* ==========================================================================
+   1. DESIGN TOKENS & CSS VARIABLES
+   ========================================================================== */
+:root {
+  /* Surfaces & Backgrounds */
+  --bg-app: #0B0F14;              /* Nền sâu thẳm toàn màn hình */
+  --bg-canvas: #0F141C;           /* Nền khu vực nội dung chính */
+  --bg-surface-card: #141A24;     /* Bề mặt thẻ, panel điều khiển */
+  --bg-surface-elevated: #1B2230; /* Bề mặt modal, dropdown, ngăn kéo nổi */
+  --bg-surface-subtle: #111620;   /* Bề mặt phụ mờ */
+
+  /* Glassmorphism restrained */
+  --bg-glass-nav: rgba(11, 15, 20, 0.90);
+  --bg-glass-card: rgba(20, 26, 36, 0.75);
+  --bg-glass-modal: rgba(15, 20, 28, 0.95);
+
+  /* Hairline Borders */
+  --border-hairline: rgba(255, 255, 255, 0.07);
+  --border-card: rgba(255, 255, 255, 0.10);
+  --border-subtle: rgba(255, 255, 255, 0.14);
+  --border-focus: rgba(217, 119, 6, 0.50);
+  --border-accent: rgba(245, 158, 11, 0.40);
+
+  /* Warm Amber & Antique Bronze Accents */
+  --amber-primary: #D97706;       /* Vàng hổ phách chuẩn */
+  --amber-light: #F59E0B;         /* Vàng hổ phách sáng */
+  --amber-hover: #B45309;         /* Vàng hổ phách đậm */
+  --amber-pale: #FDE68A;          /* Vàng nhạt chữ nhấn */
+  --amber-glow: rgba(217, 119, 6, 0.20);
+  --amber-subtle: rgba(217, 119, 6, 0.12);
+
+  /* Semantic Indicators */
+  --emerald-success: #10B981;     /* Xanh lục bảo dịu cho Watchlist & tăng trưởng */
+  --emerald-subtle: rgba(16, 185, 129, 0.15);
+  --coral-accent: #E11D48;        /* Đỏ san hô sẫm cho cảnh báo/nổi bật */
+  --coral-subtle: rgba(225, 29, 72, 0.15);
+  --slate-neutral: #64748B;       /* Màu xám trung tính */
+  --bronze-metallic: #92400E;     /* Kim loại đồng cổ điển */
+
+  /* Academic Models Color Palette (Hoàn toàn không tím AI & không cyan neon) */
+  --color-model-als: #0284C7;         /* Xanh lam học thuật sâu (Deep Sky Blue) */
+  --color-model-kg: #059669;          /* Xanh lục bảo đậm (Forest Emerald) */
+  --color-model-rrf: #D97706;         /* Vàng hổ phách kết hợp (Warm Amber) */
+  --color-model-weighted: #EA580C;    /* Cam đồng (Burnt Ochre) */
+  --color-model-popularity: #78716C;  /* Đá hoa cương xám (Warm Stone Gray) */
+
+  /* Typography Readability */
+  --text-headline: #F8FAFC;       /* Trắng tinh khiết cho tiêu đề */
+  --text-primary: #E2E8F0;        /* Trắng ấm dịu mắt cho văn bản chính */
+  --text-secondary: #94A3B8;      /* Xám bạc cho văn bản giải thích */
+  --text-muted: #64748B;          /* Xám mờ cho ghi chú phụ */
+  --text-amber: #FBBF24;          /* Chữ nhấn màu hổ phách */
+
+  /* Typography Fonts */
+  --font-serif: 'Newsreader', 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', SFMono-Regular, Consolas, monospace;
+
+  /* Restrained Radii & Shadows */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  --shadow-subtle: 0 4px 16px -2px rgba(0, 0, 0, 0.50);
+  --shadow-elevated: 0 12px 36px -4px rgba(0, 0, 0, 0.75);
+  --shadow-amber-glow: 0 0 24px -2px rgba(217, 119, 6, 0.35);
+  --shadow-emerald-glow: 0 0 20px -2px rgba(16, 185, 129, 0.30);
+}
+
+/* ==========================================================================
+   2. BASE RESET & TYPOGRAPHY FOUNDATIONS
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  color-scheme: dark;
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-app);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(217, 119, 6, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 10% 30%, rgba(15, 20, 28, 0.8) 0%, transparent 50%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Editorial Headlines */
+h1, h2, h3, .font-editorial {
+  font-family: var(--font-serif);
+  color: var(--text-headline);
+  letter-spacing: -0.015em;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+
+/* Numeric Precision */
+.tabular-nums, .font-mono, .metric-number {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--amber-primary);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--amber-primary);
+  color: #FFFFFF;
+}
+
+/* ==========================================================================
+   3. UNIVERSAL HEADER & NAVIGATION BAR
+   ========================================================================== */
+.glass-header {
+  background-color: var(--bg-glass-nav);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.brand-badge {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-headline);
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.brand-logo-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #1B2230 0%, #141A24 100%);
+  border: 1px solid var(--border-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--amber-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Segmented View Switcher (Zero-Reload Mode Tabs) */
+.view-switcher-track {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--bg-surface-subtle);
+  border: 1px solid var(--border-card);
+  padding: 3px;
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.mode-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.mode-tab-btn:hover {
+  color: var(--text-headline);
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.mode-tab-btn.active {
+  background-color: var(--bg-surface-elevated);
+  color: var(--amber-pale);
+  border: 1px solid var(--border-accent);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), 0 0 12px -2px var(--amber-glow);
+}
+
+.mode-tab-btn.active svg {
+  color: var(--amber-light);
+}
+
+/* ==========================================================================
+   4. GLASS CONTAINERS & INTERFACE CARDS
+   ========================================================================== */
+.glass-card {
+  background-color: var(--bg-surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-subtle);
+  position: relative;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--border-card);
+}
+
+.glass-card-elevated {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+}
+
+/* ==========================================================================
+   5. PAGE 1: HERO BANNER ĐIỆN ẢNH (TOP 1 PERSONALIZED)
+   ========================================================================== */
+.hero-banner-card {
+  background: linear-gradient(135deg, rgba(20, 26, 36, 0.95) 0%, rgba(15, 20, 28, 0.98) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-elevated), 0 0 35px -8px rgba(217, 119, 6, 0.18);
+}
+
+.hero-banner-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--amber-light) 50%, transparent 100%);
+}
+
+.hero-poster-frame {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border-card);
+  aspect-ratio: 2/3;
+  background-color: #0B0F14;
+}
+
+.hero-poster-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.hero-banner-card:hover .hero-poster-frame img {
+  transform: scale(1.03);
+}
+
+/* ==========================================================================
+   6. MOOD SELECTOR (7 MIỀN CẢM XÚC ĐIỆN ẢNH)
+   ========================================================================== */
+.mood-chips-track {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 0.25rem 0.1rem;
+  scrollbar-width: none;
+}
+
+.mood-chips-track::-webkit-scrollbar {
+  display: none;
+}
+
+.mood-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background-color: var(--bg-surface-subtle);
+  border: 1px solid var(--border-hairline);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.mood-chip-btn:hover {
+  color: var(--text-headline);
+  border-color: var(--border-card);
+  background-color: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.mood-chip-btn.active {
+  background-color: rgba(217, 119, 6, 0.15);
+  border-color: var(--amber-primary);
+  color: var(--amber-pale);
+  box-shadow: 0 2px 12px -2px var(--amber-glow);
+  font-weight: 600;
+}
+
+.mood-chip-btn.active svg {
+  color: var(--amber-light);
+}
+
+/* ==========================================================================
+   7. LIVE PREFERENCE SLIDERS (THỬ NGHIỆM ĐỔI GU PHIM 16MS)
+   ========================================================================== */
+.preference-tuner-box {
+  background: linear-gradient(180deg, #141A24 0%, #111620 100%);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-subtle);
+}
+
+.tuner-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tuner-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+}
+
+.tuner-name {
+  font-weight: 600;
+  color: var(--text-headline);
+}
+
+.tuner-val-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background-color: rgba(217, 119, 6, 0.15);
+  color: var(--amber-pale);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Range input styling */
+.editorial-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: #1B2230;
+  border-radius: var(--radius-full);
+  outline: none;
+  border: 1px solid var(--border-hairline);
+  cursor: pointer;
+}
+
+.editorial-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--amber-light);
+  border: 2px solid #0B0F14;
+  box-shadow: 0 0 10px var(--amber-glow);
+  cursor: grab;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.editorial-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+  background: #FBBF24;
+}
+
+.editorial-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--amber-light);
+  border: 2px solid #0B0F14;
+  box-shadow: 0 0 10px var(--amber-glow);
+  cursor: grab;
+}
+
+/* ==========================================================================
+   8. MOVIE CARDS & RECOMMENDATION GRID
+   ========================================================================== */
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .movie-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 768px) {
+  .movie-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1024px) {
+  .movie-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+.movie-card {
+  background-color: var(--bg-surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  cursor: pointer;
+}
+
+.movie-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-elevated), 0 0 20px -4px var(--amber-glow);
+}
+
+.movie-poster-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  overflow: hidden;
+  background-color: #0A0E14;
+}
+
+.movie-poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.movie-card:hover .movie-poster-img {
+  transform: scale(1.05);
+}
+
+.movie-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 15, 20, 0.1) 0%, rgba(11, 15, 20, 0.85) 100%);
+  opacity: 0.9;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0.875rem;
+}
+
+.compatibility-badge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  background: rgba(11, 15, 20, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: var(--amber-pale);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Provenance Tags Badges */
+.provenance-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+}
+
+.provenance-tag.p1-genre {
+  background-color: rgba(217, 119, 6, 0.12);
+  border-color: rgba(217, 119, 6, 0.35);
+  color: #FDE68A;
+}
+
+.provenance-tag.p2-mood {
+  background-color: rgba(5, 150, 105, 0.12);
+  border-color: rgba(5, 150, 105, 0.35);
+  color: #A7F3D0;
+}
+
+.provenance-tag.p3-collab {
+  background-color: rgba(234, 88, 12, 0.12);
+  border-color: rgba(234, 88, 12, 0.35);
+  color: #FED7AA;
+}
+
+.provenance-tag.als-latent {
+  background-color: rgba(2, 132, 199, 0.12);
+  border-color: rgba(2, 132, 199, 0.35);
+  color: #BAE6FD;
+}
+
+/* Star Rating System */
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--amber-light);
+}
+
+.star-rating svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* ==========================================================================
+   9. PAGE 2: 3D THREE.JS LATENT EMBEDDING CANVAS CONTAINER
+   ========================================================================== */
+.canvas-3d-wrapper {
+  position: relative;
+  width: 100%;
+  height: 520px;
+  background-color: #0A0D14;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-card);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8), var(--shadow-elevated);
+}
+
+.canvas-3d-viewport {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+.canvas-3d-viewport:active {
+  cursor: grabbing;
+}
+
+.canvas-3d-hud-card {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  max-width: 320px;
+  background-color: rgba(15, 20, 28, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  box-shadow: var(--shadow-elevated);
+  z-index: 10;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.canvas-3d-controls-overlay {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.canvas-btn {
+  background-color: rgba(20, 26, 36, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-secondary);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.canvas-btn:hover {
+  color: var(--text-headline);
+  border-color: var(--border-accent);
+  background-color: var(--bg-surface-elevated);
+}
+
+/* ==========================================================================
+   10. HEAD-TO-HEAD 5 MODELS WITH HOVER INTERLOCK
+   ========================================================================== */
+.head-to-head-column {
+  background-color: var(--bg-surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.model-column-header {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.model-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.model-item-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Hover Interlock Highlight Class */
+.model-item-row.interlock-highlighted {
+  background-color: rgba(217, 119, 6, 0.18) !important;
+  outline: 2px solid var(--amber-light) !important;
+  outline-offset: -2px;
+  color: #FFF !important;
+  font-weight: 600;
+  box-shadow: 0 0 16px -2px var(--amber-glow);
+  z-index: 2;
+}
+
+.model-item-row.interlock-highlighted .movie-rank-badge {
+  background-color: var(--amber-primary);
+  color: #0B0F14;
+  font-weight: 800;
+}
+
+/* ==========================================================================
+   11. MA TRẬN NHIỆT 5X5 HEATMAP (SPEARMAN & JACCARD)
+   ========================================================================== */
+.heatmap-table-grid {
+  display: grid;
+  grid-template-columns: 140px repeat(5, minmax(70px, 1fr));
+  gap: 3px;
+  background-color: var(--bg-surface-subtle);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-hairline);
+}
+
+.heatmap-cell {
+  aspect-ratio: 1.3/1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, outline 0.15s ease;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.05);
+  outline: 2px solid var(--amber-light);
+  z-index: 5;
+}
+
+.heatmap-cell.null-cell {
+  background-color: #141A24;
+  color: #64748B;
+  font-style: italic;
+}
+
+.heatmap-cell.null-cell::after {
+  content: "null";
+  font-size: 0.6875rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   12. WATCHLIST DRAWER & MODAL DIALOGS
+   ========================================================================== */
+.watchlist-drawer {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  background-color: var(--bg-surface-elevated);
+  border-left: 1px solid var(--border-card);
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.8);
+  z-index: 100;
+  transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.watchlist-drawer.open {
+  right: 0;
+}
+
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(11, 15, 20, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.drawer-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Modal Dialog */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(11, 15, 20, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 120;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-content-card {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-xl);
+  max-width: 720px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-elevated);
+  position: relative;
+  transform: translateY(12px);
+  transition: transform 0.25s ease;
+}
+
+.modal-overlay.active .modal-content-card {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   13. BUTTONS & CONTROLS
+   ========================================================================== */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  background-color: var(--amber-primary);
+  color: #FFFFFF;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.25);
+}
+
+.btn-primary:hover {
+  background-color: var(--amber-light);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  background-color: var(--bg-surface-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-surface-elevated);
+  border-color: var(--border-accent);
+  color: var(--amber-pale);
+}
+
+.btn-emerald {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.25rem;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #A7F3D0;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-emerald:hover {
+  background-color: rgba(16, 185, 129, 0.25);
+  border-color: var(--emerald-success);
+}
