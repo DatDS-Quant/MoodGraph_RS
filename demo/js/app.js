@@ -290,6 +290,21 @@
 
       // Khởi động các thành phần Trang 2 nếu có sẵn
       if (window.AcademicLab && typeof window.AcademicLab.init === 'function') {
+        // Tự động đồng bộ Persona từ Trang 1 sang Trang 2
+        const numRatings = Object.keys(MoodGraphState.userRatings || {}).length;
+        if (MoodGraphState.activePersonaId === 'user_cold' || numRatings > 0) {
+          if (typeof window.MoodGraphApp.changeLabUser === 'function') {
+            window.MoodGraphApp.changeLabUser('live_session', true);
+          }
+        } else if (MoodGraphState.activePersonaId === 'user2') {
+          if (typeof window.MoodGraphApp.changeLabUser === 'function') {
+            window.MoodGraphApp.changeLabUser('user2', true);
+          }
+        } else {
+          if (typeof window.MoodGraphApp.changeLabUser === 'function') {
+            window.MoodGraphApp.changeLabUser('user1', true);
+          }
+        }
         window.AcademicLab.init();
       } else {
         // Fallback tự kết xuất các bảng đo lường học thuật của Mode B nếu academic_lab.js chưa tải
@@ -1074,6 +1089,21 @@
     const scoreNum = Number(score);
     MoodGraphState.userRatings[mid] = scoreNum;
     saveStorageJson("moodgraph_user_ratings", MoodGraphState.userRatings);
+
+    // Đồng bộ nhãn dropdown Live Session trên Trang 2
+    try {
+      const optLive = document.getElementById('opt-lab-live');
+      const numRatings = Object.keys(MoodGraphState.userRatings).length;
+      if (optLive) {
+        optLive.textContent = `🎬 Tài khoản của bạn (Live Session • ${numRatings} đánh giá)`;
+      }
+      // Nếu AcademicLab đang mở ở chế độ live_session, tự động cập nhật lại bảng đối đầu
+      if (window.AcademicLab && typeof window.AcademicLab.onUserRatingsChanged === 'function') {
+        window.AcademicLab.onUserRatingsChanged();
+      }
+    } catch (e) {
+      console.warn("Lỗi đồng bộ Live Session sang Trang 2:", e);
+    }
 
     const movie = getMovieById(mid);
     const title = movie ? (movie.vietnameseTitle || movie.cleanTitle || movie.title) : `Phim #${mid}`;

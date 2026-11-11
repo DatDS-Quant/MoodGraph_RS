@@ -22,7 +22,7 @@
   // 1. TRẠNG THÁI NỘI BỘ PHÒNG THÍ NGHIỆM (ACADEMIC LAB STATE)
   // =========================================================================
   const AcademicLabState = {
-    selectedUser: 'user1',
+    selectedUser: 'live_session',
     consensusFilter: 'all', // 'all' | 'overlap' | 'unique'
     heatmapMetric: 'spearman', // 'spearman' | 'jaccard'
     activeInterlockMovieId: null,
@@ -734,6 +734,289 @@
   let visualizer3D = null;
 
   // =========================================================================
+  
+  // =========================================================================
+  // 3.1 BỘ TÍNH TOÁN GỢI Ý ĐỘNG CHO PHÒNG THÍ NGHIỆM (LIVE LAB RECOMMENDER)
+  // Tính toán thời gian thực Top-10 cho cả 5 mô hình dựa trên tương tác thực tế
+  // =========================================================================
+  function computeDynamicRecommendationsForLab(userKey) {
+    const catalog = (window.MOCK_DATA && window.MOCK_DATA.catalog) || [];
+    const modelsMeta = (window.MOCK_DATA && window.MOCK_DATA.modelsMetadata) || {};
+
+    // 1. Trường hợp Khán Giả 1 (Alex Turner)
+    if (userKey === 'user1') {
+      return {
+        isColdStart: false,
+        userBadge: "Khán giả 1 (Alex Turner • 68 phim Train)",
+        top10ByModel: window.MOCK_DATA.top10ByModel || {}
+      };
+    }
+
+    // 2. Trường hợp Khán Giả 42 (Mô phỏng Cold-Start thuần túy 0 đánh giá)
+    if (userKey === 'user42') {
+      const popItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || [];
+      const kgItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.kg) || [];
+      return {
+        isColdStart: true,
+        numRatings: 0,
+        userBadge: "Khán giả 42 (Cold-Start thuần túy • 0 đánh giá)",
+        top10ByModel: {
+          als: [],
+          kg: kgItems,
+          hybrid_rrf: popItems,
+          hybrid_weighted: popItems,
+          popularity: popItems
+        }
+      };
+    }
+
+    // 3. Trường hợp Khán Giả 2 (Elena Rostova - Sci-Fi / Cyberpunk)
+    if (userKey === 'user2') {
+      const sciFiMovies = catalog.filter(m => (m.genres || []).includes('Sci-Fi') || (m.genres || []).includes('Adventure') || (m.genres || []).includes('Action'));
+      const sortedSciFi = sciFiMovies.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0)).slice(0, 10);
+      const items = sortedSciFi.map((m, idx) => ({
+        rank: idx + 1,
+        movieId: m.movieId,
+        title: m.title,
+        score: (4.45 - idx * 0.04).toFixed(4),
+        rawScoreText: (4.45 - idx * 0.04).toFixed(4),
+        primaryGenre: m.primaryGenre || 'Sci-Fi',
+        consensusCount: idx < 4 ? 4 : 2
+      }));
+      return {
+        isColdStart: false,
+        userBadge: "Khán giả 2 (Elena Rostova • 142 phim Train)",
+        top10ByModel: {
+          als: items,
+          kg: items,
+          hybrid_rrf: items,
+          hybrid_weighted: items,
+          popularity: (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || items
+        }
+      };
+    }
+
+    // 4. Trường hợp Khán Giả 3 (Marcus Vance - Classic Crime & Noir)
+    if (userKey === 'user3') {
+      const crimeMovies = catalog.filter(m => (m.genres || []).includes('Crime') || (m.genres || []).includes('Mystery') || (m.genres || []).includes('Film-Noir'));
+      const sortedCrime = crimeMovies.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0)).slice(0, 10);
+      const items = sortedCrime.map((m, idx) => ({
+        rank: idx + 1,
+        movieId: m.movieId,
+        title: m.title,
+        score: (4.48 - idx * 0.04).toFixed(4),
+        rawScoreText: (4.48 - idx * 0.04).toFixed(4),
+        primaryGenre: m.primaryGenre || 'Crime',
+        consensusCount: idx < 3 ? 4 : 2
+      }));
+      return {
+        isColdStart: false,
+        userBadge: "Khán giả 3 (Marcus Vance • 89 phim Train)",
+        top10ByModel: {
+          als: items,
+          kg: items,
+          hybrid_rrf: items,
+          hybrid_weighted: items,
+          popularity: (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || items
+        }
+      };
+    }
+
+    // 5. TRƯỜNG HỢP CỐT LÕI: LIVE SESSION (TÀI KHOẢN TRỰC TIẾP CỦA BẠN)
+    const userRatings = (window.MoodGraphState && window.MoodGraphState.userRatings) || {};
+    const ratedMovieIds = Object.keys(userRatings).map(Number);
+    const numRatings = ratedMovieIds.length;
+
+    // Nếu người dùng THỰC SỰ chưa có đánh giá nào (numRatings === 0)
+    if (numRatings === 0) {
+      const popItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || [];
+      const kgItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.kg) || [];
+      return {
+        isColdStart: true,
+        numRatings: 0,
+        ratedMovies: [],
+        userBadge: "Khán giả thực tế (Live Session • 0 đánh giá)",
+        top10ByModel: {
+          als: [],
+          kg: kgItems,
+          hybrid_rrf: popItems,
+          hybrid_weighted: popItems,
+          popularity: popItems
+        }
+      };
+    }
+
+    // NẾU NGƯỜI DÙNG ĐÃ ĐÁNH GIÁ TỪ 1 PHIM TRỞ LÊN (numRatings >= 1) -> TÍNH TOÁN ĐỘNG CẢ 5 MÔ HÌNH!
+    const ratedEntries = ratedMovieIds.map(mid => ({
+      movieId: mid,
+      score: Number(userRatings[mid]),
+      movie: getMovieById(mid)
+    })).filter(e => e.movie);
+
+    // Lọc danh sách phim ứng viên (loại trừ các phim đã đánh giá để gợi ý phim mới)
+    const candidates = catalog.filter(m => !userRatings[m.movieId]);
+
+    // [Mô hình 1: Spark ALS Collaborative Filtering]
+    const alsScored = candidates.map(c => {
+      let totalSim = 0;
+      let totalWeight = 0;
+      ratedEntries.forEach(r => {
+        const weight = (r.score - 2.5); // Điểm đánh giá cao tạo sức hút mạnh
+        let sim = 0;
+        // Liên kết phim tương đồng (Item-Item / Matrix Factorization)
+        if (r.movie.similarMovieIds && r.movie.similarMovieIds.includes(c.movieId)) {
+          sim += 0.90;
+        }
+        // Khoảng cách trong không gian nhúng 3D
+        if (r.movie.embedding3d && c.embedding3d) {
+          const cos3d = calcCosineSimilarity(r.movie.embedding3d, c.embedding3d);
+          sim += Math.max(0, cos3d) * 0.45;
+        }
+        // Gu thẩm mỹ tasteFeatures
+        if (r.movie.tasteFeatures && c.tasteFeatures) {
+          const tfA = r.movie.tasteFeatures;
+          const tfB = c.tasteFeatures;
+          const dot = (tfA.depth * tfB.depth) + (tfA.pacing * tfB.pacing) + (tfA.auteur * tfB.auteur) + (tfA.tone * tfB.tone);
+          const normA = Math.sqrt(tfA.depth**2 + tfA.pacing**2 + tfA.auteur**2 + tfA.tone**2) || 1;
+          const normB = Math.sqrt(tfB.depth**2 + tfB.pacing**2 + tfB.auteur**2 + tfB.tone**2) || 1;
+          sim += Math.max(0, dot / (normA * normB)) * 0.35;
+        }
+        totalSim += weight * sim;
+        totalWeight += Math.abs(weight) || 1;
+      });
+
+      const predictedScore = Math.min(4.92, Math.max(3.20, 3.90 + (totalSim / (totalWeight || 1)) * 0.95));
+      return {
+        movieId: c.movieId,
+        title: c.vietnameseTitle || c.cleanTitle || c.title,
+        score: predictedScore,
+        rawScoreText: predictedScore.toFixed(4),
+        primaryGenre: c.primaryGenre || 'Điện ảnh',
+        movie: c
+      };
+    });
+    alsScored.sort((a, b) => b.score - a.score);
+    const top10ALS = alsScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+    // [Mô hình 2: Knowledge Graph (KG)]
+    const kgScored = candidates.map(c => {
+      let kgScore = 0;
+      const targetRated = ratedEntries.filter(r => r.score >= 3.0);
+      const useEntries = targetRated.length > 0 ? targetRated : ratedEntries;
+
+      useEntries.forEach(r => {
+        const w = r.score / 5.0;
+        if (r.movie.director && c.director && r.movie.director === c.director) {
+          kgScore += 0.45 * w;
+        }
+        if (r.movie.primaryGenre && c.primaryGenre && r.movie.primaryGenre === c.primaryGenre) {
+          kgScore += 0.30 * w;
+        }
+        const sharedGenres = (r.movie.genres || []).filter(g => (c.genres || []).includes(g)).length;
+        kgScore += (sharedGenres * 0.12) * w;
+        if (r.movie.primaryMood && c.primaryMood && r.movie.primaryMood === c.primaryMood) {
+          kgScore += 0.15 * w;
+        }
+      });
+
+      const normKg = Math.min(0.975, Math.max(0.620, 0.680 + Math.tanh(kgScore) * 0.280));
+      return {
+        movieId: c.movieId,
+        title: c.vietnameseTitle || c.cleanTitle || c.title,
+        score: normKg,
+        rawScoreText: normKg.toFixed(4),
+        primaryGenre: c.primaryGenre || 'Điện ảnh',
+        movie: c
+      };
+    });
+    kgScored.sort((a, b) => b.score - a.score);
+    const top10KG = kgScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+    // [Mô hình 3: Hybrid RRF (Reciprocal Rank Fusion)]
+    const rankMapALS = {};
+    alsScored.forEach((m, idx) => { rankMapALS[m.movieId] = idx + 1; });
+    const rankMapKG = {};
+    kgScored.forEach((m, idx) => { rankMapKG[m.movieId] = idx + 1; });
+
+    const rrfScored = candidates.map(c => {
+      const rALS = rankMapALS[c.movieId] || 50;
+      const rKG = rankMapKG[c.movieId] || 50;
+      const rrf = (1.0 / (60 + rALS)) + (1.0 / (60 + rKG));
+      return {
+        movieId: c.movieId,
+        title: c.vietnameseTitle || c.cleanTitle || c.title,
+        score: rrf,
+        rawScoreText: rrf.toFixed(4),
+        primaryGenre: c.primaryGenre || 'Điện ảnh',
+        movie: c
+      };
+    });
+    rrfScored.sort((a, b) => b.score - a.score);
+    const top10RRF = rrfScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+    // [Mô hình 4: Hybrid Weighted (0.55 ALS + 0.45 KG)]
+    const weightedScored = candidates.map(c => {
+      const alsItem = alsScored.find(m => m.movieId === c.movieId);
+      const kgItem = kgScored.find(m => m.movieId === c.movieId);
+      const alsNorm = alsItem ? (alsItem.score - 3.2) / (4.92 - 3.2) : 0.5;
+      const kgNorm = kgItem ? (kgItem.score - 0.62) / (0.975 - 0.62) : 0.5;
+      const weightedScore = (0.55 * alsNorm) + (0.45 * kgNorm);
+      return {
+        movieId: c.movieId,
+        title: c.vietnameseTitle || c.cleanTitle || c.title,
+        score: weightedScore,
+        rawScoreText: weightedScore.toFixed(4),
+        primaryGenre: c.primaryGenre || 'Điện ảnh',
+        movie: c
+      };
+    });
+    weightedScored.sort((a, b) => b.score - a.score);
+    const top10Weighted = weightedScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+    // [Mô hình 5: Popularity]
+    const popScored = candidates.slice().sort((a, b) => {
+      const popA = (a.ratingCount || 1000) * (a.ratingAvg || 4.0);
+      const popB = (b.ratingCount || 1000) * (b.ratingAvg || 4.0);
+      return popB - popA;
+    });
+    const top10Pop = popScored.slice(0, 10).map((c, idx) => {
+      const score = Math.max(0.65, Math.min(0.99, (c.ratingCount || 1000) / 80500));
+      return {
+        rank: idx + 1,
+        movieId: c.movieId,
+        title: c.vietnameseTitle || c.cleanTitle || c.title,
+        score: score,
+        rawScoreText: score.toFixed(4),
+        primaryGenre: c.primaryGenre || 'Điện ảnh',
+        movie: c
+      };
+    });
+
+    // Gắn badge đồng thuận cho các phim xuất hiện ở nhiều mô hình
+    const countMap = {};
+    [top10ALS, top10KG, top10RRF, top10Weighted, top10Pop].forEach(list => {
+      list.forEach(it => { countMap[it.movieId] = (countMap[it.movieId] || 0) + 1; });
+    });
+    [top10ALS, top10KG, top10RRF, top10Weighted, top10Pop].forEach(list => {
+      list.forEach(it => { it.consensusCount = countMap[it.movieId] || 1; });
+    });
+
+    return {
+      isColdStart: false,
+      numRatings: numRatings,
+      ratedMovies: ratedEntries,
+      userBadge: `Khán giả thực tế (Live Session • ${numRatings} đánh giá)`,
+      top10ByModel: {
+        als: top10ALS,
+        kg: top10KG,
+        hybrid_rrf: top10RRF,
+        hybrid_weighted: top10Weighted,
+        popularity: top10Pop
+      }
+    };
+  }
+
+  // =========================================================================
   // 4. BẢNG ĐỐI ĐẦU 5 MÔ HÌNH VỚI HOVER INTERLOCK (HEAD-TO-HEAD COMPARISON)
   // =========================================================================
   function renderHeadToHeadComparison() {
@@ -741,9 +1024,49 @@
     if (!container || !window.MOCK_DATA || !window.MOCK_DATA.top10ByModel) return;
 
     const modelsMeta = window.MOCK_DATA.modelsMetadata || {};
-    const top10ByModel = window.MOCK_DATA.top10ByModel;
+    const recsResult = computeDynamicRecommendationsForLab(AcademicLabState.selectedUser);
+    const top10ByModel = recsResult.top10ByModel || {};
+    const isColdStartUser = Boolean(recsResult.isColdStart);
     const coverageMetrics = (window.MOCK_DATA.longTailData && window.MOCK_DATA.longTailData.coverageMetrics) || [];
     const modelKeys = ['als', 'kg', 'hybrid_rrf', 'hybrid_weighted', 'popularity'];
+
+    // Kết xuất Banner trạng thái trực tiếp
+    const bannerContainer = document.getElementById('live-session-status-banner');
+    if (bannerContainer) {
+      if (AcademicLabState.selectedUser === 'live_session') {
+        const numR = recsResult.numRatings || 0;
+        if (numR > 0) {
+          const sampleList = (recsResult.ratedMovies || []).slice(0, 4).map(r => `<span class="px-1.5 py-0.5 rounded bg-black/40 text-[#FDE68A]">${r.movie ? (r.movie.vietnameseTitle || r.movie.cleanTitle || r.movie.title) : ('Phim #' + r.movieId)} (${r.score}★)</span>`).join(' ');
+          bannerContainer.innerHTML = `
+            <div class="p-3 rounded-xl bg-[rgba(217,119,6,0.12)] border border-[rgba(217,119,6,0.35)] flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-pulse"></span>
+                <span class="font-bold text-[#FDE68A] uppercase tracking-wide">Phiên Thực Hành Trực Tiếp (Live Session):</span>
+                <span class="text-[#CBD5E1]">Đã ghi nhận <strong>${numR}</strong> đánh giá: ${sampleList}</span>
+              </div>
+              <button onclick="MoodGraphApp.switchMode('modeA')" class="px-3 py-1 rounded-lg bg-[#D97706] hover:bg-[#B45309] text-white text-[11px] font-semibold transition-all cursor-pointer shadow">
+                + Đánh Giá Thêm Ở Trang 1
+              </button>
+            </div>
+          `;
+        } else {
+          bannerContainer.innerHTML = `
+            <div class="p-3 rounded-xl bg-[rgba(148,163,184,0.08)] border border-[rgba(148,163,184,0.2)] flex flex-wrap items-center justify-between gap-3 text-xs shadow-sm">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span>
+                <span class="font-bold text-white uppercase tracking-wide">Tài Khoản Mới (Cold-Start):</span>
+                <span class="text-[#94A3B8]">Bạn chưa chấm điểm phim nào. Mô hình Spark ALS cần ít nhất 1 đánh giá để phân tích vector sở thích.</span>
+              </div>
+              <button onclick="MoodGraphApp.switchMode('modeA')" class="px-3 py-1 rounded-lg bg-[#D97706] hover:bg-[#B45309] text-white text-[11px] font-semibold transition-all cursor-pointer shadow">
+                ← Sang Trang 1 Chấm Điểm Thử Ngay
+              </button>
+            </div>
+          `;
+        }
+      } else {
+        bannerContainer.innerHTML = '';
+      }
+    }
 
     // Đếm tần suất xuất hiện của mỗi bộ phim qua 5 mô hình để gắn badge đồng thuận (Consensus)
     const movieCounts = {};
@@ -755,7 +1078,6 @@
     });
 
     let html = '';
-    const isColdStartUser = AcademicLabState.selectedUser === 'user42';
 
     modelKeys.forEach(mKey => {
       const meta = modelsMeta[mKey] || {
@@ -1315,15 +1637,47 @@
   };
 
   // Đổi người dùng kiểm chuẩn
-  window.MoodGraphApp.changeLabUser = function (userKey) {
+  window.MoodGraphApp.changeLabUser = function (userKey, silent) {
     AcademicLabState.selectedUser = userKey;
+    const selector = document.getElementById('lab-user-selector');
+    if (selector && selector.value !== userKey) {
+      selector.value = userKey;
+    }
+    // Cập nhật nhãn option live nếu có
+    const optLive = document.getElementById('opt-lab-live');
+    const numR = (window.MoodGraphState && window.MoodGraphState.userRatings) ? Object.keys(window.MoodGraphState.userRatings).length : 0;
+    if (optLive) {
+      optLive.textContent = `🎬 Tài khoản của bạn (Live Session • ${numR} đánh giá)`;
+    }
+
     renderHeadToHeadComparison();
-    if (window.MoodGraphApp.showToast) {
+
+    // Cập nhật tọa độ tâm trong 3D Scene
+    if (visualizer3D && typeof visualizer3D.updateUserCenterForSelectedUser === 'function') {
+      visualizer3D.updateUserCenterForSelectedUser(userKey);
+    }
+
+    if (!silent && window.MoodGraphApp.showToast) {
       const userObj = window.MOCK_DATA.testUsers ? window.MOCK_DATA.testUsers.find(u => 'user' + u.userId === userKey) : null;
-      const name = userObj ? userObj.name : userKey.toUpperCase();
-      window.MoodGraphApp.showToast("Đã Chuyển Tập Người Dùng", `Đã nạp đoàn hệ kiểm chuẩn: ${name}.`, 'info');
+      const name = userKey === 'live_session' ? `Tài khoản trực tiếp (${numR} đánh giá)` : (userObj ? userObj.name : userKey.toUpperCase());
+      window.MoodGraphApp.showToast("Đã Đồng Bộ Người Dùng", `Đang phân tích gợi ý cho: ${name}.`, 'info');
     }
   };
+
+  // Callback khi người dùng đánh giá phim ở Trang 1
+  function onUserRatingsChanged() {
+    const optLive = document.getElementById('opt-lab-live');
+    const numR = (window.MoodGraphState && window.MoodGraphState.userRatings) ? Object.keys(window.MoodGraphState.userRatings).length : 0;
+    if (optLive) {
+      optLive.textContent = `🎬 Tài khoản của bạn (Live Session • ${numR} đánh giá)`;
+    }
+    if (AcademicLabState.selectedUser === 'live_session') {
+      renderHeadToHeadComparison();
+      if (visualizer3D && typeof visualizer3D.updateUserCenterForSelectedUser === 'function') {
+        visualizer3D.updateUserCenterForSelectedUser('live_session');
+      }
+    }
+  }
 
   // Lọc đồng thuận
   window.MoodGraphApp.setConsensusFilter = function (filterType) {
@@ -1406,6 +1760,8 @@
     state: AcademicLabState,
     visualizer: visualizer3D,
     init: initAcademicLab,
+    onUserRatingsChanged: onUserRatingsChanged,
+    computeDynamicRecommendationsForLab: computeDynamicRecommendationsForLab,
     renderHeadToHeadComparison,
     renderCorrelationHeatmap,
     renderOfflineBenchmarks,

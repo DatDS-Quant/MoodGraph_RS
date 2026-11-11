@@ -455,6 +455,7 @@
             <div class="flex items-center gap-1.5 bg-[#0B0F14] border border-[rgba(255,255,255,0.08)] rounded-lg p-1">
               <span class="text-[11px] text-[#94A3B8] px-2 font-medium">Người dùng:</span>
               <select id="lab-user-selector" onchange="MoodGraphApp.changeLabUser(this.value)" class="bg-[#141A24] text-xs font-semibold text-white rounded px-2.5 py-1 border border-[rgba(255,255,255,0.08)] focus:outline-none focus:border-[#D97706]">
+                <option value="live_session" id="opt-lab-live">🎬 Tài khoản của bạn (Live Session • 0 đánh giá)</option>
                 <option value="user1">Khán giả 1 (Alex Turner • Gu Nghệ Thuật)</option>
                 <option value="user2">Khán giả 2 (Elena Rostova • Khoa Học Viễn Tưởng)</option>
                 <option value="user3">Khán giả 3 (Marcus Vance • Phim Đen Tội Phạm)</option>
@@ -578,6 +579,7 @@
         </div>
 
         <!-- 5 Columns Container -->
+        <div id="live-session-status-banner" class="mb-4"></div>
         <div id="head-to-head-columns" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
           <!-- Được kết xuất động bằng JavaScript -->
         </div>
