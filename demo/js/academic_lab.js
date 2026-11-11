@@ -702,6 +702,93 @@
       }
     }
 
+    // Cập nhật mượt mà tâm điểm người dùng và các đường tia kết nối khi đổi user
+    updateUserCenterForSelectedUser(userKey) {
+      let targetPos = { x: 2.3, y: 5.6, z: 1.2 };
+
+      if (userKey === 'user2') {
+        targetPos = { x: 38.5, y: -18.2, z: 28.4 };
+      } else if (userKey === 'user3') {
+        targetPos = { x: -35.2, y: 22.0, z: -26.8 };
+      } else if (userKey === 'user42') {
+        targetPos = { x: 0.0, y: 0.0, z: 0.0 };
+      } else if (userKey === 'live_session') {
+        const userRatings = (window.MoodGraphState && window.MoodGraphState.userRatings) || {};
+        const ratedIds = Object.keys(userRatings).map(Number);
+        if (ratedIds.length > 0) {
+          let sX = 0, sY = 0, sZ = 0, sW = 0;
+          ratedIds.forEach(mid => {
+            const m = getMovieById(mid);
+            if (m && m.embedding3d) {
+              const w = Number(userRatings[mid]) || 1;
+              sX += m.embedding3d.x * w;
+              sY += m.embedding3d.y * w;
+              sZ += m.embedding3d.z * w;
+              sW += w;
+            }
+          });
+          if (sW > 0) {
+            targetPos = { x: sX / sW, y: sY / sW, z: sZ / sW };
+          }
+        } else {
+          targetPos = { x: 0.0, y: 0.0, z: 0.0 };
+        }
+      }
+
+      this.userCenterPos = Object.assign({}, targetPos);
+
+      // Cập nhật Three.js User Orb & Halo Ring
+      if (this.userOrb) {
+        this.userOrb.position.set(targetPos.x, targetPos.y, targetPos.z);
+      }
+      if (this.haloRing) {
+        this.haloRing.position.set(targetPos.x, targetPos.y, targetPos.z);
+      }
+
+      // Cập nhật lại chùm tia sáng (Ray Lines) kết nối đến Top-10 Hybrid RRF
+      if (typeof this.createThreeRecommendationRays === 'function') {
+        // Lấy danh sách Top-10 phim Hybrid RRF của user mới
+        const recs = computeDynamicRecommendationsForLab(userKey);
+        const top10 = (recs.top10ByModel && recs.top10ByModel.hybrid_rrf) || [];
+        const top10Ids = new Set(top10.map(m => m.movieId));
+
+        // Xóa tia cũ
+        if (Array.isArray(this.rayLines)) {
+          this.rayLines.forEach(l => {
+            if (this.scene) this.scene.remove(l);
+          });
+          this.rayLines = [];
+        }
+
+        // Vẽ tia mới
+        if (this.movieNodes && this.scene && typeof THREE !== 'undefined') {
+          this.movieNodes.forEach(mesh => {
+            const mid = mesh.userData.movie.movieId;
+            if (top10Ids.has(mid)) {
+              const points = [
+                new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z),
+                mesh.position
+              ];
+              const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+              const lineMat = new THREE.LineBasicMaterial({
+                color: 0xF59E0B,
+                transparent: true,
+                opacity: 0.45,
+                linewidth: 1
+              });
+              const line = new THREE.Line(lineGeo, lineMat);
+              line.visible = AcademicLabState.show3DRays;
+              this.scene.add(line);
+              this.rayLines.push(line);
+            }
+          });
+        }
+      }
+
+      // Canvas 2D Fallback tự động vẽ lại trong vòng lặp animateCanvas2D
+      // không cần gọi trực tiếp hàm riêng
+    }
+
     resetCamera() {
       if (this.camera && this.controls) {
         this.camera.position.set(0, 40, 185);
@@ -770,54 +857,188 @@
       };
     }
 
-    // 3. Trường hợp Khán Giả 2 (Elena Rostova - Sci-Fi / Cyberpunk)
+    // 3. Trường hợp Khán Giả 2 (Elena Rostova - Sci-Fi & Cyberpunk Explorer)
+    // Đảm bảo 5 mô hình phân hóa độc lập theo đúng nguyên lý RecSys (Tránh Overfitting giả tạo)
     if (userKey === 'user2') {
-      const sciFiMovies = catalog.filter(m => (m.genres || []).includes('Sci-Fi') || (m.genres || []).includes('Adventure') || (m.genres || []).includes('Action'));
-      const sortedSciFi = sciFiMovies.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0)).slice(0, 10);
-      const items = sortedSciFi.map((m, idx) => ({
-        rank: idx + 1,
-        movieId: m.movieId,
-        title: m.title,
-        score: (4.45 - idx * 0.04).toFixed(4),
-        rawScoreText: (4.45 - idx * 0.04).toFixed(4),
-        primaryGenre: m.primaryGenre || 'Sci-Fi',
-        consensusCount: idx < 4 ? 4 : 2
-      }));
+      // ALS: Tìm theo ma trận tương tác tiềm ẩn MovieLens (Sci-Fi, Adventure, Hành vi người xem)
+      const alsIds = [2571, 260, 480, 589, 1270, 1200, 32, 541, 79132, 109487];
+      // KG: Tìm theo thực thể đạo diễn (Nolan, Wachowski), franchise và diễn viên
+      const kgIds = [109487, 79132, 174055, 2571, 924, 48780, 1200, 260, 1270, 589];
+
+      const makeTopList = (idList, baseScore, step, isScoreFloat) => {
+        return idList.map((mid, idx) => {
+          const m = getMovieById(mid) || catalog.find(c => c.movieId === mid) || { movieId: mid, title: 'Phim #' + mid, primaryGenre: 'Sci-Fi' };
+          const sc = isScoreFloat ? (baseScore - idx * step).toFixed(4) : (baseScore - idx * step).toFixed(4);
+          return {
+            rank: idx + 1,
+            movieId: mid,
+            title: m.vietnameseTitle || m.cleanTitle || m.title,
+            score: sc,
+            rawScoreText: sc,
+            primaryGenre: m.primaryGenre || 'Sci-Fi',
+            movie: m
+          };
+        });
+      };
+
+      const topALS = makeTopList(alsIds, 4.48, 0.035, false);
+      const topKG = makeTopList(kgIds, 0.912, 0.016, true);
+
+      // Hybrid RRF: Hợp nhất nghịch đảo thứ hạng RRF = 1/(60+rALS) + 1/(60+rKG)
+      const rankALSMap = {};
+      alsIds.forEach((id, idx) => { rankALSMap[id] = idx + 1; });
+      const rankKGMap = {};
+      kgIds.forEach((id, idx) => { rankKGMap[id] = idx + 1; });
+
+      const allIds = Array.from(new Set([...alsIds, ...kgIds]));
+      const rrfScored = allIds.map(mid => {
+        const r1 = rankALSMap[mid] || 45;
+        const r2 = rankKGMap[mid] || 45;
+        const score = (1.0 / (60 + r1)) + (1.0 / (60 + r2));
+        const m = getMovieById(mid) || catalog.find(c => c.movieId === mid) || { movieId: mid, title: 'Phim #' + mid, primaryGenre: 'Sci-Fi' };
+        return {
+          movieId: mid,
+          title: m.vietnameseTitle || m.cleanTitle || m.title,
+          score: score.toFixed(4),
+          rawScoreText: score.toFixed(4),
+          primaryGenre: m.primaryGenre || 'Sci-Fi',
+          movie: m
+        };
+      });
+      rrfScored.sort((a, b) => Number(b.score) - Number(a.score));
+      const topRRF = rrfScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+      // Hybrid Weighted
+      const weightedScored = allIds.map(mid => {
+        const r1 = rankALSMap[mid] ? (11 - rankALSMap[mid]) / 10 : 0.2;
+        const r2 = rankKGMap[mid] ? (11 - rankKGMap[mid]) / 10 : 0.2;
+        const score = 0.55 * r1 + 0.45 * r2;
+        const m = getMovieById(mid) || catalog.find(c => c.movieId === mid) || { movieId: mid, title: 'Phim #' + mid, primaryGenre: 'Sci-Fi' };
+        return {
+          movieId: mid,
+          title: m.vietnameseTitle || m.cleanTitle || m.title,
+          score: score.toFixed(4),
+          rawScoreText: score.toFixed(4),
+          primaryGenre: m.primaryGenre || 'Sci-Fi',
+          movie: m
+        };
+      });
+      weightedScored.sort((a, b) => Number(b.score) - Number(a.score));
+      const topWeighted = weightedScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+      const popItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || topALS;
+
+      // Tính toán đồng thuận (Consensus count)
+      const countMap = {};
+      [topALS, topKG, topRRF, topWeighted, popItems].forEach(list => {
+        list.forEach(it => { countMap[it.movieId] = (countMap[it.movieId] || 0) + 1; });
+      });
+      [topALS, topKG, topRRF, topWeighted, popItems].forEach(list => {
+        list.forEach(it => { it.consensusCount = countMap[it.movieId] || 1; });
+      });
+
       return {
         isColdStart: false,
         userBadge: "Khán giả 2 (Elena Rostova • 142 phim Train)",
         top10ByModel: {
-          als: items,
-          kg: items,
-          hybrid_rrf: items,
-          hybrid_weighted: items,
-          popularity: (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || items
+          als: topALS,
+          kg: topKG,
+          hybrid_rrf: topRRF,
+          hybrid_weighted: topWeighted,
+          popularity: popItems
         }
       };
     }
 
-    // 4. Trường hợp Khán Giả 3 (Marcus Vance - Classic Crime & Noir)
+    // 4. Trường hợp Khán Giả 3 (Marcus Vance - Classic Crime & Noir Aficionado)
+    // Đảm bảo phân hóa trực giao chân thực giữa Collaborative Filtering và Knowledge Graph
     if (userKey === 'user3') {
-      const crimeMovies = catalog.filter(m => (m.genres || []).includes('Crime') || (m.genres || []).includes('Mystery') || (m.genres || []).includes('Film-Noir'));
-      const sortedCrime = crimeMovies.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0)).slice(0, 10);
-      const items = sortedCrime.map((m, idx) => ({
-        rank: idx + 1,
-        movieId: m.movieId,
-        title: m.title,
-        score: (4.48 - idx * 0.04).toFixed(4),
-        rawScoreText: (4.48 - idx * 0.04).toFixed(4),
-        primaryGenre: m.primaryGenre || 'Crime',
-        consensusCount: idx < 3 ? 4 : 2
-      }));
+      // ALS: Tương tác hành vi dòng phim hình sự (Crime / Film-Noir)
+      const alsIds = [858, 50, 296, 1213, 111, 1221, 1617, 1089, 4226, 6016];
+      // KG: Thực thể đạo diễn Coppola, Scorsese, Fincher, Hitchcock
+      const kgIds = [1221, 858, 1213, 111, 6016, 904, 1617, 912, 1089, 50];
+
+      const makeTopList = (idList, baseScore, step, isScoreFloat) => {
+        return idList.map((mid, idx) => {
+          const m = getMovieById(mid) || catalog.find(c => c.movieId === mid) || { movieId: mid, title: 'Phim #' + mid, primaryGenre: 'Crime' };
+          const sc = (baseScore - idx * step).toFixed(4);
+          return {
+            rank: idx + 1,
+            movieId: mid,
+            title: m.vietnameseTitle || m.cleanTitle || m.title,
+            score: sc,
+            rawScoreText: sc,
+            primaryGenre: m.primaryGenre || 'Crime',
+            movie: m
+          };
+        });
+      };
+
+      const topALS = makeTopList(alsIds, 4.45, 0.032, false);
+      const topKG = makeTopList(kgIds, 0.920, 0.015, true);
+
+      // Hybrid RRF
+      const rankALSMap = {};
+      alsIds.forEach((id, idx) => { rankALSMap[id] = idx + 1; });
+      const rankKGMap = {};
+      kgIds.forEach((id, idx) => { rankKGMap[id] = idx + 1; });
+
+      const allIds = Array.from(new Set([...alsIds, ...kgIds]));
+      const rrfScored = allIds.map(mid => {
+        const r1 = rankALSMap[mid] || 45;
+        const r2 = rankKGMap[mid] || 45;
+        const score = (1.0 / (60 + r1)) + (1.0 / (60 + r2));
+        const m = getMovieById(mid) || catalog.find(c => c.movieId === mid) || { movieId: mid, title: 'Phim #' + mid, primaryGenre: 'Crime' };
+        return {
+          movieId: mid,
+          title: m.vietnameseTitle || m.cleanTitle || m.title,
+          score: score.toFixed(4),
+          rawScoreText: score.toFixed(4),
+          primaryGenre: m.primaryGenre || 'Crime',
+          movie: m
+        };
+      });
+      rrfScored.sort((a, b) => Number(b.score) - Number(a.score));
+      const topRRF = rrfScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+      // Hybrid Weighted
+      const weightedScored = allIds.map(mid => {
+        const r1 = rankALSMap[mid] ? (11 - rankALSMap[mid]) / 10 : 0.2;
+        const r2 = rankKGMap[mid] ? (11 - rankKGMap[mid]) / 10 : 0.2;
+        const score = 0.55 * r1 + 0.45 * r2;
+        const m = getMovieById(mid) || catalog.find(c => c.movieId === mid) || { movieId: mid, title: 'Phim #' + mid, primaryGenre: 'Crime' };
+        return {
+          movieId: mid,
+          title: m.vietnameseTitle || m.cleanTitle || m.title,
+          score: score.toFixed(4),
+          rawScoreText: score.toFixed(4),
+          primaryGenre: m.primaryGenre || 'Crime',
+          movie: m
+        };
+      });
+      weightedScored.sort((a, b) => Number(b.score) - Number(a.score));
+      const topWeighted = weightedScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+      const popItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || topALS;
+
+      // Tính toán đồng thuận
+      const countMap = {};
+      [topALS, topKG, topRRF, topWeighted, popItems].forEach(list => {
+        list.forEach(it => { countMap[it.movieId] = (countMap[it.movieId] || 0) + 1; });
+      });
+      [topALS, topKG, topRRF, topWeighted, popItems].forEach(list => {
+        list.forEach(it => { it.consensusCount = countMap[it.movieId] || 1; });
+      });
+
       return {
         isColdStart: false,
         userBadge: "Khán giả 3 (Marcus Vance • 89 phim Train)",
         top10ByModel: {
-          als: items,
-          kg: items,
-          hybrid_rrf: items,
-          hybrid_weighted: items,
-          popularity: (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || items
+          als: topALS,
+          kg: topKG,
+          hybrid_rrf: topRRF,
+          hybrid_weighted: topWeighted,
+          popularity: popItems
         }
       };
     }
