@@ -8,7 +8,10 @@
   <!-- Phông chữ Google Fonts Editorial / Claude -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Phông chữ Dịu mắt, Tự nhiên & Đậm chất Điện ảnh Nhân bản (Anti-AI Humanist Typography) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS CDN với bảng màu Dark Charcoal & Warm Amber -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -315,7 +318,7 @@
             <div class="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
               <div class="flex items-center gap-1.5 min-w-0">
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
-                <span class="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-semibold truncate">Tâm Trạng Khám Phá</span>
+                <span class="text-[11px] font-sans tracking-wide text-slate-300 font-medium truncate">Tâm Trạng Khám Phá</span>
               </div>
               <span id="active-mood-display" class="text-[10px] font-mono text-amber-300 font-medium truncate max-w-[120px]">
                 Tất cả
@@ -360,7 +363,7 @@
             <div class="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
               <div class="flex items-center gap-1.5 min-w-0">
                 <span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0"></span>
-                <span class="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-semibold truncate">Tùy Biến Gu Điện Ảnh</span>
+                <span class="text-[11px] font-sans tracking-wide text-slate-300 font-medium truncate">Tùy Biến Gu Điện Ảnh</span>
               </div>
               <button id="btn-reset-sliders" 
                       onclick="MoodGraphApp.resetSliders()" 
@@ -374,7 +377,7 @@
               
               <!-- Trục 1: Chiều Sâu Cốt Truyện (Warm Amber) -->
               <div class="space-y-0.5">
-                <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                <div class="flex items-center justify-between text-[10px] font-sans text-slate-300 font-medium">
                   <span class="truncate">Chiều Sâu</span>
                   <span id="val-slider-depth" class="font-bold text-amber-400 tabular-nums shrink-0">75%</span>
                 </div>
@@ -385,7 +388,7 @@
 
               <!-- Trục 2: Nhịp Độ Diễn Biến (Antique Bronze) -->
               <div class="space-y-0.5">
-                <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                <div class="flex items-center justify-between text-[10px] font-sans text-slate-300 font-medium">
                   <span class="truncate">Nhịp Độ</span>
                   <span id="val-slider-pacing" class="font-bold text-amber-300 tabular-nums shrink-0">60%</span>
                 </div>
@@ -396,7 +399,7 @@
 
               <!-- Trục 3: Bản Sắc Tác Giả (Amber) -->
               <div class="space-y-0.5">
-                <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                <div class="flex items-center justify-between text-[10px] font-sans text-slate-300 font-medium">
                   <span class="truncate">Bản Sắc Tác Giả</span>
                   <span id="val-slider-auteur" class="font-bold text-amber-400 tabular-nums shrink-0">85%</span>
                 </div>
