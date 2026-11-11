@@ -786,11 +786,19 @@
       // Xử lý kịch bản Cold-Start cho Spark ALS
       if (isColdStartUser && mKey === 'als') {
         itemsHtml = `
-          <div class="p-4 my-6 rounded-lg bg-[rgba(225,29,72,0.12)] border border-[rgba(225,29,72,0.35)] text-center space-y-2">
-            <span class="text-[#FDA4AF] font-mono text-xs font-bold block">⚠️ VECTOR USER NULL</span>
-            <p class="text-[11px] text-[#94A3B8] leading-relaxed">
-              Spark ALS sụp đổ hoàn toàn khi gặp người dùng mới chưa có lịch sử đánh giá (N &le; 1). Cần kích hoạt cơ chế Fallback sang Knowledge Graph hoặc Popularity.
+          <div class="p-4 my-4 rounded-xl bg-[rgba(217,119,6,0.12)] border border-[rgba(217,119,6,0.35)] text-center space-y-2.5 shadow-lg">
+            <span class="text-[#FDE68A] font-mono text-xs font-bold block flex items-center justify-center gap-1.5">
+              <span>ℹ️</span> CHƯA CÓ LỊCH SỬ ĐÁNH GIÁ (COLD-START)
+            </span>
+            <p class="text-[11px] text-[#CBD5E1] leading-relaxed">
+              Mô hình Lọc cộng tác (Spark ALS) cần lịch sử tương tác để học sở thích điện ảnh của bạn.
             </p>
+            <p class="text-[10px] text-[#94A3B8] leading-relaxed">
+              Vui lòng quay lại <strong class="text-white">Trang 1</strong> để chấm điểm một vài bộ phim yêu thích, hoặc xem các đề xuất từ <strong class="text-[#A7F3D0]">Đồ Thị Tri Thức</strong> và <strong class="text-[#FED7AA]">Phim Phổ Biến</strong> ở các cột bên cạnh.
+            </p>
+            <button onclick="MoodGraphApp.switchMode('modeA')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D97706] hover:bg-[#B45309] text-white text-[11px] font-semibold transition-all shadow cursor-pointer mt-1">
+              <span>←</span> Sang Trang 1 Chấm Điểm Phim
+            </button>
           </div>
         `;
       } else {
