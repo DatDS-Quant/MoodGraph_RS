@@ -177,9 +177,9 @@
           <div>
             <div class="text-xs font-semibold text-white flex items-center gap-1.5">
               <span>Hồ Sơ Khán Giả Thử Nghiệm</span>
-              <span class="px-1.5 py-0.2 rounded text-[10px] bg-[rgba(217,119,6,0.15)] text-[#FDE68A] font-mono">1-Click Persona</span>
+              
             </div>
-            <div class="text-[11px] text-[#94A3B8] hidden sm:block">Khảo sát phản ứng thời gian thực của thuật toán khi chuyển đổi người dùng</div>
+            <div class="text-[11px] text-[#94A3B8] hidden sm:block">Trải nghiệm các gu điện ảnh khác nhau</div>
           </div>
         </div>
         
@@ -260,18 +260,14 @@
               </span>
               <h2 class="text-base font-semibold text-white tracking-tight">Thử Nghiệm Thay Đổi Gu Phim Của Bạn</h2>
             </div>
-            <p class="text-xs text-[#94A3B8] mt-1">
-              Kéo các thanh trượt bên dưới để chứng kiến thuật toán Cosine Similarity và RRF tái xếp hạng danh sách gợi ý trong <strong class="text-[#F59E0B]">dưới 5ms (60 FPS)</strong>.
-            </p>
+            <p class="text-xs text-[#94A3B8] mt-1">Tùy chỉnh các thanh trượt bên dưới để khám phá những bộ phim phù hợp nhất với sở thích của bạn.</p>
           </div>
 
           <div class="flex items-center gap-3">
             <button onclick="MoodGraphApp.resetSliders()" class="btn-secondary text-xs px-3 py-1.5">
               Đặt Lại Gu Ban Đầu
             </button>
-            <div id="tuner-latency-badge" class="px-2.5 py-1 rounded bg-[#0B0F14] border border-[rgba(255,255,255,0.08)] text-[11px] font-mono text-[#10B981]">
-              Độ trễ: 1.8 ms
-            </div>
+            
           </div>
         </div>
 
@@ -376,14 +372,9 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[rgba(16,185,129,0.15)] text-[#A7F3D0] border border-[rgba(16,185,129,0.35)] font-mono">
-                ĐÃ KIỂM TOÁN NGUỒN GỐC
-              </span>
-              <h2 class="text-xl font-medium text-white tracking-tight font-serif">Gợi Ý Phù Hợp Nhất Dành Riêng Cho Bạn</h2>
+              <h2 class="text-xl font-medium text-white tracking-tight font-serif">Gợi Ý Dành Riêng Cho Bạn</h2>
             </div>
-            <p class="text-xs text-[#94A3B8] mt-0.5">
-              Tích hợp 4 lớp minh chứng giải thích: <span class="text-[#FDE68A] font-medium">P1 Thể loại</span> • <span class="text-[#A7F3D0] font-medium">P2 Cảm xúc Genome</span> • <span class="text-[#FED7AA] font-medium">P3 Đồng tương tác</span> • <span class="text-[#BAE6FD] font-medium">ALS Không gian tiềm ẩn</span>
-            </p>
+            <p class="text-xs text-[#94A3B8] mt-0.5">Những tác phẩm được đề xuất dựa trên sở thích và tâm trạng của bạn.</p>
           </div>
           <div class="text-xs font-mono text-[#94A3B8]">
             Hiển thị Top 10 đề xuất thích ứng
@@ -481,15 +472,7 @@
           </div>
         </div>
 
-        <!-- Thẻ Đo Lường Độ Trễ Thực Nghiệm (P95 Latency) -->
-        <div class="pt-3 border-t border-[rgba(255,255,255,0.06)] flex flex-wrap items-center gap-2.5 text-xs font-mono">
-          <span class="text-[#94A3B8] font-sans text-[11px]">Độ trễ suy luận thực nghiệm (P95):</span>
-          <span class="px-2 py-0.5 rounded bg-[rgba(2,132,199,0.12)] border border-[rgba(2,132,199,0.35)] text-[#BAE6FD]">Spark ALS: 3.28 ms</span>
-          <span class="px-2 py-0.5 rounded bg-[rgba(5,150,105,0.12)] border border-[rgba(5,150,105,0.35)] text-[#A7F3D0]">Knowledge Graph: 3.63 ms</span>
-          <span class="px-2 py-0.5 rounded bg-[rgba(217,119,6,0.12)] border border-[rgba(217,119,6,0.35)] text-[#FDE68A]">Hybrid RRF: 3.08 ms</span>
-          <span class="px-2 py-0.5 rounded bg-[rgba(234,88,12,0.12)] border border-[rgba(234,88,12,0.35)] text-[#FED7AA]">Weighted: 2.88 ms</span>
-          <span class="px-2 py-0.5 rounded bg-[rgba(120,113,108,0.15)] border border-[rgba(120,113,108,0.35)] text-[#D6D3D1]">Popularity: 0.025 ms</span>
-        </div>
+        
       </section>
 
       <!-- KHU VỰC 3D THREE.JS: KHÔNG GIAN NHÚNG VECTOR TIỀM ẨN & ĐỒ THỊ TRI THỨC -->
@@ -509,12 +492,7 @@
             </p>
           </div>
 
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-[#10B981] font-mono flex items-center gap-1.5 bg-[#141A24] px-2.5 py-1 rounded border border-[rgba(255,255,255,0.08)]">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping"></span>
-              60 FPS Tự Nhiên
-            </span>
-          </div>
+          
         </div>
 
         <!-- Nhãn Giải Thích Học Thuật Phép Chiếu PCA Bảo Toàn Phương Sai (Item 6) -->
@@ -589,9 +567,7 @@
               <span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
               So Sánh Đối Đầu Top-10 Song Song Giữa 5 Mô Hình
             </h2>
-            <p class="text-xs text-[#94A3B8]">
-              Tính năng <strong class="text-[#F59E0B] font-semibold">Hover Interlock</strong>: Rê chuột vào một bộ phim ở bất kỳ cột nào, phim đó trên các cột khác lập tức sáng rực với viền vàng hổ phách và nhãn vị trí.
-            </p>
+            <p class="text-xs text-[#94A3B8]">Danh sách 10 tác phẩm đề xuất hàng đầu từ các mô hình khác nhau.</p>
           </div>
 
           <!-- Dynamic Interlock Info Banner -->
