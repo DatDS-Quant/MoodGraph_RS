@@ -877,7 +877,7 @@
 
     // Cập nhật số lượng
     if (badge) {
-      badge.textContent = `Hiển thị ${filtered.length} / ${allMovies.length} tác phẩm`;
+      badge.innerHTML = `Hiển thị <strong>${filtered.length}</strong> / <strong>${allMovies.length}</strong> phim đại diện <span class="text-[#94A3B8] text-[10px] ml-1">(Kho MovieLens 25M: 62,423 phim)</span>`;
     }
 
     if (filtered.length === 0) {
