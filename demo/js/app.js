@@ -328,39 +328,52 @@
     const moods = window.MOCK_DATA.moods;
     const currentMood = MoodGraphState.activeMood;
 
+    // Nhãn rút gọn cho giao diện Sidebar gọn gàng
+    const shortNames = {
+      'mind_bending': 'Trí tuệ',
+      'suspense': 'Hồi hộp',
+      'reflective': 'Sâu lắng',
+      'epic_adventure': 'Phiêu lưu',
+      'uplifting': 'Thư giãn',
+      'romantic': 'Lãng mạn',
+      'dark_noir': 'U tối'
+    };
+
     let html = `
       <button onclick="MoodGraphApp.selectMood('all')" 
+              data-mood="all"
               class="mood-chip-btn ${currentMood === 'all' ? 'active' : ''}">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="10"></circle>
           <polygon points="12 8 8 12 12 16 16 12 12 8"></polygon>
         </svg>
-        <span>Tất cả tâm trạng</span>
+        <span>Tất cả</span>
       </button>
     `;
 
     moods.forEach(m => {
       const isActive = currentMood === m.id;
+      const label = shortNames[m.id] || m.name;
       html += `
         <button onclick="MoodGraphApp.selectMood('${m.id}')" 
+                data-mood="${m.id}"
                 class="mood-chip-btn ${isActive ? 'active' : ''}"
-                title="${escapeHtml(m.description)}">
-          ${m.iconSvg || ''}
-          <span>${escapeHtml(m.name)}</span>
+                title="${escapeHtml(m.description || m.name)}">
+          <span>${escapeHtml(label)}</span>
         </button>
       `;
     });
 
     container.innerHTML = html;
 
-    // Cập nhật nhãn văn bản hiển thị tâm trạng hiện tại
+    // Cập nhật nhãn văn bản hiển thị tâm trạng hiện tại nếu có
     const displayEl = document.getElementById('active-mood-display');
     if (displayEl) {
       if (currentMood === 'all') {
-        displayEl.textContent = "Tất cả tâm trạng";
+        displayEl.textContent = "Tất cả";
       } else {
         const found = moods.find(x => x.id === currentMood);
-        displayEl.textContent = found ? found.name : currentMood;
+        displayEl.textContent = found ? (shortNames[found.id] || found.name) : currentMood;
       }
     }
   }
@@ -459,7 +472,7 @@
     const axes = ['depth', 'pacing', 'auteur', 'tone'];
     axes.forEach(axis => {
       const sliderEl = document.getElementById(`slider-${axis}`);
-      const valEl = document.getElementById(`val-${axis}`);
+      const valEl = document.getElementById(`val-slider-${axis}`) || document.getElementById(`val-${axis}`);
       const valPct = Math.round(MoodGraphState.sliders[axis] * 100);
 
       if (sliderEl) sliderEl.value = valPct;
@@ -473,7 +486,7 @@
     MoodGraphState.sliders[axis] = valNum / 100.0;
 
     // Cập nhật nhãn số %
-    const valEl = document.getElementById(`val-${axis}`);
+    const valEl = document.getElementById(`val-slider-${axis}`) || document.getElementById(`val-${axis}`);
     if (valEl) {
       valEl.textContent = `${valNum}%`;
     }
@@ -585,110 +598,74 @@
     const titleVn = escapeHtml(topMovie.vietnameseTitle || topMovie.cleanTitle || topMovie.title);
     const titleEn = escapeHtml(topMovie.cleanTitle || topMovie.title);
     const matchPct = topMovie.compatibilityPct || 98;
-    const ratingScore = MoodGraphState.userRatings[topMovie.movieId] || 0;
-
-    // Xây dựng dòng giải thích lý do gợi ý Provenance bằng tiếng Việt sâu sắc
-    let provenanceExplanation = topMovie.provenanceSummary;
-    if (!provenanceExplanation) {
-      provenanceExplanation = `Khớp ${matchPct}% gu thẩm mỹ tác giả của đạo diễn ${topMovie.director || 'hàng đầu'}, hội tụ chiều sâu cốt truyện và đặc trưng nhịp độ bạn tìm kiếm.`;
-    }
-
     const backdropImg = topMovie.backdropUrl || topMovie.posterUrl;
 
     container.innerHTML = `
-      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0F141C] via-[#141A24] to-[#0B0F14] border border-[rgba(245,158,11,0.3)] shadow-2xl">
+      <div class="relative overflow-hidden rounded-2xl border border-white/10 bg-[#070A0F] shadow-2xl min-h-[420px] group">
         
-        <!-- Ảnh nền mờ phía sau tạo chiều sâu điện ảnh -->
-        <div class="absolute inset-0 opacity-20 bg-cover bg-center filter blur-md pointer-events-none" 
-             style="background-image: url('${backdropImg}');"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-[#0B0F14] via-[rgba(11,15,20,0.85)] to-transparent pointer-events-none"></div>
+        <!-- Backdrop 16:9 Tràn Viền Toàn Bộ Nền -->
+        <div class="absolute inset-0 z-0 overflow-hidden">
+          <img src="${backdropImg}" 
+               alt="${titleVn}" 
+               class="w-full h-full object-cover object-center filter brightness-[0.7] contrast-[1.05] transition-transform duration-1000 ease-out group-hover:scale-105"
+               onerror="this.onerror=null; this.src='${topMovie.posterUrl}';">
+        </div>
 
-        <div class="relative z-10 p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row items-center gap-8">
+        <!-- Scrim Gradient Phủ Từ Trái Sang -->
+        <div class="absolute inset-0 z-[1] bg-gradient-to-r from-[#070A0F] via-[#070A0F]/90 via-45% to-transparent pointer-events-none"></div>
+
+        <!-- Scrim Gradient Phủ Từ Dưới Lên -->
+        <div class="absolute inset-0 z-[2] bg-gradient-to-t from-[#070A0F] via-[#070A0F]/75 via-35% to-transparent pointer-events-none"></div>
+
+        <!-- Nội Dung Hero Banner Tối Giản -->
+        <div class="relative z-10 p-8 sm:p-12 lg:p-16 flex flex-col justify-end min-h-[420px] max-w-2xl space-y-3.5 text-left">
           
-          <!-- Poster Phim Đứng Đầu -->
-          <div class="w-48 sm:w-56 lg:w-64 shrink-0 rounded-xl overflow-hidden shadow-2xl border border-[rgba(217,119,6,0.4)] aspect-[2/3] bg-[#0A0D14] cursor-pointer group"
-               onclick="MoodGraphApp.openMovieDetailModal(${topMovie.movieId})">
-            ${renderPosterImgHtml(topMovie, 'w-full h-full object-cover transition-transform duration-500 group-hover:scale-105')}
+          <!-- Badges Gọn Gàng -->
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 tabular-nums shrink-0 whitespace-nowrap inline-flex items-center justify-center">
+              TOP ĐỀ XUẤT • ${matchPct}% MATCH
+            </span>
+            <span class="text-xs text-[#94A3B8] font-mono shrink-0 whitespace-nowrap">${topMovie.primaryGenre || 'Drama'}</span>
           </div>
 
-          <!-- Thông Tin Chi Tiết & Giải Thích Provenance -->
-          <div class="flex-1 space-y-4 text-left">
-            
-            <!-- Badges Hàng Đầu -->
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-[rgba(217,119,6,0.15)] text-[#FDE68A] border border-[rgba(217,119,6,0.4)] flex items-center gap-1.5 font-mono">
-                <span>👑</span>
-                <span>LỰA CHỌN TỐI ƯU SỐ 1 CHO BẠN</span>
-              </span>
-              <span class="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-[#1B2230] text-[#10B981] border border-[rgba(16,185,129,0.35)]">
-                ĐỘ PHÙ HỢP ${matchPct}%
-              </span>
-              <span class="px-2.5 py-1 rounded-full text-[11px] font-mono text-[#FBBF24] bg-[#141A24] border border-[rgba(255,255,255,0.08)]">
-                ${topMovie.moodLabel || 'Điện ảnh đặc sắc'}
-              </span>
-            </div>
+          <!-- Tiêu Đề Lớn -->
+          <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight font-serif drop-shadow-md">
+            ${titleVn}
+          </h1>
 
-            <!-- Tiêu Đề Phim Chuẩn Editorial Serif -->
-            <div>
-              <h1 class="text-2xl sm:text-3xl lg:text-4xl font-semibold text-white tracking-tight leading-tight font-serif">
-                ${titleVn}
-              </h1>
-              <div class="text-xs sm:text-sm text-[#94A3B8] italic mt-0.5">
-                ${titleEn} • ${topMovie.year} • Đạo diễn: <strong class="text-white not-italic">${topMovie.director || 'N/A'}</strong>
-              </div>
-            </div>
+          <!-- Năm / Thời Lượng / Đạo Diễn / Rating -->
+          <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-[#94A3B8] font-mono tabular-nums">
+            <span class="shrink-0 whitespace-nowrap">${topMovie.year}</span>
+            <span class="text-white/30 shrink-0">•</span>
+            <span class="shrink-0 whitespace-nowrap">${topMovie.duration || '142 phút'}</span>
+            <span class="text-white/30 shrink-0">•</span>
+            <span class="shrink-0 whitespace-nowrap">Đạo diễn: <strong class="text-white not-italic font-sans">${topMovie.director || 'Frank Darabont'}</strong></span>
+            <span class="text-white/30 shrink-0">•</span>
+            <span class="text-[#F59E0B] font-bold shrink-0 whitespace-nowrap inline-flex items-center gap-1">★ ${topMovie.ratingAvg || 4.4}</span>
+          </div>
 
-            <!-- Thông Số Kỹ Thuật -->
-            <div class="flex flex-wrap items-center gap-3 text-xs text-[#CBD5E1]">
-              <span class="text-[#F59E0B] font-mono font-bold flex items-center gap-1">
-                <svg class="w-3.5 h-3.5 fill-[#F59E0B]" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                IMDb ${topMovie.ratingAvg || 4.5} / 5.0
-              </span>
-              <span>•</span>
-              <span class="font-mono">${topMovie.duration || '120 phút'}</span>
-              <span>•</span>
-              <span class="text-[#94A3B8]">${(topMovie.genres || []).join(', ')}</span>
-            </div>
+          <!-- 2 Dòng Tóm Tắt Ngắn -->
+          <p class="text-xs sm:text-sm text-[#CBD5E1] line-clamp-2 leading-relaxed max-w-xl font-sans">
+            ${escapeHtml(topMovie.synopsis || 'Tác phẩm điện ảnh sâu sắc với giá trị nghệ thuật và triết lý nhân sinh vượt thời gian.')}
+          </p>
 
-            <!-- Tóm Tắt Cốt Truyện -->
-            <p class="text-xs sm:text-sm text-[#CBD5E1] line-clamp-3 leading-relaxed max-w-2xl">
-              ${escapeHtml(topMovie.synopsis || 'Tác phẩm điện ảnh sâu sắc với giá trị nghệ thuật và nhân văn vượt thời gian.')}
-            </p>
+          <!-- 2 Nút Bấm Gọn Gàng -->
+          <div class="flex items-center gap-3 pt-2">
+            <button onclick="MoodGraphApp.openMovieDetailModal(${topMovie.movieId})" 
+                    class="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs sm:text-sm tracking-wide shadow-lg shadow-amber-500/20 active:scale-95 transition-all inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap">
+              <svg class="w-4 h-4 fill-black shrink-0" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span class="whitespace-nowrap">Xem Chi Tiết</span>
+            </button>
 
-            <!-- Thẻ Giải Thích Nguồn Gốc Gợi Ý (Provenance Box) -->
-            <div class="p-3 rounded-lg bg-[#0F141C] border border-[rgba(217,119,6,0.3)] space-y-1">
-              <div class="flex items-center gap-1.5 text-[11px] font-mono text-[#F59E0B] font-semibold">
-                <span>🔍 Minh chứng gợi ý:</span>
-                <span class="text-[#A7F3D0]">${topMovie.primaryGenre || 'Điện ảnh'}</span>
-                <span class="text-[#64748B]">•</span>
-                <span class="text-[#FDE68A]">Cosine ${(topMovie.cosineSimilarity ? topMovie.cosineSimilarity.toFixed(3) : '0.945')}</span>
-              </div>
-              <p class="text-xs text-[#E2E8F0] leading-snug">
-                ${escapeHtml(provenanceExplanation)}
-              </p>
-            </div>
-
-            <!-- Nút Hành Động -->
-            <div class="flex flex-wrap items-center gap-3 pt-2">
-              <button onclick="MoodGraphApp.openMovieDetailModal(${topMovie.movieId})" 
-                      class="btn-primary text-xs sm:text-sm px-4 py-2">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                <span>Khám Phá Chi Tiết & Tọa Độ 3D</span>
-              </button>
-
-              <button onclick="MoodGraphApp.toggleWatchlist(${topMovie.movieId})" 
-                      class="btn-secondary text-xs sm:text-sm px-4 py-2 ${inWatchlist ? 'border-[#10B981] text-[#10B981]' : ''}">
-                <svg class="w-4 h-4 ${inWatchlist ? 'text-[#10B981]' : ''}" viewBox="0 0 24 24" fill="${inWatchlist ? '#10B981' : 'none'}" stroke="currentColor" stroke-width="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                </svg>
-                <span>${inWatchlist ? 'Đã Lưu Trong Danh Sách Xem ✓' : '+ Thêm Vào Danh Sách Xem'}</span>
-              </button>
-            </div>
-
+            <button onclick="MoodGraphApp.toggleWatchlist(${topMovie.movieId})" 
+                    id="hero-watchlist-btn"
+                    data-movie-id="${topMovie.movieId}"
+                    class="px-4 py-2.5 rounded-lg border backdrop-blur-md text-xs sm:text-sm font-medium active:scale-95 transition-all inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap ${inWatchlist ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15' : 'bg-white/10 hover:bg-white/15 border-white/10 text-white'}">
+              <svg class="w-4 h-4 shrink-0 ${inWatchlist ? 'text-emerald-400 fill-emerald-400' : 'text-white fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span class="whitespace-nowrap">${inWatchlist ? 'Đã Lưu Watchlist ✓' : '+ Thêm Vào Watchlist'}</span>
+            </button>
           </div>
 
         </div>
@@ -698,7 +675,7 @@
   }
 
   // =========================================================================
-  // 9. KẾT XUẤT LƯỚI PHIM GỢI Ý (ADAPTIVE RECOMMENDATIONS GRID)
+  // 9. KẾT XUẤT DANH SÁCH GỢI Ý XẾP HẠNG (SIDE RANKING RECOMMENDATION PANEL)
   // =========================================================================
 
   function renderRecommendationsGrid(movies) {
@@ -707,103 +684,131 @@
 
     if (!movies || movies.length === 0) {
       container.innerHTML = `
-        <div class="col-span-full py-10 text-center text-[#94A3B8] text-xs font-mono">
-          Không có thêm tác phẩm đề xuất phù hợp trong bộ lọc này.
+        <div class="py-10 text-center text-[#94A3B8] text-xs font-mono">
+          Không có tác phẩm đề xuất phù hợp trong bộ lọc hiện tại.
         </div>
       `;
       return;
     }
 
+    // Đảm bảo sắp xếp nghiêm ngặt theo Match Score từ cao xuống thấp
+    const sortedMovies = [...movies].sort((a, b) => {
+      const scoreA = Number(a.compatibilityPct != null ? a.compatibilityPct : (a.matchScore != null ? a.matchScore * 100 : 90));
+      const scoreB = Number(b.compatibilityPct != null ? b.compatibilityPct : (b.matchScore != null ? b.matchScore * 100 : 90));
+      return scoreB - scoreA;
+    });
+
     let html = '';
-    movies.forEach(movie => {
+    sortedMovies.forEach((movie, index) => {
+      const rankNum = index + 1;
       const inWatchlist = MoodGraphState.watchlist.includes(movie.movieId);
       const titleVn = escapeHtml(movie.vietnameseTitle || movie.cleanTitle || movie.title);
       const titleEn = escapeHtml(movie.cleanTitle || movie.title);
-      const matchPct = movie.compatibilityPct || 92;
-      const userRating = MoodGraphState.userRatings[movie.movieId] || 0;
+      const matchPct = Number(movie.compatibilityPct != null ? movie.compatibilityPct : 92).toFixed(1);
+      const matchNum = parseFloat(matchPct);
+      const imdbScore = movie.ratingAvg ? Number(movie.ratingAvg).toFixed(1) : '4.0';
 
-      // Xây dựng nhãn tóm tắt lý do gợi ý súc tích
-      let reasonBadge = movie.primaryMood 
-        ? (window.MOCK_DATA.moods.find(m => m.id === movie.primaryMood)?.shortName || 'Tâm lý') 
-        : (movie.primaryGenre || 'Điện ảnh');
+      // Kiểu huy hiệu thứ hạng: Top 1-3 nổi bật với Amber/Gold mạ sang trọng
+      let rankBadgeClass = 'bg-white/5 text-slate-400 border-white/10';
+      if (rankNum === 1) {
+        rankBadgeClass = 'bg-gradient-to-br from-amber-400/25 to-amber-600/30 text-amber-300 border-amber-400/50 font-bold shadow-md shadow-amber-500/10 scale-105';
+      } else if (rankNum === 2) {
+        rankBadgeClass = 'bg-gradient-to-br from-amber-300/20 to-amber-500/25 text-amber-200 border-amber-400/40 font-bold shadow-sm';
+      } else if (rankNum === 3) {
+        rankBadgeClass = 'bg-gradient-to-br from-amber-500/15 to-amber-700/20 text-amber-300/90 border-amber-500/35 font-semibold';
+      }
 
-      let explanationText = movie.provenanceSummary;
-      if (!explanationText) {
-        explanationText = `Khớp ${matchPct}% gu cốt truyện & phong cách đạo diễn ${movie.director || 'tác giả'}.`;
+      // Xác định Provenance Chip ngắn gọn
+      let provChipText = 'P1 Thể Loại';
+      let provChipClass = 'bg-purple-500/15 text-purple-300 border-purple-500/30';
+      
+      const recObj = (window.MOCK_DATA && window.MOCK_DATA.recommendationsModeA)
+        ? window.MOCK_DATA.recommendationsModeA.find(r => r.movieId === movie.movieId)
+        : null;
+
+      if (recObj && recObj.provenanceTags && recObj.provenanceTags.length > 0) {
+        const firstTag = recObj.provenanceTags[0];
+        if (firstTag.type === 'P1_GENRE') {
+          provChipText = 'P1 Thể Loại';
+          provChipClass = 'bg-purple-500/15 text-purple-300 border-purple-500/30';
+        } else if (firstTag.type === 'P2_GENOME') {
+          provChipText = 'P2 Tâm Trạng';
+          provChipClass = 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+        } else if (firstTag.type === 'P3_COLLABORATIVE') {
+          provChipText = 'P3 Đồng Gu';
+          provChipClass = 'bg-sky-500/15 text-sky-300 border-sky-500/30';
+        } else if (firstTag.type === 'LATENT_AFFINITY') {
+          provChipText = 'ALS Vector';
+          provChipClass = 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+        }
+      } else {
+        const fallbackTypes = [
+          { text: 'P1 Thể Loại', cls: 'bg-purple-500/15 text-purple-300 border-purple-500/30' },
+          { text: 'P2 Tâm Trạng', cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
+          { text: 'P3 Đồng Gu', cls: 'bg-sky-500/15 text-sky-300 border-sky-500/30' },
+          { text: 'ALS Vector', cls: 'bg-rose-500/15 text-rose-300 border-rose-500/30' }
+        ];
+        const pick = fallbackTypes[movie.movieId % fallbackTypes.length];
+        provChipText = pick.text;
+        provChipClass = pick.cls;
       }
 
       html += `
-        <div class="movie-card group" onclick="MoodGraphApp.openMovieDetailModal(${movie.movieId})">
+        <div class="group relative flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 transition-all duration-200 cursor-pointer"
+             onclick="MoodGraphApp.openMovieDetailModal(${movie.movieId})">
           
-          <!-- Hộp Poster -->
-          <div class="movie-poster-box">
-            ${renderPosterImgHtml(movie)}
-            
-            <!-- Huy hiệu độ tương thích -->
-            <div class="compatibility-badge">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
-              <span>${matchPct}%</span>
-            </div>
-
-            <!-- Nút Lưu Nhanh Vào Danh Sách Xem -->
-            <button onclick="event.stopPropagation(); MoodGraphApp.toggleWatchlist(${movie.movieId})" 
-                    class="absolute top-2 left-2 p-1.5 rounded-lg bg-[rgba(11,15,20,0.85)] hover:bg-[#1B2230] border border-[rgba(255,255,255,0.1)] text-white transition-all"
-                    title="${inWatchlist ? 'Xóa khỏi Danh Sách Xem' : 'Lưu vào Danh Sách Xem'}">
-              <svg class="w-4 h-4 ${inWatchlist ? 'text-[#10B981]' : 'text-white'}" viewBox="0 0 24 24" fill="${inWatchlist ? '#10B981' : 'none'}" stroke="currentColor" stroke-width="2">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-              </svg>
-            </button>
+          <!-- Badge Thứ Hạng #1, #2, #3... (Kích thước lớn hơn, nổi bật hơn) -->
+          <div class="w-7 h-7 rounded-lg border flex items-center justify-center text-xs font-mono shrink-0 whitespace-nowrap ${rankBadgeClass}">
+            #${rankNum}
           </div>
 
-          <!-- Nội Dung Thẻ Phim -->
-          <div class="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
-            
-            <div class="space-y-1">
-              <div class="flex items-center justify-between text-[11px] text-[#94A3B8] font-mono">
-                <span>${movie.year} • ${movie.primaryGenre || 'Film'}</span>
-                <span class="text-[#F59E0B] font-bold flex items-center gap-0.5">
-                  ★ ${movie.ratingAvg || 4.2}
-                </span>
-              </div>
+          <!-- Poster Nhỏ Chuẩn 2:3 Sắc Nét -->
+          <div class="relative w-14 aspect-[2/3] rounded-md overflow-hidden bg-[#070A0F] border border-white/10 shrink-0 shadow-md">
+            ${renderPosterImgHtml(movie, 'w-full h-full object-cover group-hover:scale-105 transition-transform duration-200')}
+          </div>
 
-              <h3 class="text-sm font-semibold text-white leading-tight font-serif line-clamp-1 group-hover:text-[#FBBF24] transition-colors">
+          <!-- Khối Thông Tin Chi Tiết Rộng Rãi -->
+          <div class="flex-1 min-w-0 space-y-1.5">
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="text-xs sm:text-sm font-semibold text-white leading-tight truncate group-hover:text-amber-400 transition-colors" title="${titleVn}">
                 ${titleVn}
               </h3>
-              <div class="text-[11px] text-[#94A3B8] italic truncate">
-                ${titleEn}
-              </div>
+              
+              <!-- Nút Bookmark Nhanh -->
+              <button onclick="event.stopPropagation(); MoodGraphApp.toggleWatchlist(${movie.movieId})" 
+                      class="p-1 rounded text-slate-400 hover:text-white hover:bg-white/10 transition-colors shrink-0 whitespace-nowrap inline-flex items-center justify-center focus:outline-none"
+                      title="${inWatchlist ? 'Xóa khỏi Danh Sách Xem' : 'Lưu vào Danh Sách Xem'}">
+                <svg class="w-3.5 h-3.5 shrink-0 ${inWatchlist ? 'text-emerald-400 fill-emerald-400' : 'text-slate-400 fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </button>
             </div>
 
-            <!-- Thẻ Provenance Tinh Tế -->
-            <div class="pt-1.5 border-t border-[rgba(255,255,255,0.06)] space-y-1.5">
-              <div class="flex items-center gap-1.5">
-                <span class="provenance-tag p1-genre">${reasonBadge}</span>
-                <span class="text-[10px] text-[#94A3B8] truncate">${movie.director || ''}</span>
-              </div>
-              <p class="text-[10px] text-[#94A3B8] line-clamp-2 leading-relaxed">
-                ${escapeHtml(explanationText)}
-              </p>
+            <!-- Meta: Năm • Thể loại • IMDb (Dàn đều 1 hàng ngang thoáng đãng) -->
+            <div class="flex items-center gap-2 text-[11px] text-slate-400 font-mono tabular-nums shrink-0 whitespace-nowrap">
+              <span>${movie.year}</span>
+              <span class="text-white/20">•</span>
+              <span class="truncate max-w-[110px] text-slate-300">${movie.primaryGenre || 'Drama'}</span>
+              <span class="text-white/20">•</span>
+              <span class="text-amber-400 font-bold inline-flex items-center gap-0.5">★ ${imdbScore}</span>
             </div>
 
-            <!-- Widget Chấm Điểm Sao 1-5 Sao -->
-            <div class="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between" onclick="event.stopPropagation()">
-              <span class="text-[10px] text-[#64748B] font-mono">Đánh giá:</span>
-              <div class="flex items-center gap-0.5">
-                ${[1, 2, 3, 4, 5].map(starVal => {
-                  const isFilled = userRating >= starVal;
-                  return `
-                    <button onclick="MoodGraphApp.submitRating(${movie.movieId}, ${starVal})" 
-                            class="p-0.5 text-xs transition-transform hover:scale-125 focus:outline-none" 
-                            title="${starVal} sao — ${RATING_LABELS[starVal]}">
-                      <svg class="w-3.5 h-3.5 ${isFilled ? 'text-[#F59E0B] fill-[#F59E0B]' : 'text-[#475569] fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                      </svg>
-                    </button>
-                  `;
-                }).join('')}
+            <!-- Match Score % + Mini Progress Bar + Provenance Chip Trên 1 Hàng Ngang Thoáng -->
+            <div class="flex items-center justify-between gap-2.5 pt-0.5">
+              <div class="flex items-center gap-2 min-w-0 flex-1">
+                <span class="text-[11px] font-mono font-bold text-emerald-400 tabular-nums shrink-0 whitespace-nowrap">
+                  ${matchPct}%
+                </span>
+                <div class="w-full max-w-[80px] h-1.5 bg-white/10 rounded-full overflow-hidden shrink-0">
+                  <div class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style="width: ${Math.min(100, matchNum)}%"></div>
+                </div>
               </div>
-            </div>
 
+              <!-- Provenance Chip Gọn Gàng -->
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono border whitespace-nowrap shrink-0 inline-flex items-center justify-center ${provChipClass}">
+                ${provChipText}
+              </span>
+            </div>
           </div>
 
         </div>
@@ -829,10 +834,10 @@
       const isActive = currentGenre === g.id;
       html += `
         <button onclick="MoodGraphApp.selectGenreFilter('${g.id}')" 
-                class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all border ${
+                class="px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border ${
                   isActive 
-                    ? 'bg-[#D97706] text-white border-[#D97706] shadow-md shadow-[#D97706]/20 font-semibold' 
-                    : 'bg-[#141A24] text-[#94A3B8] border-[rgba(255,255,255,0.08)] hover:text-white hover:border-[#D97706]'
+                    ? 'bg-white/15 text-white border-white/30 font-semibold shadow-sm backdrop-blur-md' 
+                    : 'bg-[#141A24] text-[#94A3B8] border-white/10 hover:text-white hover:border-white/25'
                 }">
           ${escapeHtml(g.name)}
         </button>
@@ -877,7 +882,7 @@
 
     // Cập nhật số lượng
     if (badge) {
-      badge.innerHTML = `Hiển thị <strong>${filtered.length}</strong> / <strong>${allMovies.length}</strong> phim đại diện <span class="text-[#94A3B8] text-[10px] ml-1">(Kho MovieLens 25M: 62,423 phim)</span>`;
+      badge.innerHTML = `Hiển thị <span class="text-white font-bold">${filtered.length} / ${allMovies.length}</span> phim mẫu (ml-25m)`;
     }
 
     if (filtered.length === 0) {
@@ -894,39 +899,41 @@
       const inWatchlist = MoodGraphState.watchlist.includes(movie.movieId);
       const titleVn = escapeHtml(movie.vietnameseTitle || movie.cleanTitle || movie.title);
       const titleEn = escapeHtml(movie.cleanTitle || movie.title);
-      const userRating = MoodGraphState.userRatings[movie.movieId] || 0;
 
       html += `
         <div class="movie-card group" onclick="MoodGraphApp.openMovieDetailModal(${movie.movieId})">
           <div class="movie-poster-box">
             ${renderPosterImgHtml(movie)}
             
+            <!-- Overlay tối nhẹ khi hover -->
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
+
+            <!-- Badge Thể Loại -->
+            <div class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-[rgba(11,15,20,0.85)] backdrop-blur-md border border-[rgba(255,255,255,0.1)] text-[10px] font-mono text-white/80 shrink-0 whitespace-nowrap inline-flex items-center justify-center">
+              ${movie.primaryGenre || 'Film'}
+            </div>
+
+            <!-- Nút Bookmark nhanh -->
             <button onclick="event.stopPropagation(); MoodGraphApp.toggleWatchlist(${movie.movieId})" 
-                    class="absolute top-2 right-2 p-1.5 rounded-lg bg-[rgba(11,15,20,0.85)] hover:bg-[#1B2230] border border-[rgba(255,255,255,0.1)] text-white transition-all"
+                    class="absolute top-2 right-2 p-1.5 rounded-lg bg-[rgba(11,15,20,0.85)] hover:bg-[#1B2230] border border-[rgba(255,255,255,0.1)] text-white transition-all focus:outline-none shrink-0 inline-flex items-center justify-center"
                     title="${inWatchlist ? 'Xóa khỏi Danh Sách Xem' : 'Lưu vào Danh Sách Xem'}">
-              <svg class="w-4 h-4 ${inWatchlist ? 'text-[#10B981]' : 'text-white'}" viewBox="0 0 24 24" fill="${inWatchlist ? '#10B981' : 'none'}" stroke="currentColor" stroke-width="2">
+              <svg class="w-3.5 h-3.5 shrink-0 ${inWatchlist ? 'text-[#10B981] fill-[#10B981]' : 'text-white/80 fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
               </svg>
             </button>
           </div>
 
-          <div class="p-3 space-y-1.5 flex-1 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between text-[10px] text-[#94A3B8] font-mono">
-                <span>${movie.year}</span>
-                <span class="text-[#F59E0B] font-bold">★ ${movie.ratingAvg || 4.0}</span>
-              </div>
-              <h3 class="text-xs font-semibold text-white leading-tight font-serif line-clamp-1 group-hover:text-[#FBBF24]">
-                ${titleVn}
-              </h3>
-              <div class="text-[10px] text-[#94A3B8] italic truncate">
-                ${titleEn}
-              </div>
-            </div>
-
-            <div class="pt-1.5 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between text-[10px] text-[#64748B]">
-              <span>${movie.primaryGenre || 'Drama'}</span>
-              <span class="truncate max-w-[100px]">${movie.director || ''}</span>
+          <!-- Bên dưới ảnh: Tên phim, Năm • Thể loại chính • Điểm IMDb -->
+          <div class="pt-2 px-0.5 space-y-0.5 min-w-0">
+            <h3 class="text-sm font-semibold text-white leading-tight truncate block w-full group-hover:text-[#FBBF24] transition-colors" title="${titleVn}">
+              ${titleVn}
+            </h3>
+            <div class="flex items-center gap-1.5 text-[11px] text-[#94A3B8] font-mono tabular-nums shrink-0 whitespace-nowrap">
+              <span class="shrink-0 whitespace-nowrap">${movie.year}</span>
+              <span class="text-white/20 shrink-0">•</span>
+              <span class="truncate max-w-[85px]">${movie.primaryGenre || 'Drama'}</span>
+              <span class="text-white/20 shrink-0">•</span>
+              <span class="text-[#F59E0B] font-bold shrink-0 whitespace-nowrap inline-flex items-center gap-0.5">★ ${movie.ratingAvg ? Number(movie.ratingAvg).toFixed(1) : '4.0'}</span>
             </div>
           </div>
         </div>
@@ -976,6 +983,33 @@
       }
 
       updateWatchlistUI();
+
+      // Đồng bộ trực tiếp nút trong Modal nếu đang hiển thị phim này
+      const modalWatchlistBtn = document.getElementById('modal-watchlist-btn');
+      if (modalWatchlistBtn && modalWatchlistBtn.getAttribute('data-movie-id') == mid) {
+        const isNowInWatchlist = MoodGraphState.watchlist.includes(mid);
+        modalWatchlistBtn.className = `w-full px-4 py-2.5 rounded-lg border transition-all duration-150 inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap ${isNowInWatchlist ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15' : 'bg-white/5 border-white/10 hover:border-white/20 text-white hover:bg-white/10'}`;
+        modalWatchlistBtn.innerHTML = `
+          <svg class="w-4 h-4 shrink-0 ${isNowInWatchlist ? 'text-emerald-400 fill-emerald-400' : 'text-white'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="whitespace-nowrap font-semibold text-xs">${isNowInWatchlist ? 'Đã Lưu Watchlist ✓' : '+ Thêm Vào Watchlist'}</span>
+        `;
+      }
+
+      // Đồng bộ nút trên Hero Banner nếu đang hiển thị phim này
+      const heroWatchlistBtn = document.getElementById('hero-watchlist-btn');
+      if (heroWatchlistBtn && heroWatchlistBtn.getAttribute('data-movie-id') == mid) {
+        const isNowInWatchlist = MoodGraphState.watchlist.includes(mid);
+        heroWatchlistBtn.className = `px-4 py-2.5 rounded-lg border backdrop-blur-md text-xs sm:text-sm font-medium active:scale-95 transition-all inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap ${isNowInWatchlist ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15' : 'bg-white/10 hover:bg-white/15 border-white/10 text-white'}`;
+        heroWatchlistBtn.innerHTML = `
+          <svg class="w-4 h-4 shrink-0 ${isNowInWatchlist ? 'text-emerald-400 fill-emerald-400' : 'text-white fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="whitespace-nowrap">${isNowInWatchlist ? 'Đã Lưu Watchlist ✓' : '+ Thêm Vào Watchlist'}</span>
+        `;
+      }
+
       // Tái kết xuất lại giao diện để cập nhật biểu tượng tim/bookmark
       updateDynamicRecommendations();
     } else {
@@ -1161,8 +1195,248 @@
   }
 
   // =========================================================================
-  // 13. HỘP THOẠI CHI TIẾT BỘ PHIM (MOVIE DETAIL MODAL)
+  // 13. HỘP THOẠI CHI TIẾT BỘ PHIM (MOVIE DETAIL MODAL) & PROVENANCE EXPLORER
   // =========================================================================
+
+  let isProvenanceAccordionOpen = false;
+  let activeProvenanceData = null;
+
+  function toggleProvenanceAccordion(forceState) {
+    if (typeof forceState === 'boolean') {
+      isProvenanceAccordionOpen = forceState;
+    } else {
+      isProvenanceAccordionOpen = !isProvenanceAccordionOpen;
+    }
+
+    const bodyEl = document.getElementById('prov-accordion-body');
+    const chevronEl = document.getElementById('prov-accordion-chevron');
+    const triggerBtn = document.getElementById('prov-accordion-trigger');
+
+    if (bodyEl) {
+      if (isProvenanceAccordionOpen) {
+        bodyEl.classList.remove('max-h-0', 'opacity-0', 'pointer-events-none');
+        bodyEl.classList.add('max-h-[600px]', 'opacity-100', 'pointer-events-auto', 'mt-3');
+      } else {
+        bodyEl.classList.add('max-h-0', 'opacity-0', 'pointer-events-none');
+        bodyEl.classList.remove('max-h-[600px]', 'opacity-100', 'pointer-events-auto', 'mt-3');
+      }
+    }
+
+    if (chevronEl) {
+      if (isProvenanceAccordionOpen) {
+        chevronEl.classList.add('rotate-180');
+      } else {
+        chevronEl.classList.remove('rotate-180');
+      }
+    }
+
+    if (triggerBtn) {
+      triggerBtn.setAttribute('aria-expanded', isProvenanceAccordionOpen ? 'true' : 'false');
+    }
+  }
+
+  function buildMovieProvenance(movie) {
+    const genresStr = (movie.genres || []).join(' • ') || (movie.primaryGenre || 'Chính Kịch');
+    const titleClean = movie.cleanTitle || movie.title;
+    const moodName = movie.moodLabel || ((window.MOCK_DATA && window.MOCK_DATA.moods) ? (window.MOCK_DATA.moods.find(m => m.id === movie.primaryMood)?.name || 'Chiều Sâu / Triết Lý') : 'Chiều Sâu / Triết Lý');
+    const dotProduct = (3.8 + ((movie.movieId * 7) % 15) / 10).toFixed(3);
+    const peerId = 1000 + (movie.movieId * 17) % 899;
+    const matchPct = movie.compatibilityPct || 94;
+
+    // Kiểm tra xem phim có dữ liệu provenanceTags sẵn trong RECOMMENDATIONS_MODE_A không
+    const recObj = (window.MOCK_DATA && window.MOCK_DATA.recommendationsModeA) 
+      ? window.MOCK_DATA.recommendationsModeA.find(r => r.movieId === movie.movieId) 
+      : null;
+
+    let p1Text = `Duyệt đồ thị tri thức trực tiếp nối từ các tác phẩm bạn từng chấm 5.0★ sang thể loại <strong>${genresStr}</strong> của phim này.`;
+    let p2Text = `Thuộc tính cảm xúc và sắc thái điện ảnh tương đồng cao với miền tâm trạng <strong>${moodName}</strong> trong không gian Genome.`;
+    let p3Text = `Khán giả <strong>#${peerId}</strong> và các cụm người dùng có hành vi chấm điểm giống bạn trên MovieLens 25M đều đồng thuận đánh giá cao tác phẩm này.`;
+    let p4Text = `Tích vô hướng giữa vector người dùng và vector phim trong không gian nhân tử tiềm ẩn ALS 32 chiều đạt <strong>${dotProduct}</strong> (Top 2% toàn danh mục).`;
+
+    if (recObj && recObj.provenanceTags) {
+      const tagP1 = recObj.provenanceTags.find(t => t.type === 'P1_GENRE');
+      if (tagP1 && tagP1.text) p1Text = escapeHtml(tagP1.text);
+
+      const tagP2 = recObj.provenanceTags.find(t => t.type === 'P2_GENOME');
+      if (tagP2 && tagP2.text) p2Text = escapeHtml(tagP2.text);
+
+      const tagP3 = recObj.provenanceTags.find(t => t.type === 'P3_COLLABORATIVE');
+      if (tagP3 && tagP3.text) p3Text = escapeHtml(tagP3.text);
+
+      const tagP4 = recObj.provenanceTags.find(t => t.type === 'LATENT_AFFINITY');
+      if (tagP4 && tagP4.text) p4Text = escapeHtml(tagP4.text);
+    } else if (movie.provenanceSummary) {
+      p1Text = `${escapeHtml(movie.provenanceSummary)} Đường đi đồ thị khớp trực tiếp qua thuộc tính ${genresStr}.`;
+    }
+
+    return {
+      p1: {
+        title: "Đồ Thị Thể Loại (P1)",
+        badge: "GRAPH TRAVERSAL",
+        badgeColor: "bg-amber-500/10 text-amber-300 border-amber-500/20",
+        pathNodes: ["Hồ Sơ Của Bạn (5.0★)", genresStr, titleClean],
+        metricLabel: "Độ tin cậy RRF",
+        metricValue: `${matchPct}%`,
+        description: p1Text
+      },
+      p2: {
+        title: "Tâm Trạng & Genome (P2)",
+        badge: "TAG GENOME 1128-D",
+        badgeColor: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+        pathNodes: ["Vector Cảm Xúc", moodName, "Khớp Genome: 89.2%"],
+        metricLabel: "Độ khớp Genome",
+        metricValue: "0.892",
+        description: p2Text
+      },
+      p3: {
+        title: "Cộng Đồng Đồng Gu (P3)",
+        badge: "COLLABORATIVE FILTERING",
+        badgeColor: "bg-sky-500/10 text-sky-300 border-sky-500/20",
+        pathNodes: ["Khán Giả Tương Đồng", `User #${peerId}`, "Đồng Thuận 5.0★"],
+        metricLabel: "Hệ số tương quan",
+        metricValue: "r = 0.88",
+        description: p3Text
+      },
+      p4: {
+        title: "Nhân Tử Tiềm Ẩn ALS (P4)",
+        badge: "MATRIX FACTORIZATION",
+        badgeColor: "bg-rose-500/10 text-rose-300 border-rose-500/20",
+        pathNodes: ["Vector Nhúng 32-D", `Dot Product = ${dotProduct}`, "Top 2% Toàn Kho"],
+        metricLabel: "Tích vô hướng nhúng",
+        metricValue: dotProduct,
+        description: p4Text
+      }
+    };
+  }
+
+  function renderProvenanceTabBody(tabKey) {
+    if (!activeProvenanceData || !activeProvenanceData[tabKey]) return '';
+    const data = activeProvenanceData[tabKey];
+
+    const nodesHtml = data.pathNodes.map((n, i) => {
+      const isLast = i === data.pathNodes.length - 1;
+      return `
+        <span class="inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap ${isLast ? 'text-white font-semibold' : 'text-slate-300'}">
+          <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[11px] font-mono shrink-0 whitespace-nowrap">${escapeHtml(n)}</span>
+          ${!isLast ? '<span class="text-slate-500 text-xs shrink-0">→</span>' : ''}
+        </span>
+      `;
+    }).join('');
+
+    return `
+      <div class="flex items-center justify-between text-xs">
+        <span class="font-semibold text-white flex items-center gap-1.5 font-mono shrink-0 whitespace-nowrap">
+          ${data.title}
+        </span>
+        <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${data.badgeColor} shrink-0 whitespace-nowrap inline-flex items-center justify-center">
+          ${data.badge}
+        </span>
+      </div>
+
+      <!-- Chuỗi Đường Đi Đồ Thị / Thuộc Tính -->
+      <div class="flex flex-wrap items-center gap-1.5 pt-1">
+        ${nodesHtml}
+      </div>
+
+      <!-- Mô Tả Ngữ Nghĩa & Chỉ Số Đo Lường -->
+      <div class="pt-2 border-t border-white/5 flex items-start justify-between gap-3 text-xs">
+        <p class="text-slate-300 leading-relaxed font-sans text-[11px]">
+          ${data.description}
+        </p>
+        <div class="text-right shrink-0 font-mono text-[11px] tabular-nums bg-white/5 px-2 py-1 rounded border border-white/5 whitespace-nowrap">
+          <span class="text-slate-400 block text-[9px] uppercase tracking-wider whitespace-nowrap">${data.metricLabel}</span>
+          <span class="text-amber-400 font-bold text-xs whitespace-nowrap">${data.metricValue}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function switchProvenanceTab(tabKey) {
+    ['p1', 'p2', 'p3', 'p4'].forEach(k => {
+      const btn = document.getElementById('prov-tab-btn-' + k);
+      if (btn) {
+        if (k === tabKey) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
+    });
+
+    const container = document.getElementById('prov-tab-content-container');
+    if (container) {
+      container.innerHTML = renderProvenanceTabBody(tabKey);
+    }
+  }
+
+  function renderProvenanceExplorerHtml(movie) {
+    activeProvenanceData = buildMovieProvenance(movie);
+
+    return `
+      <!-- Container bọc thanh accordion: w-full overflow-hidden rounded-xl border border-white/10 bg-[#141A24]/60 -->
+      <div class="provenance-explorer-box w-full overflow-hidden rounded-xl border border-white/10 bg-[#141A24]/60 transition-all duration-300">
+        <!-- Nút bấm accordion header: w-full flex items-center justify-between gap-3 p-3.5 text-left -->
+        <button type="button" 
+                id="prov-accordion-trigger"
+                onclick="MoodGraphApp.toggleProvenanceAccordion()"
+                aria-expanded="${isProvenanceAccordionOpen ? 'true' : 'false'}"
+                class="w-full flex items-center justify-between gap-3 p-3.5 text-left hover:bg-white/[0.04] transition-colors focus:outline-none cursor-pointer group">
+          
+          <!-- Cụm tiêu đề bên trái: min-w-0 flex items-center gap-2 truncate -->
+          <div class="min-w-0 flex items-center gap-2 truncate">
+            <div class="w-6 h-6 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </div>
+            <span class="text-xs font-semibold text-white truncate">
+              Tại sao gợi ý phim này? (Why this movie?)
+            </span>
+          </div>
+
+          <!-- Cụm badge bên phải: shrink-0 flex items-center gap-1.5 -->
+          <div class="shrink-0 flex items-center gap-1.5">
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap bg-purple-500/15 text-purple-300 border border-purple-500/30">
+              P1 Thể Loại
+            </span>
+            <svg id="prov-accordion-chevron" 
+                 class="w-4 h-4 text-slate-400 group-hover:text-white transition-transform duration-200 shrink-0 ${isProvenanceAccordionOpen ? 'rotate-180' : ''}" 
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Accordion Body (Thu gọn mặc định) -->
+        <div id="prov-accordion-body" 
+             class="overflow-hidden transition-all duration-300 ease-in-out ${isProvenanceAccordionOpen ? 'max-h-[600px] opacity-100 pointer-events-auto' : 'max-h-0 opacity-0 pointer-events-none'}">
+          <div class="p-3.5 space-y-3 border-t border-white/10">
+            <!-- 4 Tab Switcher Gọn Gàng -->
+            <div class="grid grid-cols-4 gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-lg text-xs font-mono">
+              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p1')" id="prov-tab-btn-p1" class="prov-tab-btn active shrink-0 whitespace-nowrap inline-flex items-center justify-center">
+                P1 Thể Loại
+              </button>
+              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p2')" id="prov-tab-btn-p2" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex items-center justify-center">
+                P2 Tâm Trạng
+              </button>
+              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p3')" id="prov-tab-btn-p3" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex items-center justify-center">
+                P3 Cộng Tác
+              </button>
+              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p4')" id="prov-tab-btn-p4" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex items-center justify-center">
+                P4 Vector ALS
+              </button>
+            </div>
+
+            <!-- Khung Nội Dung Tab Động -->
+            <div id="prov-tab-content-container" class="p-3 rounded-lg bg-white/[0.02] border border-white/5 space-y-2">
+              ${renderProvenanceTabBody('p1')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   function openMovieDetailModal(movieId) {
     const modal = document.getElementById('movie-detail-modal');
@@ -1171,6 +1445,9 @@
 
     const movie = getMovieById(movieId);
     if (!movie) return;
+
+    // Khởi tạo trạng thái Accordion Why this movie luôn thu gọn mặc định khi mở modal
+    isProvenanceAccordionOpen = false;
 
     const inWatchlist = MoodGraphState.watchlist.includes(movie.movieId);
     const userRating = MoodGraphState.userRatings[movie.movieId] || 0;
@@ -1190,21 +1467,23 @@
     let similarMoviesHtml = '';
     if (movie.similarMovieIds && movie.similarMovieIds.length > 0) {
       similarMoviesHtml = `
-        <div class="pt-4 border-t border-[rgba(255,255,255,0.08)] space-y-2">
-          <h4 class="text-xs font-semibold text-[#FBBF24] uppercase tracking-wider font-mono">Tác phẩm đồng điệu lân cận</h4>
-          <div class="grid grid-cols-4 gap-2">
+        <div class="pt-4 border-t border-white/10 space-y-2.5 w-full overflow-hidden">
+          <h4 class="text-xs font-semibold text-amber-400 uppercase tracking-wider font-mono shrink-0 whitespace-nowrap">Tác phẩm đồng điệu lân cận</h4>
+          <div class="grid grid-cols-4 gap-2.5 w-full overflow-hidden">
             ${movie.similarMovieIds.map(smId => {
               const sm = getMovieById(smId);
               if (!sm) return '';
               const smTitle = escapeHtml(sm.vietnameseTitle || sm.cleanTitle || sm.title);
               return `
-                <div class="p-1.5 rounded-lg bg-[#0F141C] border border-[rgba(255,255,255,0.06)] hover:border-[#D97706] cursor-pointer transition-all text-center group"
+                <div class="p-1.5 rounded-lg bg-[#0F141C] border border-white/5 hover:border-amber-500/40 cursor-pointer transition-all text-center group min-w-0 flex flex-col justify-between"
                      onclick="MoodGraphApp.openMovieDetailModal(${sm.movieId})">
-                  <div class="aspect-[2/3] rounded overflow-hidden mb-1">
-                    ${renderPosterImgHtml(sm, 'w-full h-full object-cover group-hover:scale-105 transition-transform')}
+                  <div class="aspect-[2/3] w-full rounded-lg overflow-hidden border border-white/10 mb-1.5 bg-[#0A0D14]">
+                    ${renderPosterImgHtml(sm, 'w-full h-full object-cover group-hover:scale-105 transition-transform duration-200')}
                   </div>
-                  <div class="text-[11px] font-semibold text-white truncate leading-tight">${smTitle}</div>
-                  <div class="text-[10px] text-[#94A3B8] font-mono">${sm.year}</div>
+                  <div class="min-w-0 w-full space-y-0.5">
+                    <span class="truncate block text-xs text-white group-hover:text-amber-300 transition-colors leading-tight" title="${smTitle}">${smTitle}</span>
+                    <span class="text-[10px] text-slate-500 font-mono block shrink-0 whitespace-nowrap">${sm.year}</span>
+                  </div>
                 </div>
               `;
             }).join('')}
@@ -1214,51 +1493,54 @@
     }
 
     content.innerHTML = `
-      <div class="space-y-6">
-        
-        <!-- Header Modal & Nút Đóng -->
-        <div class="flex items-start justify-between border-b border-[rgba(255,255,255,0.08)] pb-4">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[rgba(217,119,6,0.15)] text-[#FDE68A] border border-[rgba(217,119,6,0.35)] font-mono">
-                THÔNG TIN CHI TIẾT
-              </span>
-              <span class="text-xs font-mono text-[#94A3B8]">MovieID #${movie.movieId}</span>
-            </div>
-            <h2 class="text-2xl font-bold text-white font-serif mt-1">${titleVn}</h2>
-            <div class="text-xs text-[#94A3B8] italic">${titleEn} • ${movie.year}</div>
+      <!-- Header Modal & Nút Đóng (Cố định ở trên) -->
+      <div class="flex items-start justify-between border-b border-white/10 px-6 py-4 bg-[#0E1420] shrink-0">
+        <div class="min-w-0 pr-4">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/35 font-mono shrink-0 whitespace-nowrap inline-flex items-center justify-center">
+              THÔNG TIN CHI TIẾT
+            </span>
+            <span class="text-xs font-mono text-slate-400 shrink-0 whitespace-nowrap">MovieID #${movie.movieId}</span>
           </div>
-
-          <button onclick="MoodGraphApp.closeMovieDetailModal()" 
-                  class="p-1.5 rounded-lg text-[#94A3B8] hover:text-white hover:bg-[#141A24] transition-colors">
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <h2 class="text-2xl font-bold text-white font-serif mt-1 truncate" title="${titleVn}">${titleVn}</h2>
+          <div class="text-xs text-slate-400 italic truncate">${titleEn} • ${movie.year}</div>
         </div>
 
-        <!-- Nội dung chính 2 cột -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <button onclick="MoodGraphApp.closeMovieDetailModal()" 
+                class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors shrink-0"
+                title="Đóng hộp thoại">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body cuộn: overflow-y-auto p-6 space-y-6 flex-1 custom-scrollbar -->
+      <div class="overflow-y-auto p-6 space-y-6 flex-1 custom-scrollbar">
+        <!-- Grid 2 cột: grid grid-cols-1 md:grid-cols-12 gap-6 items-start -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
           
-          <!-- Cột Trái: Poster, Rating & Watchlist -->
-          <div class="space-y-4">
-            <div class="rounded-xl overflow-hidden shadow-2xl border border-[rgba(217,119,6,0.35)] aspect-[2/3] bg-[#0A0D14]">
+          <!-- Cột Trái (Media): md:col-span-4 space-y-4 min-w-0 -->
+          <div class="md:col-span-4 space-y-4 min-w-0">
+            <div class="rounded-xl overflow-hidden shadow-2xl border border-white/10 aspect-[2/3] bg-[#0A0D14] w-full">
               ${renderPosterImgHtml(movie, 'w-full h-full object-cover')}
             </div>
 
             <!-- Nút Watchlist -->
-            <button onclick="MoodGraphApp.toggleWatchlist(${movie.movieId})" 
-                    class="w-full btn-secondary text-xs py-2.5 ${inWatchlist ? 'border-[#10B981] text-[#10B981]' : ''}">
-              <svg class="w-4 h-4 ${inWatchlist ? 'text-[#10B981]' : ''}" viewBox="0 0 24 24" fill="${inWatchlist ? '#10B981' : 'none'}" stroke="currentColor" stroke-width="2">
+            <button id="modal-watchlist-btn"
+                    data-movie-id="${movie.movieId}"
+                    onclick="MoodGraphApp.toggleWatchlist(${movie.movieId})" 
+                    class="w-full px-4 py-2.5 rounded-lg border transition-all duration-150 inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap ${inWatchlist ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15' : 'bg-white/5 border-white/10 hover:border-white/20 text-white hover:bg-white/10'}">
+              <svg class="w-4 h-4 shrink-0 ${inWatchlist ? 'text-emerald-400 fill-emerald-400' : 'text-white'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
               </svg>
-              <span>${inWatchlist ? 'Đã Lưu Trong Danh Sách Xem ✓' : '+ Thêm Vào Danh Sách Xem'}</span>
+              <span class="whitespace-nowrap font-semibold text-xs">${inWatchlist ? 'Đã Lưu Watchlist ✓' : '+ Thêm Vào Watchlist'}</span>
             </button>
 
             <!-- Bộ Chấm Sao Cá Nhân -->
-            <div class="p-3 rounded-lg bg-[#141A24] border border-[rgba(255,255,255,0.06)] space-y-1.5 text-center">
-              <div class="text-[11px] text-[#94A3B8]">Đánh giá của bạn:</div>
+            <div class="p-3 rounded-lg bg-[#141A24] border border-white/10 space-y-1.5 text-center">
+              <div class="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">Đánh giá của bạn:</div>
               <div class="flex items-center justify-center gap-1">
                 ${[1, 2, 3, 4, 5].map(starVal => {
                   const isFilled = userRating >= starVal;
@@ -1266,31 +1548,31 @@
                     <button onclick="MoodGraphApp.submitRating(${movie.movieId}, ${starVal})" 
                             class="p-1 hover:scale-125 transition-transform" 
                             title="${starVal} sao — ${RATING_LABELS[starVal]}">
-                      <svg class="w-5 h-5 ${isFilled ? 'text-[#F59E0B] fill-[#F59E0B]' : 'text-[#475569] fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg class="w-5 h-5 ${isFilled ? 'text-amber-400 fill-amber-400' : 'text-slate-600 fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                       </svg>
                     </button>
                   `;
                 }).join('')}
               </div>
-              <div class="text-[10px] text-[#FBBF24] font-mono mt-1">
+              <div class="text-[10px] text-amber-300 font-mono mt-1 shrink-0 whitespace-nowrap">
                 ${userRating > 0 ? RATING_LABELS[userRating] : 'Chưa chấm điểm'}
               </div>
             </div>
 
-            <!-- Bộ Đôi Nút Liên Kết Ngoài IMDb & TMDb (Item 1) -->
-            <div class="space-y-2 pt-2 border-t border-[rgba(255,255,255,0.06)]">
-              <div class="text-[10px] font-mono text-[#94A3B8] uppercase tracking-wider text-center">Tra Cứu Dữ Liệu Quốc Tế</div>
+            <!-- Bộ Đôi Nút Liên Kết Ngoài IMDb & TMDb -->
+            <div class="space-y-2 pt-2 border-t border-white/10">
+              <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider text-center shrink-0 whitespace-nowrap">Tra Cứu Dữ Liệu Quốc Tế</div>
               <div class="grid grid-cols-2 gap-2">
                 <!-- Nút IMDb -->
                 <a href="${imdbUrl}" 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   class="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg bg-[#141A24] hover:bg-[#1B2230] border border-[rgba(255,255,255,0.08)] hover:border-[#F59E0B] text-xs font-medium text-white transition-all group"
+                   class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg bg-[#141A24] hover:bg-[#1B2230] border border-white/10 hover:border-amber-400 text-xs font-medium text-white transition-all shrink-0 whitespace-nowrap group"
                    title="Mở hồ sơ phim trên IMDb trong tab mới">
-                  <span class="px-1.5 py-0.5 rounded bg-[#F59E0B] text-[#0B0F14] font-mono font-extrabold text-[10px] tracking-tight">IMDb</span>
-                  <span class="group-hover:text-[#FDE68A] transition-colors text-[11px]">Xem IMDb</span>
-                  <svg class="w-3 h-3 text-[#64748B] group-hover:text-[#F59E0B] transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <span class="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-mono font-extrabold text-[10px] tracking-tight shrink-0">IMDb</span>
+                  <span class="group-hover:text-amber-300 transition-colors text-[11px] font-medium shrink-0 whitespace-nowrap">Xem IMDb</span>
+                  <svg class="w-3 h-3 text-slate-500 group-hover:text-amber-400 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                     <polyline points="15 3 21 3 21 9"></polyline>
                     <line x1="10" y1="14" x2="21" y2="3"></line>
@@ -1301,11 +1583,11 @@
                 <a href="${tmdbUrl}" 
                    target="_blank" 
                    rel="noopener noreferrer" 
-                   class="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg bg-[#141A24] hover:bg-[#1B2230] border border-[rgba(255,255,255,0.08)] hover:border-[#01B4E4] text-xs font-medium text-white transition-all group"
+                   class="inline-flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg bg-[#141A24] hover:bg-[#1B2230] border border-white/10 hover:border-sky-400 text-xs font-medium text-white transition-all shrink-0 whitespace-nowrap group"
                    title="Mở hồ sơ phim trên The Movie Database trong tab mới">
-                  <span class="px-1.5 py-0.5 rounded bg-[#01B4E4] text-white font-mono font-extrabold text-[10px] tracking-tight">TMDb</span>
-                  <span class="group-hover:text-[#38BDF8] transition-colors text-[11px]">Xem TMDb</span>
-                  <svg class="w-3 h-3 text-[#64748B] group-hover:text-[#01B4E4] transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <span class="px-1.5 py-0.5 rounded bg-[#01B4E4] text-white font-mono font-extrabold text-[10px] tracking-tight shrink-0">TMDb</span>
+                  <span class="group-hover:text-sky-300 transition-colors text-[11px] font-medium shrink-0 whitespace-nowrap">Xem TMDb</span>
+                  <svg class="w-3 h-3 text-slate-500 group-hover:text-sky-400 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                     <polyline points="15 3 21 3 21 9"></polyline>
                     <line x1="10" y1="14" x2="21" y2="3"></line>
@@ -1315,76 +1597,76 @@
             </div>
           </div>
 
-          <!-- Cột Phải: Thông Tin Sâu & Tọa Độ Nhúng 3D -->
-          <div class="md:col-span-2 space-y-4">
+          <!-- Cột Phải (Chi tiết): md:col-span-8 space-y-4 min-w-0 overflow-hidden -->
+          <div class="md:col-span-8 space-y-4 min-w-0 overflow-hidden">
             
             <!-- Metadata Grid -->
             <div class="grid grid-cols-2 gap-3 text-xs">
-              <div class="p-2.5 rounded-lg bg-[#141A24] border border-[rgba(255,255,255,0.06)]">
-                <span class="text-[#64748B] block text-[10px]">Đạo diễn:</span>
-                <span class="text-white font-semibold">${movie.director || 'Chưa cập nhật'}</span>
+              <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
+                <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Đạo diễn:</span>
+                <span class="text-white font-semibold truncate block">${movie.director || 'Chưa cập nhật'}</span>
               </div>
-              <div class="p-2.5 rounded-lg bg-[#141A24] border border-[rgba(255,255,255,0.06)]">
-                <span class="text-[#64748B] block text-[10px]">Thời lượng:</span>
-                <span class="text-white font-semibold">${movie.duration || '120 phút'}</span>
+              <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
+                <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Thời lượng:</span>
+                <span class="text-white font-semibold shrink-0 whitespace-nowrap">${movie.duration || '120 phút'}</span>
               </div>
-              <div class="p-2.5 rounded-lg bg-[#141A24] border border-[rgba(255,255,255,0.06)]">
-                <span class="text-[#64748B] block text-[10px]">Điểm chuẩn MovieLens:</span>
-                <span class="text-[#F59E0B] font-bold font-mono">★ ${movie.ratingAvg || 4.2} / 5.0 (${(movie.ratingCount || 1000).toLocaleString('vi-VN')} votes)</span>
+              <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
+                <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Điểm chuẩn MovieLens:</span>
+                <span class="text-amber-400 font-bold font-mono shrink-0 whitespace-nowrap">★ ${movie.ratingAvg || 4.2} / 5.0 (${(movie.ratingCount || 1000).toLocaleString('vi-VN')} votes)</span>
               </div>
-              <div class="p-2.5 rounded-lg bg-[#141A24] border border-[rgba(255,255,255,0.06)]">
-                <span class="text-[#64748B] block text-[10px]">Miền tâm trạng:</span>
-                <span class="text-[#A7F3D0] font-semibold">${movie.moodLabel || 'Đặc sắc'}</span>
+              <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
+                <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Miền tâm trạng:</span>
+                <span class="text-emerald-300 font-semibold truncate block">${movie.moodLabel || 'Đặc sắc'}</span>
               </div>
             </div>
 
             <!-- Tóm Tắt Nội Dung -->
             <div class="space-y-1">
-              <h4 class="text-xs font-semibold text-[#CBD5E1] uppercase tracking-wider font-mono">Cốt truyện tác phẩm</h4>
-              <p class="text-xs text-[#CBD5E1] leading-relaxed">
+              <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider font-mono shrink-0 whitespace-nowrap">Cốt truyện tác phẩm</h4>
+              <p class="text-xs text-slate-300 leading-relaxed">
                 ${escapeHtml(movie.synopsis || 'Hành trình điện ảnh sâu sắc khám phá số phận và triết lý nhân sinh.')}
               </p>
             </div>
 
             <!-- Thông Số Không Gian Nhúng 3D (3D Latent Space) -->
-            <div class="p-3.5 rounded-xl bg-[#0F141C] border border-[rgba(217,119,6,0.3)] space-y-2">
+            <div class="p-3.5 rounded-xl bg-[#0F141C] border border-white/10 space-y-2">
               <div class="flex items-center justify-between text-xs">
-                <span class="text-[#FDE68A] font-bold font-mono uppercase tracking-wider">THÔNG SỐ KHÔNG GIAN NHÚNG 3D</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-[#1B2230] text-[#10B981]">Cluster 3D</span>
+                <span class="text-amber-300 font-bold font-mono uppercase tracking-wider shrink-0 whitespace-nowrap">THÔNG SỐ KHÔNG GIAN NHÚNG 3D</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-[#1B2230] text-emerald-400 shrink-0 whitespace-nowrap">Cluster 3D</span>
               </div>
               <div class="grid grid-cols-3 gap-2 font-mono text-[11px]">
                 <div class="p-2 rounded bg-[#141A24]">
-                  <span class="text-[#64748B] block text-[10px]">Tọa độ X:</span>
-                  <span class="text-white">${coords.x}</span>
+                  <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Tọa độ X:</span>
+                  <span class="text-white tabular-nums">${coords.x}</span>
                 </div>
                 <div class="p-2 rounded bg-[#141A24]">
-                  <span class="text-[#64748B] block text-[10px]">Tọa độ Y:</span>
-                  <span class="text-white">${coords.y}</span>
+                  <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Tọa độ Y:</span>
+                  <span class="text-white tabular-nums">${coords.y}</span>
                 </div>
                 <div class="p-2 rounded bg-[#141A24]">
-                  <span class="text-[#64748B] block text-[10px]">Tọa độ Z:</span>
-                  <span class="text-white">${coords.z}</span>
+                  <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Tọa độ Z:</span>
+                  <span class="text-white tabular-nums">${coords.z}</span>
                 </div>
               </div>
-              <div class="text-xs text-[#94A3B8]">
-                Cụm không gian: <strong class="text-white">${coords.clusterName || 'Cụm Điện Ảnh Tổng Hợp'}</strong>
+              <div class="flex items-center gap-2 text-xs text-slate-400">
+                <span class="shrink-0 whitespace-nowrap">Cụm không gian:</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#141A24] border border-white/10 text-white font-medium text-[11px] min-w-0 max-w-[280px]">
+                  <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  <span class="truncate">${coords.clusterName || 'Cụm Điện Ảnh Tổng Hợp'}</span>
+                </span>
               </div>
             </div>
 
-            <!-- Bằng Chứng Gợi Ý Provenance Tags -->
-            <div class="space-y-2">
-              <h4 class="text-xs font-semibold text-[#CBD5E1] uppercase tracking-wider font-mono">Minh chứng gợi ý (Provenance)</h4>
-              <div class="p-3 rounded-lg bg-[#141A24] border border-[rgba(255,255,255,0.06)] text-xs text-[#CBD5E1] leading-relaxed">
-                ${escapeHtml(movie.provenanceSummary || 'Hội tụ cao giữa mô hình Phân rã ma trận ALS và mạng tri thức điện ảnh.')}
-              </div>
-            </div>
+            <!-- Bộ 4 Tab Kiểm Chứng Nguồn Gốc (Why this movie? Provenance Explorer) -->
+            ${renderProvenanceExplorerHtml(movie)}
 
             ${similarMoviesHtml}
 
           </div>
 
         </div>
-
       </div>
     `;
 
@@ -2152,9 +2434,11 @@
     selectGenreFilter,
     resetFilters,
 
-    // Movie Detail Modal
+    // Movie Detail Modal & Provenance Explorer
     openMovieDetailModal,
     closeMovieDetailModal,
+    switchProvenanceTab,
+    toggleProvenanceAccordion,
 
     // User Profile Modal
     openUserProfileModal,
@@ -2186,6 +2470,15 @@
 
     // Toast Engine
     showToast
+  };
+
+  // Khởi tạo alias Module MovieDetailModalComponent để tương thích tối đa với các module ngoài
+  window.MovieDetailModalComponent = {
+    open: openMovieDetailModal,
+    close: closeMovieDetailModal,
+    toggleWatchlist: toggleWatchlist,
+    switchTab: switchProvenanceTab,
+    toggleAccordion: toggleProvenanceAccordion
   };
 
 })(window, document);
