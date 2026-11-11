@@ -134,7 +134,7 @@
           <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
           </svg>
-          <span class="font-medium">Watchlist</span>
+          <span class="font-medium">Danh Sách Xem</span>
           <span id="watchlist-count-badge" class="text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 tabular-nums">0</span>
         </button>
 
@@ -153,7 +153,9 @@
                   class="bg-transparent text-xs font-medium text-slate-200 hover:text-white focus:outline-none cursor-pointer pr-4 appearance-none">
             <option value="user1" class="bg-[#070A0F] text-white">Alex Turner</option>
             <option value="user2" class="bg-[#070A0F] text-white">Sarah Jenkins</option>
+            <option value="user3" class="bg-[#070A0F] text-white">Marcus Vance</option>
             <option value="user_cold" class="bg-[#070A0F] text-white">Khán giả mới</option>
+            <option value="live_session" class="bg-[#070A0F] text-white">Tài khoản trực tiếp (Live Session)</option>
           </select>
           
           <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-white pointer-events-none transition-colors -ml-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -188,15 +190,15 @@
           </div>
         </div>
         
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="persona-buttons-track">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2" id="persona-buttons-track">
           <!-- Nút Khán giả 1: Alex Turner -->
           <button onclick="MoodGraphApp.switchPersona('user1')" 
                   id="btn-persona-user1" 
                   class="persona-btn active px-3.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-white/15 text-white border border-white/30 transition-all shadow-sm backdrop-blur-md">
-            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[11px] font-bold text-white">1</span>
-            <div class="text-left">
-              <div class="leading-tight font-semibold">Alex Turner</div>
-              <div class="text-[10px] text-slate-300">Hình sự / Tâm lý kinh điển</div>
+            <span class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-[11px] font-bold text-white shrink-0">1</span>
+            <div class="text-left min-w-0">
+              <div class="leading-tight font-semibold truncate">Alex Turner</div>
+              <div class="text-[10px] text-slate-300 truncate">Hình sự / Tâm lý kinh điển</div>
             </div>
           </button>
 
@@ -204,21 +206,43 @@
           <button onclick="MoodGraphApp.switchPersona('user2')" 
                   id="btn-persona-user2" 
                   class="persona-btn px-3.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-white/[0.03] text-[#94A3B8] hover:text-white border border-white/10 hover:border-white/20 transition-all">
-            <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold text-slate-400">2</span>
-            <div class="text-left">
-              <div class="leading-tight font-semibold">Sarah Jenkins</div>
-              <div class="text-[10px] text-slate-400">Viễn tưởng & Phiêu lưu</div>
+            <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold text-slate-400 shrink-0">2</span>
+            <div class="text-left min-w-0">
+              <div class="leading-tight font-semibold truncate">Sarah Jenkins</div>
+              <div class="text-[10px] text-slate-400 truncate">Viễn tưởng & Phiêu lưu</div>
             </div>
           </button>
 
-          <!-- Nút Khán giả 3: Khán giả mới Cold-Start -->
+          <!-- Nút Khán giả 3: Marcus Vance -->
+          <button onclick="MoodGraphApp.switchPersona('user3')" 
+                  id="btn-persona-user3" 
+                  class="persona-btn px-3.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-white/[0.03] text-[#94A3B8] hover:text-white border border-white/10 hover:border-white/20 transition-all">
+            <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold text-slate-400 shrink-0">3</span>
+            <div class="text-left min-w-0">
+              <div class="leading-tight font-semibold truncate">Marcus Vance</div>
+              <div class="text-[10px] text-slate-400 truncate">Phim Đen Tội Phạm</div>
+            </div>
+          </button>
+
+          <!-- Nút Khán giả 42: Khán giả mới Cold-Start -->
           <button onclick="MoodGraphApp.switchPersona('user_cold')" 
                   id="btn-persona-user-cold" 
                   class="persona-btn px-3.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-white/[0.03] text-[#94A3B8] hover:text-white border border-white/10 hover:border-white/20 transition-all">
-            <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold text-slate-400">0</span>
-            <div class="text-left">
-              <div class="leading-tight font-semibold">Khán Giả Mới</div>
-              <div class="text-[10px] text-slate-400">0 tương tác (Cold-Start)</div>
+            <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold text-slate-400 shrink-0">0</span>
+            <div class="text-left min-w-0">
+              <div class="leading-tight font-semibold truncate">Khán Giả Mới</div>
+              <div class="text-[10px] text-slate-400 truncate">0 tương tác (Cold-Start)</div>
+            </div>
+          </button>
+
+          <!-- Nút Tài Khoản Trực Tiếp: Live Session -->
+          <button onclick="MoodGraphApp.switchPersona('live_session')" 
+                  id="btn-persona-live" 
+                  class="persona-btn px-3.5 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-white/[0.03] text-[#94A3B8] hover:text-white border border-white/10 hover:border-white/20 transition-all">
+            <span class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-[11px] font-bold text-sky-400 shrink-0">●</span>
+            <div class="text-left min-w-0">
+              <div class="leading-tight font-semibold truncate">Phiên Trực Tiếp</div>
+              <div class="text-[10px] text-slate-400 truncate" id="btn-live-session-subtitle">Live Session</div>
             </div>
           </button>
         </div>
@@ -243,7 +267,7 @@
             <!-- Dòng 1: Tiêu đề chính + Đếm số lượng phim nằm trọn vẹn trên 1 hàng ngang -->
             <div class="flex items-center justify-between gap-3 flex-wrap">
               <h2 class="text-xl font-bold text-white font-serif tracking-tight whitespace-nowrap flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                <span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
                 Kho Tàng 62,423 Bộ Phim Điện Ảnh
               </h2>
               <span id="catalog-count-badge" class="text-xs font-mono text-slate-400 tabular-nums">
@@ -335,7 +359,7 @@
           <div class="p-3.5 rounded-xl bg-[#0E1420]/90 border border-white/10 shadow-md space-y-2.5 backdrop-blur-md">
             <div class="flex items-center justify-between pb-1.5 border-b border-white/[0.06]">
               <div class="flex items-center gap-1.5 min-w-0">
-                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0"></span>
                 <span class="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-semibold truncate">Tùy Biến Gu Điện Ảnh</span>
               </div>
               <button id="btn-reset-sliders" 
@@ -348,25 +372,25 @@
             <!-- Lưới 4 Thanh Trượt 2 Cột Siêu Gọn -->
             <div class="grid grid-cols-2 gap-x-3 gap-y-2">
               
-              <!-- Trục 1: Chiều Sâu Cốt Truyện (Tím) -->
+              <!-- Trục 1: Chiều Sâu Cốt Truyện (Warm Amber) -->
               <div class="space-y-0.5">
                 <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
                   <span class="truncate">Chiều Sâu</span>
-                  <span id="val-slider-depth" class="font-bold text-purple-400 tabular-nums shrink-0">75%</span>
+                  <span id="val-slider-depth" class="font-bold text-amber-400 tabular-nums shrink-0">75%</span>
                 </div>
                 <input type="range" id="slider-depth" min="0" max="100" value="75" 
-                       class="editorial-slider w-full h-1 bg-white/10 rounded cursor-pointer accent-purple-500 block" 
+                       class="editorial-slider w-full h-1 bg-white/10 rounded cursor-pointer accent-amber-500 block" 
                        oninput="MoodGraphApp.onSliderChange('depth', this.value)">
               </div>
 
-              <!-- Trục 2: Nhịp Độ Diễn Biến (Cyan) -->
+              <!-- Trục 2: Nhịp Độ Diễn Biến (Antique Bronze) -->
               <div class="space-y-0.5">
                 <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
                   <span class="truncate">Nhịp Độ</span>
-                  <span id="val-slider-pacing" class="font-bold text-cyan-400 tabular-nums shrink-0">60%</span>
+                  <span id="val-slider-pacing" class="font-bold text-amber-300 tabular-nums shrink-0">60%</span>
                 </div>
                 <input type="range" id="slider-pacing" min="0" max="100" value="60" 
-                       class="editorial-slider w-full h-1 bg-white/10 rounded cursor-pointer accent-cyan-400 block" 
+                       class="editorial-slider w-full h-1 bg-white/10 rounded cursor-pointer accent-amber-400 block" 
                        oninput="MoodGraphApp.onSliderChange('pacing', this.value)">
               </div>
 
@@ -447,7 +471,7 @@
               <select id="lab-user-selector" onchange="MoodGraphApp.changeLabUser(this.value)" class="bg-[#141A24] text-xs font-semibold text-white rounded px-2.5 py-1 border border-[rgba(255,255,255,0.08)] focus:outline-none focus:border-[#D97706]">
                 <option value="live_session" id="opt-lab-live">🎬 Tài khoản của bạn (Live Session • 0 đánh giá)</option>
                 <option value="user1">Khán giả 1 (Alex Turner • Gu Nghệ Thuật)</option>
-                <option value="user2">Khán giả 2 (Elena Rostova • Khoa Học Viễn Tưởng)</option>
+                <option value="user2">Khán giả 2 (Sarah Jenkins • Khoa Học Viễn Tưởng)</option>
                 <option value="user3">Khán giả 3 (Marcus Vance • Phim Đen Tội Phạm)</option>
                 <option value="user42">Khán giả 42 (Cold-Start • Chưa Có Lịch Sử)</option>
               </select>
@@ -472,7 +496,7 @@
           <div>
             <div class="flex items-center gap-2">
               <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[rgba(217,119,6,0.15)] text-[#FDE68A] border border-[rgba(217,119,6,0.35)] font-mono">
-                THREE.JS & WEBGL 360°
+                HÌNH CHIẾU VECTOR 3D
               </span>
               <h2 class="text-lg font-medium text-white tracking-tight font-serif">
                 Trực Quan Hóa Không Gian Nhúng Vector Tiềm Ẩn (3D Latent Space)
@@ -669,7 +693,7 @@
             </svg>
           </div>
           <div class="leading-relaxed">
-            <strong class="text-[#38BDF8] font-mono">Ghi chú học thuật:</strong> Thuật toán ALS đơn lẻ gặp thách thức ma trận cực thưa trên giao thức Temporal Leave-1-Last. Đây chính là động lực khoa học cốt lõi thúc đẩy phát triển Mô hình Lai Hybrid RRF (kết hợp Đồ thị tri thức KG), nâng Hit Rate@10 từ 0.0% lên 9.86% và mở rộng độ bao phủ danh mục lên 152 phim.
+            <strong class="text-[#38BDF8] font-mono">Ghi chú học thuật:</strong> Thuật toán ALS đơn lẻ gặp thách thức ma trận cực thưa trên giao thức Temporal Leave-1-Last. Đây chính là động lực khoa học cốt lõi thúc đẩy phát triển Mô hình Lai Hybrid RRF (kết hợp Đồ thị tri thức KG), nâng Hit Rate@10 từ 0.00% lên 8.33% (đạt 9.85% ở KG) và mở rộng độ bao phủ danh mục lên 239/250 phim (95.6% danh mục, gấp 17 lần ALS thuần túy và gấp 4.3 lần Popularity). Chỉ số Độ mới lạ (Novelty) được định lượng theo đơn vị bits thông tin entropy (Shannon self-information) đối với tần suất xuất hiện trong tập huấn luyện.
           </div>
         </div>
       </section>
@@ -688,7 +712,7 @@
               <p class="text-xs text-[#94A3B8]">Suy giảm NDCG@10 khi lịch sử đánh giá giảm từ 50 về 0 lượt</p>
             </div>
             <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[rgba(225,29,72,0.15)] text-[#FDA4AF] border border-[rgba(225,29,72,0.35)]">
-              SPARSITY TEST
+              KIỂM CHUẨN ĐỘ THƯA
             </span>
           </div>
 
@@ -713,7 +737,7 @@
               <p class="text-xs text-[#94A3B8]">Độ bao phủ danh mục (Coverage@10) và tỷ lệ phim ngách</p>
             </div>
             <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[rgba(16,185,129,0.15)] text-[#A7F3D0] border border-[rgba(16,185,129,0.35)]">
-              GINI DIVERSITY
+              HỆ SỐ ĐA DẠNG GINI
             </span>
           </div>
 
