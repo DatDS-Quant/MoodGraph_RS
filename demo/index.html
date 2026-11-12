@@ -57,12 +57,12 @@
   <!-- =========================================================================
        1. UNIVERSAL HEADER & NAVIGATION BAR (Cinematic Obsidian Glass)
        ========================================================================= -->
-  <header class="sticky top-0 z-50 h-16 bg-[#070A0F]/90 backdrop-blur-xl border-b border-white/[0.08] px-4 lg:px-6 transition-all duration-200">
-    <div class="max-w-7xl mx-auto h-full flex items-center justify-between gap-4">
+  <header class="sticky top-0 z-50 h-16 bg-[#070A0F]/90 backdrop-blur-xl border-b border-white/[0.08] px-3 sm:px-4 lg:px-6 transition-all duration-200">
+    <div class="max-w-7xl 2xl:max-w-[1680px] w-full mx-auto h-full flex items-center justify-between gap-2 sm:gap-4">
       
       <!-- Logo MoodGraph (Bên trái) -->
-      <div class="flex items-center gap-3 cursor-pointer shrink-0 select-none" onclick="MoodGraphApp.switchMode('modeA')">
-        <div class="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/10 flex items-center justify-center">
+      <div class="flex items-center gap-2 sm:gap-3 cursor-pointer shrink-0 select-none" onclick="MoodGraphApp.switchMode('modeA')">
+        <div class="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/10 flex items-center justify-center shrink-0">
           <svg class="w-4 h-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="6" cy="6" r="2.5" fill="#F59E0B" stroke="none"></circle>
             <circle cx="18" cy="6" r="2.5" fill="#10B981" stroke="none"></circle>
@@ -73,18 +73,18 @@
           </svg>
         </div>
         <div class="flex items-center gap-2">
-          <span class="font-bold text-lg text-white tracking-tight">MoodGraph</span>
-          <span class="text-[10px] font-mono text-slate-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded tracking-wide">RESEARCH LAB</span>
+          <span class="font-bold text-base sm:text-lg text-white tracking-tight">MoodGraph</span>
+          <span class="text-[9px] sm:text-[10px] font-mono text-slate-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded tracking-wide hidden sm:inline-block">RESEARCH LAB</span>
         </div>
       </div>
 
       <!-- Segmented Mode Switcher (Dạng Segmented Control hiện đại) -->
-      <nav class="view-switcher-track bg-white/[0.03] p-1 rounded-lg border border-white/5 flex items-center gap-1">
+      <nav class="view-switcher-track bg-white/[0.03] p-1 rounded-lg border border-white/5 flex items-center gap-1 shrink-0">
         <button id="nav-btn-mode-a" 
                 onclick="MoodGraphApp.switchMode('modeA')" 
-                class="mode-tab-btn active">
+                class="mode-tab-btn active px-2.5 sm:px-3 py-1.5 text-xs">
           <!-- Icon Phim Cuộn -->
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
             <line x1="7" y1="2" x2="7" y2="22"></line>
             <line x1="17" y1="2" x2="17" y2="22"></line>
@@ -94,27 +94,29 @@
             <line x1="17" y1="17" x2="22" y2="17"></line>
             <line x1="17" y1="7" x2="22" y2="7"></line>
           </svg>
-          <span>Trải Nghiệm Điện Ảnh</span>
+          <span class="hidden sm:inline">Trải Nghiệm Điện Ảnh</span>
+          <span class="sm:hidden">Điện Ảnh</span>
         </button>
 
         <button id="nav-btn-mode-b" 
                 onclick="MoodGraphApp.switchMode('modeB')" 
-                class="mode-tab-btn">
+                class="mode-tab-btn px-2.5 sm:px-3 py-1.5 text-xs">
           <!-- Icon Không Gian 3D / Thí Nghiệm -->
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
             <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
             <line x1="12" y1="22.08" x2="12" y2="12"></line>
           </svg>
-          <span>Phòng Thí Nghiệm Học Thuật</span>
+          <span class="hidden lg:inline">Phòng Thí Nghiệm Học Thuật</span>
+          <span class="lg:hidden">Thí Nghiệm</span>
         </button>
       </nav>
 
       <!-- Cụm chức năng (Bên phải) -->
-      <div class="flex items-center gap-2.5 sm:gap-3">
+      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
         
-        <!-- Ô Tìm Kiếm Nhanh (h-9) -->
-        <div class="relative hidden md:flex items-center">
+        <!-- Ô Tìm Kiếm Nhanh (Chỉ hiện khi màn hình lớn >= xl để tránh chiếm chỗ người dùng) -->
+        <div class="relative hidden xl:flex items-center">
           <svg class="absolute left-3 w-3.5 h-3.5 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -122,41 +124,43 @@
           <input type="text" 
                  id="global-search-input" 
                  placeholder="Tìm phim... (/)" 
-                 class="h-9 w-44 lg:w-56 bg-white/[0.04] border border-white/10 hover:border-white/20 focus:border-white/30 rounded-lg pl-8 pr-8 text-xs text-white placeholder-slate-400 focus:outline-none focus:bg-white/[0.06] transition-all">
-          <span class="absolute right-2.5 text-[10px] font-mono text-slate-500 border border-white/10 rounded px-1.5 py-0.5 pointer-events-none">/</span>
+                 class="h-9 w-36 2xl:w-48 bg-white/[0.04] border border-white/10 hover:border-white/20 focus:border-white/30 rounded-lg pl-8 pr-7 text-xs text-white placeholder-slate-400 focus:outline-none focus:bg-white/[0.06] transition-all">
+          <span class="absolute right-2 text-[10px] font-mono text-slate-500 border border-white/10 rounded px-1.5 py-0.5 pointer-events-none">/</span>
         </div>
 
-        <!-- Nút Watchlist (Khắc phục triệt để lỗi rớt dòng) -->
+        <!-- Nút Watchlist (Thu gọn chữ trên màn hình nhỏ để ưu tiên User Dropdown) -->
         <button id="open-watchlist-btn" 
                 onclick="MoodGraphApp.toggleWatchlist()" 
-                class="flex items-center gap-2 h-9 px-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-xs text-slate-300 hover:text-white transition-all shrink-0 whitespace-nowrap focus:outline-none"
+                class="flex items-center gap-1.5 h-9 px-2 sm:px-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-xs text-slate-300 hover:text-white transition-all shrink-0 whitespace-nowrap focus:outline-none"
                 title="Mở Danh Sách Xem">
-          <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
           </svg>
-          <span class="font-medium">Watchlist</span>
+          <span class="hidden md:inline font-medium">Watchlist</span>
           <span id="watchlist-count-badge" class="text-[11px] font-mono font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 tabular-nums">0</span>
         </button>
 
-        <!-- Persona Dropdown & Profile (h-9) -->
-        <div class="relative flex items-center h-9 pl-2 pr-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 transition-all shrink-0 group">
+        <!-- Persona Dropdown & Profile (h-9) - Luôn hiển thị trọn vẹn, không bao giờ bị khuất -->
+        <div class="relative flex items-center h-9 pl-1.5 sm:pl-2 pr-2 sm:pr-2.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 transition-all shrink-0 max-w-[155px] sm:max-w-[185px] md:max-w-[210px] lg:max-w-[240px] group">
           <button type="button" 
                   onclick="MoodGraphApp.openUserProfileModal()" 
                   id="header-user-avatar-btn"
-                  class="w-6 h-6 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[11px] font-semibold text-white mr-2 hover:bg-white/20 transition-colors shrink-0" 
+                  class="w-6 h-6 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-[11px] font-semibold text-white mr-1.5 sm:mr-2 hover:bg-white/20 transition-colors shrink-0" 
                   title="Xem chi tiết hồ sơ MovieLens">
             <span id="header-user-avatar">A</span>
           </button>
           
           <select id="header-persona-selector" 
                   onchange="MoodGraphApp.switchPersona(this.value)" 
-                  class="bg-transparent text-xs font-medium text-slate-200 hover:text-white focus:outline-none cursor-pointer pr-4 appearance-none">
-            <option value="user1" class="bg-[#070A0F] text-white">Alex Turner</option>
-            <option value="user2" class="bg-[#070A0F] text-white">Sarah Jenkins</option>
-            <option value="user_cold" class="bg-[#070A0F] text-white">Khán giả mới</option>
+                  class="bg-transparent text-xs font-semibold text-slate-200 hover:text-white focus:outline-none cursor-pointer pr-3 appearance-none truncate max-w-[90px] sm:max-w-[125px] md:max-w-[150px] lg:max-w-[175px]">
+            <option value="user1" class="bg-[#0B101B] text-slate-200 py-1">Alex Turner (Nghệ Thuật)</option>
+            <option value="user2" class="bg-[#0B101B] text-slate-200 py-1">Elena / Sarah (Sci-Fi)</option>
+            <option value="user3" class="bg-[#0B101B] text-slate-200 py-1">Marcus Vance (Hành Động)</option>
+            <option value="user42" class="bg-[#0B101B] text-slate-200 py-1">Khán giả 42 (Cold-Start)</option>
+            <option value="live_session" id="opt-header-live" class="bg-[#0B101B] text-amber-300 py-1">🎬 Bạn (Live Session)</option>
           </select>
           
-          <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-white pointer-events-none transition-colors -ml-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-white pointer-events-none transition-colors -ml-1 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M6 9l6 6 6-6"></path>
           </svg>
         </div>
@@ -422,10 +426,125 @@
     <!-- =======================================================================
          VIEW: MODE B (PHÒNG THÍ NGHIỆM HỌC THUẬT & KHÔNG GIAN NHÚNG 3D)
          ======================================================================= -->
-    <div id="mode-b-container" class="hidden space-y-8">
+    <!-- =======================================================================
+         VIEW: MODE B (RECOMMENDATION LAB / PHÒNG THÍ NGHIỆM HỌC THUẬT)
+         Bố cục 2 Cột: Sidebar nội bộ (~240px) + Main Workspace đầy đủ 5 Khối cũ + 3 Khối mới
+         ======================================================================= -->
+    <div id="mode-b-container" class="hidden">
+      
+      <!-- BỐ CỤC 2 CỘT TỔNG THỂ -->
+      <div class="flex flex-col lg:flex-row gap-6 items-start">
+        
+        <!-- CỘT TRÁI: SIDEBAR ĐIỀU HƯỚNG NỘI BỘ (~240px) -->
+        <aside class="w-full lg:w-60 shrink-0 lg:sticky lg:top-20 space-y-4">
+          
+          <div class="p-4 rounded-2xl bg-[#0E1420]/95 border border-slate-800/80 shadow-2xl backdrop-blur-xl space-y-4">
+            
+            <!-- Logo & Brand Header nội bộ -->
+            <div class="flex items-center gap-2.5 pb-3 border-b border-white/[0.08]">
+              <div class="w-8 h-8 rounded-lg bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs font-bold text-white tracking-tight truncate">MoodGraph</div>
+                <div class="text-[10px] font-mono text-purple-400">Research Lab</div>
+              </div>
+            </div>
+
+            <!-- Nút Quay Lại Chế Độ Khám Phá Điện Ảnh (Mode A) -->
+            <button type="button" 
+                    onclick="MoodGraphApp.switchMode('modeA')" 
+                    class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/5 transition-all text-xs font-medium text-left group cursor-pointer">
+              <svg class="w-4 h-4 text-slate-400 group-hover:text-amber-400 transition-colors shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                <line x1="7" y1="2" x2="7" y2="22"></line>
+                <line x1="17" y1="2" x2="17" y2="22"></line>
+              </svg>
+              <span class="truncate">Movie Discovery</span>
+            </button>
+
+            <!-- Mục Active: Recommendation Lab (Parent Menu) -->
+            <div class="space-y-1 pt-1">
+              <div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 text-xs font-semibold">
+                <svg class="w-4 h-4 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 2v7.31"></path>
+                  <path d="M14 9.3V2"></path>
+                  <path d="M8.5 2h7"></path>
+                  <path d="M14 9.3a6.5 6.5 0 1 1-4 0"></path>
+                  <path d="M5.52 16h12.96"></path>
+                </svg>
+                <span class="truncate">Recommendation Lab</span>
+              </div>
+
+              <!-- Danh Sách Các Mục Điều Hướng Con (Scroll mượt tới từng khối) -->
+              <nav class="pl-2 pt-1 space-y-1 text-xs font-mono">
+                <a href="#academic-block-1" class="side-lab-nav-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-300 hover:text-amber-300 hover:bg-white/[0.04] transition-all">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  <span class="truncate">1. Điều Khiển Đoàn Hệ</span>
+                </a>
+                <a href="#academic-block-2" class="side-lab-nav-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/[0.04] transition-all">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  <span class="truncate">2. Không Gian Nhúng 3D</span>
+                </a>
+                <a href="#academic-block-3" class="side-lab-nav-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/[0.04] transition-all">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  <span class="truncate">3. Đối Đầu 5 Thuật Toán</span>
+                </a>
+                <a href="#academic-block-4" class="side-lab-nav-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/[0.04] transition-all">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                  <span class="truncate">4. Ma Trận Tương Quan 5x5</span>
+                </a>
+                <a href="#academic-block-5" class="side-lab-nav-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/[0.04] transition-all">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span class="truncate">5. Offline Benchmarks</span>
+                </a>
+                <a href="#academic-block-6" class="side-lab-nav-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/[0.04] transition-all">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                  <span class="truncate">6. Top-N Filmstrip</span>
+                </a>
+                <a href="#academic-block-7" class="side-lab-nav-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/[0.04] transition-all">
+                  <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                  <span class="truncate">7. Biểu Đồ & KG Explain</span>
+                </a>
+                <a href="#academic-block-8" class="side-lab-nav-item flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/[0.04] transition-all">
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  <span class="truncate">8. Hiệu Năng PySpark</span>
+                </a>
+              </nav>
+            </div>
+
+            <!-- Quick Meta Card ở chân Sidebar -->
+            <div class="pt-3 border-t border-white/[0.06] space-y-2">
+              <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-medium">Trạng thái mô phỏng</div>
+              <div class="p-2.5 rounded-lg bg-black/40 border border-white/5 space-y-1.5 text-[11px] font-mono">
+                <div class="flex justify-between items-center text-slate-400">
+                  <span>Khán giả:</span>
+                  <span id="side-meta-user" class="text-white font-semibold truncate max-w-[110px]">Khán giả 1</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-400">
+                  <span>Mô hình:</span>
+                  <span id="side-meta-algo" class="text-amber-400 font-semibold truncate max-w-[110px]">Knowledge Graph</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-400">
+                  <span>Tập dữ liệu:</span>
+                  <span class="text-emerald-400 font-semibold">MovieLens 25M</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </aside>
+
+        <!-- CỘT PHẢI: VÙNG NỘI DUNG CHÍNH (MAIN WORKSPACE CHỨA TẤT CẢ CÁC KHỐI) -->
+        <div class="flex-1 min-w-0 space-y-8">
+
       
       <!-- Thanh Điều Khiển Phòng Thí Nghiệm & Thông Số Độ Trễ -->
-      <section class="glass-card p-5 space-y-4">
+      <section id="academic-block-1" class="glass-card p-5 space-y-4 rounded-2xl bg-[#0E1420]/90 border border-slate-800 shadow-xl backdrop-blur-xl">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
@@ -729,6 +848,523 @@
 
       </section>
 
+    
+
+          <!-- ===================================================================
+               KHỐI 6: MODEL COMPARISON (SO SÁNH TOP-N FILMSTRIP & BỘ CHỌN THUẬT TOÁN)
+               =================================================================== -->
+          <section id="academic-block-6" class="p-5 rounded-2xl bg-[#0E1420]/90 border border-slate-800 shadow-xl backdrop-blur-xl space-y-4">
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-white/[0.08]">
+              <div>
+                <h2 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span>Model Comparison (Top-N Filmstrip)</span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  So sánh các thuật toán gợi ý trên cùng một tập khán giả/user kiểm chuẩn
+                </p>
+              </div>
+
+              <div class="flex items-center flex-wrap gap-3 shrink-0">
+                <!-- Dropdown Chọn User / Đoàn Hệ (Custom Dark Dropdown) -->
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-400 font-medium whitespace-nowrap">Select User:</span>
+                  <div class="relative inline-block">
+                    <select id="block6-user-selector" 
+                            onchange="MoodGraphApp.changeLabUser(this.value)"
+                            class="bg-slate-900/95 hover:bg-slate-800 text-slate-200 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-400/80 cursor-pointer shadow-lg transition-all pr-8 appearance-none">
+                      <option value="user1" selected>Khán giả 1 (Alex Turner • Gu Nghệ Thuật)</option>
+                      <option value="user2">Khán giả 2 (Elena Rostova • Gu Sci-Fi / Logic)</option>
+                      <option value="user3">Khán giả 3 (Marcus Vance • Gu Hành Động / Blockbuster)</option>
+                      <option value="user42">Khán giả 42 (Cold-Start User • Chưa có lịch sử)</option>
+                      <option value="live_session" id="opt-block6-live">🎬 Tài khoản của bạn (Live Session)</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 pl-2 border-l border-white/10">
+                  <span class="text-xs text-slate-400 font-medium">Thuật toán:</span>
+                  <span id="active-algorithm-badge" class="px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30 text-xs font-semibold">Knowledge Graph</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Hàng Nút Chọn Thuật Toán (Algorithm Tabs/Pills - 5 Mô Hình Chuẩn) -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-medium" id="algorithm-pills-container">
+              <button type="button" onclick="AcademicLab.selectAlgorithm('popularity')" class="px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer border bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white border-white/10">
+                <span>Popularity Baseline</span>
+              </button>
+              <button type="button" onclick="AcademicLab.selectAlgorithm('als')" class="px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer border bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white border-white/10">
+                <span>Spark ALS</span>
+              </button>
+              <button type="button" onclick="AcademicLab.selectAlgorithm('kg')" class="px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer border bg-blue-600 text-white font-semibold border-blue-500 shadow-md shadow-blue-500/25">
+                <span>Knowledge Graph</span>
+              </button>
+              <button type="button" onclick="AcademicLab.selectAlgorithm('hybrid_rrf')" class="px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer border bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white border-white/10">
+                <span>Hybrid RRF (k=60)</span>
+              </button>
+              <button type="button" onclick="AcademicLab.selectAlgorithm('hybrid_weighted')" class="px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer border bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white border-white/10">
+                <span>Hybrid Weighted</span>
+              </button>
+            </div>
+
+            <!-- Dải Hiển Thị Top-10 Phim (Horizontal Filmstrip / 10 Cột) -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
+                <span class="flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line></svg>
+                  <span>Top-10 Recommended Movies (Nhấp vào poster để xem giải thích đường đi Knowledge Graph)</span>
+                </span>
+                <span class="text-[11px] text-amber-400 font-mono">Interactive Click</span>
+              </div>
+
+              <!-- 10 Cột Poster Grid -->
+              <div id="lab-filmstrip-grid" class="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2.5 pt-1">
+                <!-- 1. The Martian (Target) -->
+                <div onclick="AcademicLab.selectTargetMovie(101)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none scale-[1.02]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-amber-400 ring-2 ring-amber-400/80 shadow-lg shadow-amber-500/20">
+                    <img src="https://image.tmdb.org/t/p/w500/5BHuvQ6p9kfc091Z8RiFNhCwL4b.jpg" alt="The Martian" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                    <div class="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-amber-500 text-black font-mono font-bold text-[9px] uppercase tracking-wider shadow">TARGET</div>
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="The Martian">The Martian</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.85</span></div>
+                </div>
+
+                <!-- 2. Avatar -->
+                <div onclick="AcademicLab.selectTargetMovie(102)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/kyeqWdyUXW608qlYkRqosgbbJyK.jpg" alt="Avatar" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="Avatar">Avatar</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.82</span></div>
+                </div>
+
+                <!-- 3. Inception -->
+                <div onclick="AcademicLab.selectTargetMovie(79132)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg" alt="Inception" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="Inception">Inception</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.79</span></div>
+                </div>
+
+                <!-- 4. Gravity -->
+                <div onclick="AcademicLab.selectTargetMovie(104)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/a2n6bKD7qhCPCAEALgsAhWOAQcc.jpg" alt="Gravity" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="Gravity">Gravity</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.75</span></div>
+                </div>
+
+                <!-- 5. The Matrix -->
+                <div onclick="AcademicLab.selectTargetMovie(2571)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/dXNAPwY7VrqMAo51EKhhCJfaGb5.jpg" alt="The Matrix" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="The Matrix">The Matrix</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.72</span></div>
+                </div>
+
+                <!-- 6. Gladiator -->
+                <div onclick="AcademicLab.selectTargetMovie(106)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg" alt="Gladiator" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="Gladiator">Gladiator</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.69</span></div>
+                </div>
+
+                <!-- 7. Arrival -->
+                <div onclick="AcademicLab.selectTargetMovie(107)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg" alt="Arrival" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="Arrival">Arrival</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.65</span></div>
+                </div>
+
+                <!-- 8. Dune: Part One -->
+                <div onclick="AcademicLab.selectTargetMovie(108)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg" alt="Dune" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="Dune: Part One">Dune: Part One</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.62</span></div>
+                </div>
+
+                <!-- 9. Tenet -->
+                <div onclick="AcademicLab.selectTargetMovie(109)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/k68nPLbIST6NP96JmTxmZijEvCA.jpg" alt="Tenet" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="Tenet">Tenet</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.59</span></div>
+                </div>
+
+                <!-- 10. Interstellar -->
+                <div onclick="AcademicLab.selectTargetMovie(109487)" class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none hover:scale-[1.01]">
+                  <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all border-white/10 group-hover:border-white/30">
+                    <img src="https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg" alt="Interstellar" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+                  </div>
+                  <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="Interstellar">Interstellar</div>
+                  <div class="flex items-center justify-between text-[11px] font-mono mt-0.5"><span class="text-slate-400 text-[10px]">Score:</span><span class="font-bold text-amber-400 font-mono">0.55</span></div>
+                </div>
+              </div>
+            </div>
+
+          </section>
+
+          <!-- ===================================================================
+               KHỐI 7: CHIA 2 CỘT NGANG BẰNG NHAU (WHY THIS MOVIE? + EVALUATION RESULTS)
+               =================================================================== -->
+          <div id="academic-block-7" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- KHỐI BÊN TRÁI: WHY THIS MOVIE? (KNOWLEDGE GRAPH EXPLANATION) -->
+            <section class="p-5 rounded-2xl bg-[#0E1420]/90 border border-slate-800 shadow-xl backdrop-blur-xl flex flex-col justify-between space-y-4">
+              <div class="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-white/[0.08]">
+                <h3 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span>Why this movie? (Knowledge Graph Explanation)</span>
+                </h3>
+                <span id="kg-target-movie-badge" class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-mono font-semibold truncate max-w-[180px]">
+                  Target: The Martian
+                </span>
+              </div>
+
+              <!-- Sơ Đồ Node-Link Graph Trực Quan Bằng SVG -->
+              <div id="kg-explanation-diagram" class="relative w-full h-64 bg-[#070A0F]/60 rounded-xl p-2 border border-white/5 overflow-hidden flex items-center justify-center">
+                <svg viewBox="0 0 620 220" class="w-full h-full select-none overflow-visible">
+                  <defs>
+                    <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1 L 10 5 L 0 9 z" fill="#A855F7" />
+                    </marker>
+                    <marker id="arrow-cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1 L 10 5 L 0 9 z" fill="#06B6D4" />
+                    </marker>
+                    <marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10B981" />
+                    </marker>
+                    <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 1 L 10 5 L 0 9 z" fill="#F59E0B" />
+                    </marker>
+                  </defs>
+
+                  <!-- Nối User -> Liked Movie -->
+                  <line x1="85" y1="110" x2="165" y2="110" stroke="#A855F7" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrow-purple)" />
+                  <text x="125" y="102" fill="#C084FC" font-size="10" font-family="monospace" text-anchor="middle" font-weight="600">liked</text>
+
+                  <!-- Nối Liked Movie -> Nodes trung gian -->
+                  <path d="M 235 90 C 270 90, 275 55, 315 55" fill="none" stroke="#06B6D4" stroke-width="1.8" marker-end="url(#arrow-cyan)" />
+                  <text x="275" y="65" fill="#22D3EE" font-size="9.5" font-family="monospace" text-anchor="middle">has genre</text>
+
+                  <line x1="235" y1="110" x2="315" y2="110" stroke="#10B981" stroke-width="1.8" marker-end="url(#arrow-emerald)" />
+                  <text x="275" y="104" fill="#34D399" font-size="9.5" font-family="monospace" text-anchor="middle">has tag</text>
+
+                  <path d="M 235 130 C 270 130, 275 165, 315 165" fill="none" stroke="#F59E0B" stroke-width="1.8" marker-end="url(#arrow-amber)" />
+                  <text x="275" y="160" fill="#FBBF24" font-size="9.5" font-family="monospace" text-anchor="middle">similar to</text>
+
+                  <!-- Nối Nodes trung gian -> Phim đích -->
+                  <path d="M 395 55 C 435 55, 440 90, 475 90" fill="none" stroke="#06B6D4" stroke-width="1.8" marker-end="url(#arrow-cyan)" />
+                  <text x="435" y="65" fill="#22D3EE" font-size="9.5" font-family="monospace" text-anchor="middle">has genre</text>
+
+                  <line x1="395" y1="110" x2="475" y2="110" stroke="#10B981" stroke-width="1.8" marker-end="url(#arrow-emerald)" />
+                  <text x="435" y="104" fill="#34D399" font-size="9.5" font-family="monospace" text-anchor="middle">has tag</text>
+
+                  <path d="M 395 165 C 435 165, 440 130, 475 130" fill="none" stroke="#F59E0B" stroke-width="1.8" marker-end="url(#arrow-amber)" />
+                  <text x="435" y="160" fill="#FBBF24" font-size="9.5" font-family="monospace" text-anchor="middle">cosine: 0.85</text>
+
+                  <!-- Nodes -->
+                  <g transform="translate(25, 80)">
+                    <rect width="60" height="60" rx="14" fill="#581C87" stroke="#A855F7" stroke-width="2" />
+                    <text x="30" y="28" font-size="16" text-anchor="middle">👤</text>
+                    <text x="30" y="47" fill="#F3E8FF" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">Khán giả 1</text>
+                  </g>
+
+                  <g transform="translate(170, 75)">
+                    <rect width="65" height="70" rx="10" fill="#0B132B" stroke="#38BDF8" stroke-width="1.5" />
+                    <text x="32" y="24" font-size="14" text-anchor="middle">🎬</text>
+                    <text x="32" y="43" fill="#E0F2FE" font-size="8" font-family="sans-serif" font-weight="bold" text-anchor="middle">Interstellar</text>
+                    <text x="32" y="58" fill="#38BDF8" font-size="8" font-family="monospace" text-anchor="middle">Favorite</text>
+                  </g>
+
+                  <g transform="translate(320, 35)">
+                    <rect width="75" height="40" rx="8" fill="#083344" stroke="#06B6D4" stroke-width="1.5" />
+                    <text x="37" y="24" fill="#CFFAFE" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">Sci-Fi</text>
+                  </g>
+
+                  <g transform="translate(320, 90)">
+                    <rect width="75" height="40" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="1.5" />
+                    <text x="37" y="24" fill="#D1FAE5" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">Space</text>
+                  </g>
+
+                  <g transform="translate(320, 145)">
+                    <rect width="75" height="40" rx="8" fill="#451A03" stroke="#F59E0B" stroke-width="1.5" />
+                    <text x="37" y="24" fill="#FEF3C7" font-size="9.5" font-family="monospace" font-weight="bold" text-anchor="middle">Cosine Sim</text>
+                  </g>
+
+                  <g transform="translate(480, 75)">
+                    <rect width="90" height="70" rx="12" fill="#78350F" stroke="#F59E0B" stroke-width="2.5" class="animate-pulse" />
+                    <text x="45" y="24" font-size="14" text-anchor="middle">🚀</text>
+                    <text x="45" y="43" fill="#FFFBEB" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle">The Martian</text>
+                    <text x="45" y="58" fill="#FDE68A" font-size="8.5" font-family="monospace" font-weight="bold" text-anchor="middle">Score: 0.85</text>
+                  </g>
+                </svg>
+              </div>
+
+              <!-- Hộp Giải Thích Ngữ Nghĩa Tri Thức (Reasoning Card) -->
+              <div id="kg-explanation-text-box" class="p-2.5 rounded-lg bg-black/40 border border-white/5 text-[11px] text-slate-300 leading-relaxed font-mono">
+                <span class="text-amber-400 font-semibold">Knowledge Path:</span> Khán giả 1 đã thích <span class="text-sky-300 font-bold">Interstellar (2014)</span> (Sci-Fi, Space), chia sẻ thuộc tính đạo diễn/thể loại và liên kết ngữ nghĩa chặt chẽ với bộ phim được đề xuất <span class="text-amber-300 font-bold">The Martian</span> (Độ tương đồng: 0.85).
+              </div>
+            </section>
+
+            <!-- KHỐI BÊN PHẢI: EVALUATION RESULTS (BIỂU ĐỒ ĐÁNH GIÁ CHỈ SỐ) -->
+            <section class="p-5 rounded-2xl bg-[#0E1420]/90 border border-slate-800 shadow-xl backdrop-blur-xl flex flex-col justify-between space-y-4">
+              <div class="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-white/[0.08]">
+                <h3 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                  <span>Evaluation Results</span>
+                </h3>
+                
+                <!-- Legend Chú Thích 3 Chỉ Số -->
+                <div class="flex items-center gap-3 text-[11px] font-mono">
+                  <span class="inline-flex items-center gap-1.5 text-slate-300">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-[#3B82F6]"></span>
+                    <span>Recall@10</span>
+                  </span>
+                  <span class="inline-flex items-center gap-1.5 text-slate-300">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-[#F59E0B]"></span>
+                    <span>NDCG@10</span>
+                  </span>
+                  <span class="inline-flex items-center gap-1.5 text-slate-300">
+                    <span class="w-2.5 h-2.5 rounded-sm bg-[#10B981]"></span>
+                    <span>Coverage</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Vùng Vẽ Biểu Đồ Cột Nhóm SVG (Grouped Bar Chart) -->
+              <div id="evaluation-chart-container" class="relative w-full h-64 bg-[#070A0F]/60 rounded-xl p-3 border border-white/5 flex items-center justify-center">
+                <svg viewBox="0 0 640 220" class="w-full h-full overflow-visible select-none">
+                  <line x1="40" y1="185" x2="620" y2="185" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
+                  <text x="32" y="189" fill="#64748B" font-size="10" font-family="monospace" text-anchor="end">0.0</text>
+                  <line x1="40" y1="152" x2="620" y2="152" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
+                  <text x="32" y="156" fill="#64748B" font-size="10" font-family="monospace" text-anchor="end">0.2</text>
+                  <line x1="40" y1="119" x2="620" y2="119" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
+                  <text x="32" y="123" fill="#64748B" font-size="10" font-family="monospace" text-anchor="end">0.4</text>
+                  <line x1="40" y1="86" x2="620" y2="86" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
+                  <text x="32" y="90" fill="#64748B" font-size="10" font-family="monospace" text-anchor="end">0.6</text>
+                  <line x1="40" y1="53" x2="620" y2="53" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
+                  <text x="32" y="57" fill="#64748B" font-size="10" font-family="monospace" text-anchor="end">0.8</text>
+                  <line x1="40" y1="20" x2="620" y2="20" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
+                  <text x="32" y="24" fill="#64748B" font-size="10" font-family="monospace" text-anchor="end">1.0</text>
+
+                  <!-- 1. Popularity Baseline -->
+                  <g class="chart-bar-group cursor-pointer" onclick="AcademicLab.selectAlgorithm('popularity')">
+                    <rect x="70" y="165.2" width="16" height="19.8" rx="3" fill="#3B82F6" class="hover:opacity-80 transition-opacity"><title>Popularity Baseline — Recall@10: 12.0%</title></rect>
+                    <rect x="90" y="155.3" width="16" height="29.7" rx="3" fill="#F59E0B" class="hover:opacity-80 transition-opacity"><title>Popularity Baseline — NDCG@10: 18.0%</title></rect>
+                    <rect x="110" y="148.7" width="16" height="36.3" rx="3" fill="#10B981" class="hover:opacity-80 transition-opacity"><title>Popularity Baseline — Coverage: 22.0%</title></rect>
+                    <text x="98" y="208" fill="#94A3B8" font-size="10.5" font-family="monospace" text-anchor="middle" font-weight="500">Popularity</text>
+                  </g>
+
+                  <!-- 2. Spark ALS -->
+                  <g class="chart-bar-group cursor-pointer" onclick="AcademicLab.selectAlgorithm('als')">
+                    <rect x="186" y="109.1" width="16" height="75.9" rx="3" fill="#3B82F6" class="hover:opacity-80 transition-opacity"><title>Spark ALS — Recall@10: 46.0%</title></rect>
+                    <rect x="206" y="100.8" width="16" height="84.2" rx="3" fill="#F59E0B" class="hover:opacity-80 transition-opacity"><title>Spark ALS — NDCG@10: 51.0%</title></rect>
+                    <rect x="226" y="122.3" width="16" height="62.7" rx="3" fill="#10B981" class="hover:opacity-80 transition-opacity"><title>Spark ALS — Coverage: 38.0%</title></rect>
+                    <text x="214" y="208" fill="#94A3B8" font-size="10.5" font-family="monospace" text-anchor="middle" font-weight="500">Spark ALS</text>
+                  </g>
+
+                  <!-- 3. Knowledge Graph (Active mặc định) -->
+                  <g class="chart-bar-group cursor-pointer" onclick="AcademicLab.selectAlgorithm('kg')">
+                    <rect x="296" y="20" width="68" height="167" rx="6" fill="rgba(59, 130, 246, 0.08)" stroke="rgba(59, 130, 246, 0.45)" stroke-width="1.5" stroke-dasharray="3,2" />
+                    <rect x="302" y="114" width="16" height="71" rx="3" fill="#3B82F6" class="hover:opacity-80 transition-opacity"><title>Knowledge Graph — Recall@10: 43.0%</title></rect>
+                    <rect x="322" y="105.8" width="16" height="79.2" rx="3" fill="#F59E0B" class="hover:opacity-80 transition-opacity"><title>Knowledge Graph — NDCG@10: 48.0%</title></rect>
+                    <rect x="342" y="43.1" width="16" height="141.9" rx="3" fill="#10B981" class="hover:opacity-80 transition-opacity"><title>Knowledge Graph — Coverage: 86.0%</title></rect>
+                    <text x="330" y="208" fill="#FDE68A" font-size="11" font-family="monospace" text-anchor="middle" font-weight="bold">Knowledge Graph</text>
+                  </g>
+
+                  <!-- 4. Hybrid RRF -->
+                  <g class="chart-bar-group cursor-pointer" onclick="AcademicLab.selectAlgorithm('hybrid_rrf')">
+                    <rect x="418" y="95.9" width="16" height="89.1" rx="3" fill="#3B82F6" class="hover:opacity-80 transition-opacity"><title>Hybrid RRF — Recall@10: 54.0%</title></rect>
+                    <rect x="438" y="84.3" width="16" height="100.7" rx="3" fill="#F59E0B" class="hover:opacity-80 transition-opacity"><title>Hybrid RRF — NDCG@10: 61.0%</title></rect>
+                    <rect x="458" y="56.3" width="16" height="128.7" rx="3" fill="#10B981" class="hover:opacity-80 transition-opacity"><title>Hybrid RRF — Coverage: 78.0%</title></rect>
+                    <text x="446" y="208" fill="#94A3B8" font-size="10.5" font-family="monospace" text-anchor="middle" font-weight="500">Hybrid RRF</text>
+                  </g>
+
+                  <!-- 5. Hybrid Weighted -->
+                  <g class="chart-bar-group cursor-pointer" onclick="AcademicLab.selectAlgorithm('hybrid_weighted')">
+                    <rect x="534" y="99.2" width="16" height="85.8" rx="3" fill="#3B82F6" class="hover:opacity-80 transition-opacity"><title>Hybrid Weighted — Recall@10: 52.0%</title></rect>
+                    <rect x="554" y="89.3" width="16" height="95.7" rx="3" fill="#F59E0B" class="hover:opacity-80 transition-opacity"><title>Hybrid Weighted — NDCG@10: 58.0%</title></rect>
+                    <rect x="574" y="62.9" width="16" height="122.1" rx="3" fill="#10B981" class="hover:opacity-80 transition-opacity"><title>Hybrid Weighted — Coverage: 74.0%</title></rect>
+                    <text x="562" y="208" fill="#94A3B8" font-size="10.5" font-family="monospace" text-anchor="middle" font-weight="500">Hybrid Weighted</text>
+                  </g>
+                </svg>
+              </div>
+
+              <!-- Chú giải phân tích học thuật -->
+              <div id="evaluation-conclusion-box" class="p-2.5 rounded-lg bg-black/40 border border-white/5 text-[11px] text-slate-400 leading-relaxed font-mono">
+                <span class="text-amber-400 font-semibold">Kết luận thực nghiệm 5 mô hình:</span> Spark ALS đạt độ chính xác cao trên tương tác thưa (NDCG@10: 0.51), trong khi Knowledge Graph vượt trội về độ bao phủ danh mục (Coverage: 86%). Mô hình Hybrid RRF kết hợp sức mạnh cả hai đạt trạng thái cân bằng Pareto tối ưu (NDCG@10: 0.61, Coverage: 78%).
+              </div>
+            </section>
+
+          </div>
+
+          <!-- ===================================================================
+               KHỐI 8: DATA & PERFORMANCE (KẾT QUẢ HIỆU NĂNG PYSPARK)
+               =================================================================== -->
+          <section id="academic-block-8" class="p-5 rounded-2xl bg-[#0E1420]/90 border border-slate-800 shadow-xl backdrop-blur-xl space-y-5">
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3 border-b border-white/[0.08]">
+              <div>
+                <h3 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  <span>Data & Performance (Kết Quả Hiệu Năng PySpark)</span>
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">
+                  Big Data Architecture & Distributed Recommendation Engine Benchmark Specs
+                </p>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/25 text-xs font-mono font-medium">
+                Apache Spark 3.5 • MLlib & GraphFrames
+              </span>
+            </div>
+
+            <!-- 4 Thẻ KPI Hiệu Năng Phân Tán (Performance Cards) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Thời Gian Huấn Luyện (Training)</div>
+                <div class="text-xl font-bold font-mono text-cyan-400 flex items-baseline gap-1.5">
+                  <span>42.6s</span>
+                  <span class="text-[11px] font-normal text-emerald-400 font-sans">⚡ 4.3x Single-node</span>
+                </div>
+                <div class="text-[11px] text-slate-400 font-mono">PySpark ALS (25M ratings)</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Độ Trễ Suy Luận (Latency P99)</div>
+                <div class="text-xl font-bold font-mono text-amber-400 flex items-baseline gap-1.5">
+                  <span>8.4ms</span>
+                  <span class="text-[11px] font-normal text-slate-400 font-sans">/ User Top-10</span>
+                </div>
+                <div class="text-[11px] text-slate-400 font-mono">Broadcast Hash Matrix Dot</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Thông Lượng Xử Lý (Throughput)</div>
+                <div class="text-xl font-bold font-mono text-emerald-400 flex items-baseline gap-1.5">
+                  <span>118,500</span>
+                  <span class="text-[11px] font-normal text-slate-400 font-sans">ratings/sec</span>
+                </div>
+                <div class="text-[11px] text-slate-400 font-mono">8 Executors, 32 vCPU cores</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-black/40 border border-white/5 space-y-1">
+                <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Quy Mô Dữ Liệu (Scale)</div>
+                <div class="text-xl font-bold font-mono text-purple-400 flex items-baseline gap-1.5">
+                  <span>25.0M</span>
+                  <span class="text-[11px] font-normal text-slate-400 font-sans">Interactions</span>
+                </div>
+                <div class="text-[11px] text-slate-400 font-mono">62K Phim • 162K Khán giả</div>
+              </div>
+            </div>
+
+            <!-- Bảng Chi Tiết Hiệu Năng Từng Thành Phần Pipeline (Đồng Bộ 5 Mô Hình Chuẩn) -->
+            <div class="overflow-x-auto rounded-xl border border-white/5 bg-black/20">
+              <table class="w-full text-left text-xs font-mono" id="pyspark-performance-table">
+                <thead>
+                  <tr class="border-b border-white/[0.08] text-[11px] text-slate-400 uppercase tracking-wider bg-white/[0.02]">
+                    <th class="py-2.5 px-3 font-semibold">Thuật Toán / Mô Hình</th>
+                    <th class="py-2.5 px-3 font-semibold">Công Nghệ / Framework</th>
+                    <th class="py-2.5 px-3 font-semibold">Thời Gian Huấn Luyện</th>
+                    <th class="py-2.5 px-3 font-semibold">Độ Trễ Suy Luận (P95)</th>
+                    <th class="py-2.5 px-3 font-semibold">Bộ Nhớ RAM</th>
+                    <th class="py-2.5 px-3 font-semibold">Cấu Hình Cụm</th>
+                    <th class="py-2.5 px-3 font-semibold text-right">Trạng Thái</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5 text-slate-300">
+                  <!-- 1. Popularity Baseline -->
+                  <tr id="perf-row-popularity" class="hover:bg-white/[0.04] transition-all cursor-pointer" onclick="AcademicLab.selectAlgorithm('popularity')">
+                    <td class="py-2.5 px-3 font-semibold text-white flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                      <span>Popularity Baseline (M03)</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-rose-300">Spark SQL Window Agg</td>
+                    <td class="py-2.5 px-3 text-amber-300 font-bold">4.2s</td>
+                    <td class="py-2.5 px-3">&lt; 0.1ms</td>
+                    <td class="py-2.5 px-3">1.2 GB</td>
+                    <td class="py-2.5 px-3 text-slate-400">Distributed In-Memory Cache</td>
+                    <td class="py-2.5 px-3 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/25">BASELINE</span></td>
+                  </tr>
+
+                  <!-- 2. Spark ALS Collaborative -->
+                  <tr id="perf-row-als" class="hover:bg-white/[0.04] transition-all cursor-pointer" onclick="AcademicLab.selectAlgorithm('als')">
+                    <td class="py-2.5 px-3 font-semibold text-white flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                      <span>Spark ALS Collaborative</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-sky-300">PySpark MLlib (Rank=8, Reg=0.3)</td>
+                    <td class="py-2.5 px-3 text-amber-300 font-bold">42.6s</td>
+                    <td class="py-2.5 px-3">3.28ms</td>
+                    <td class="py-2.5 px-3">14.2 GB</td>
+                    <td class="py-2.5 px-3 text-slate-400">8 Exec, 32 vCPU cores</td>
+                    <td class="py-2.5 px-3 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">PRODUCTION</span></td>
+                  </tr>
+
+                  <!-- 3. Knowledge Graph Multi-Hop (Default Active) -->
+                  <tr id="perf-row-kg" class="hover:bg-white/[0.04] transition-all cursor-pointer bg-blue-500/15 border-l-2 border-l-blue-500" onclick="AcademicLab.selectAlgorithm('kg')">
+                    <td class="py-2.5 px-3 font-semibold text-white flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                      <span>Knowledge Graph Multi-Hop</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-emerald-300">GraphFrames / Random Walk</td>
+                    <td class="py-2.5 px-3 text-amber-300 font-bold">78.4s</td>
+                    <td class="py-2.5 px-3">3.63ms</td>
+                    <td class="py-2.5 px-3">22.0 GB</td>
+                    <td class="py-2.5 px-3 text-slate-400">8 Exec, 32 vCPU cores</td>
+                    <td class="py-2.5 px-3 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">PRODUCTION</span></td>
+                  </tr>
+
+                  <!-- 4. Hybrid RRF (k=60) -->
+                  <tr id="perf-row-hybrid_rrf" class="hover:bg-white/[0.04] transition-all cursor-pointer" onclick="AcademicLab.selectAlgorithm('hybrid_rrf')">
+                    <td class="py-2.5 px-3 font-semibold text-white flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                      <span>Hybrid RRF (k=60)</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-amber-300">Spark Reciprocal Rank Fusion</td>
+                    <td class="py-2.5 px-3 text-amber-300 font-bold">9.2s</td>
+                    <td class="py-2.5 px-3">3.08ms</td>
+                    <td class="py-2.5 px-3">8.0 GB</td>
+                    <td class="py-2.5 px-3 text-slate-400">Distributed Broadcast Join</td>
+                    <td class="py-2.5 px-3 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">OPTIMAL</span></td>
+                  </tr>
+
+                  <!-- 5. Hybrid Weighted (50/50) -->
+                  <tr id="perf-row-hybrid_weighted" class="hover:bg-white/[0.04] transition-all cursor-pointer" onclick="AcademicLab.selectAlgorithm('hybrid_weighted')">
+                    <td class="py-2.5 px-3 font-semibold text-white flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                      <span>Hybrid Weighted (50/50)</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-purple-300">Spark Min-Max Linear Combination</td>
+                    <td class="py-2.5 px-3 text-amber-300 font-bold">6.5s</td>
+                    <td class="py-2.5 px-3">2.88ms</td>
+                    <td class="py-2.5 px-3">7.5 GB</td>
+                    <td class="py-2.5 px-3 text-slate-400">Distributed Broadcast Join</td>
+                    <td class="py-2.5 px-3 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">PRODUCTION</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+          </section>
+
+        </div>
+      </div>
     </div>
 
   </main>
@@ -814,16 +1450,16 @@
        5. JAVASCRIPT LIBRARIES & CONTROLLERS
        ========================================================================= -->
   <!-- 1. Kho Dữ Liệu Tĩnh 50+ Phim & Thuật Toán Gợi Ý Client-Side -->
-  <script src="js/mock_data.js"></script>
+  <script src="js/mock_data.js?v=20261112k"></script>
 
   <!-- Module Modal Chi Tiết Phim & Provenance Explorer -->
-  <script src="js/modal_component.js"></script>
+  <script src="js/modal_component.js?v=20261112k"></script>
 
   <!-- 2. Bộ Điều Khiển Trang 1 (Khám Phá Điện Ảnh & Dynamic Tuner) -->
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=20261112k"></script>
 
   <!-- 3. Bộ Điều Khiển Trang 2 (Phòng Thí Nghiệm Học Thuật & 3D Three.js) -->
-  <script src="js/academic_lab.js"></script>
+  <script src="js/academic_lab.js?v=20261112k"></script>
 
 </body>
 </html>
