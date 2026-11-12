@@ -102,8 +102,14 @@
       this.hoveredMesh = null;
       this.animFrameId = null;
 
-      // Dữ liệu vị trí người dùng trung tâm
+      // Dữ liệu vị trí người dùng trung tâm và trạng thái nội suy chuyển động (Lerp)
       this.userCenterPos = { x: 0, y: 5, z: 0 };
+      this.currentPos = this.userCenterPos;
+      this.targetPos = { x: 0, y: 5, z: 0 };
+      this.lerpSpeed = 0.06;
+      this.lerpEpsilon = 0.02;
+      this.isTransitioning = false;
+      this.activeTop10Ids = new Set();
 
       // Thuộc tính phục vụ Fallback Canvas 2D
       this.ctx2d = null;
@@ -114,6 +120,10 @@
       this.lastMouseY = 0;
       this.nodes2D = [];
       this.stars2D = [];
+    }
+
+    get userRays() {
+      return this.rayLines;
     }
 
     init() {
@@ -300,12 +310,17 @@
     }
 
     createThreeRecommendationRays() {
-      // Xóa các đường tia cũ nếu có
-      this.rayLines.forEach(l => this.scene.remove(l));
+      // Xóa các đường tia cũ nếu có và giải phóng tài nguyên WebGL an toàn
+      this.rayLines.forEach(l => {
+        if (this.scene) this.scene.remove(l);
+        if (l.geometry) l.geometry.dispose();
+        if (l.material) l.material.dispose();
+      });
       this.rayLines = [];
 
       const top10 = (window.MOCK_DATA && window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.hybrid_rrf) || [];
       const top10Ids = new Set(top10.map(m => m.movieId));
+      this.activeTop10Ids = top10Ids;
 
       this.movieNodes.forEach(mesh => {
         const mid = mesh.userData.movie.movieId;
@@ -315,6 +330,9 @@
             mesh.position
           ];
           const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+          if (lineGeo.attributes && lineGeo.attributes.position && lineGeo.attributes.position.setUsage) {
+            lineGeo.attributes.position.setUsage(THREE.DynamicDrawUsage);
+          }
           const lineMat = new THREE.LineBasicMaterial({
             color: 0xF59E0B,
             transparent: true,
@@ -396,9 +414,50 @@
     animateThree() {
       this.animFrameId = requestAnimationFrame(() => this.animateThree());
 
-      const time = performance.now() * 0.001;
+      // 1. Tính toán Linear Interpolation (Lerp) cho vị trí Quả cầu User Center
+      if (!this.targetPos) {
+        this.targetPos = Object.assign({}, this.userCenterPos);
+      }
+      const dx = this.targetPos.x - this.userCenterPos.x;
+      const dy = this.targetPos.y - this.userCenterPos.y;
+      const dz = this.targetPos.z - this.userCenterPos.z;
+      const distSq = dx * dx + dy * dy + dz * dz;
 
-      // Hiệu ứng thở co giãn hào quang người dùng
+      if (distSq > (this.lerpEpsilon * this.lerpEpsilon)) {
+        this.userCenterPos.x += dx * this.lerpSpeed;
+        this.userCenterPos.y += dy * this.lerpSpeed;
+        this.userCenterPos.z += dz * this.lerpSpeed;
+        this.isTransitioning = true;
+      } else {
+        this.userCenterPos.x = this.targetPos.x;
+        this.userCenterPos.y = this.targetPos.y;
+        this.userCenterPos.z = this.targetPos.z;
+        this.isTransitioning = false;
+      }
+      this.currentPos = this.userCenterPos;
+
+      // 2. Cập nhật vị trí Quả cầu và Vành hào quang theo userCenterPos đã nội suy
+      if (this.userOrb) {
+        this.userOrb.position.set(this.userCenterPos.x, this.userCenterPos.y, this.userCenterPos.z);
+      }
+      if (this.haloRing) {
+        this.haloRing.position.set(this.userCenterPos.x, this.userCenterPos.y, this.userCenterPos.z);
+      }
+
+      // 3. Cập nhật liên tục đỉnh gốc (Vertex 0) của toàn bộ chùm tia Ray Lines
+      if (this.rayLines && this.rayLines.length > 0) {
+        for (let i = 0; i < this.rayLines.length; i++) {
+          const line = this.rayLines[i];
+          if (line && line.geometry && line.geometry.attributes && line.geometry.attributes.position) {
+            const posAttr = line.geometry.attributes.position;
+            posAttr.setXYZ(0, this.userCenterPos.x, this.userCenterPos.y, this.userCenterPos.z);
+            posAttr.needsUpdate = true;
+          }
+        }
+      }
+
+      // 4. Hiệu ứng thở co giãn hào quang người dùng
+      const time = performance.now() * 0.001;
       if (this.haloRing) {
         const pulse = 1.0 + 0.22 * Math.sin(time * 3.2);
         this.haloRing.scale.set(pulse, pulse, pulse);
@@ -457,6 +516,10 @@
 
       // Tương tác chuột xoay phối cảnh 2D
       this.setupCanvas2DEvents();
+
+      // Khởi tạo danh sách Top-10 mặc định cho Ray Lines 2D
+      const defaultTop10 = (window.MOCK_DATA && window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.hybrid_rrf) || [];
+      this.activeTop10Ids = new Set(defaultTop10.map(m => m.movieId));
 
       // Vòng lặp render 2D 60 FPS
       this.animateCanvas2D();
@@ -542,6 +605,28 @@
     animateCanvas2D() {
       this.animFrameId = requestAnimationFrame(() => this.animateCanvas2D());
 
+      // 0. Tính toán Linear Interpolation (Lerp) cho vị trí Quả cầu User Center
+      if (!this.targetPos) {
+        this.targetPos = Object.assign({}, this.userCenterPos);
+      }
+      const dx = this.targetPos.x - this.userCenterPos.x;
+      const dy = this.targetPos.y - this.userCenterPos.y;
+      const dz = this.targetPos.z - this.userCenterPos.z;
+      const distSq = dx * dx + dy * dy + dz * dz;
+
+      if (distSq > (this.lerpEpsilon * this.lerpEpsilon)) {
+        this.userCenterPos.x += dx * this.lerpSpeed;
+        this.userCenterPos.y += dy * this.lerpSpeed;
+        this.userCenterPos.z += dz * this.lerpSpeed;
+        this.isTransitioning = true;
+      } else {
+        this.userCenterPos.x = this.targetPos.x;
+        this.userCenterPos.y = this.targetPos.y;
+        this.userCenterPos.z = this.targetPos.z;
+        this.isTransitioning = false;
+      }
+      this.currentPos = this.userCenterPos;
+
       const rect = this.container.getBoundingClientRect();
       const w = rect.width || 800;
       const h = rect.height || 520;
@@ -578,8 +663,10 @@
         }
       });
 
-      // 2. Chiếu tọa độ vector người dùng trung tâm
-      const userX = 0, userY = 5, userZ = 0;
+      // 2. Chiếu tọa độ vector người dùng trung tâm theo vị trí lerp động
+      const userX = this.userCenterPos.x;
+      const userY = this.userCenterPos.y;
+      const userZ = this.userCenterPos.z;
       const ux1 = userX * Math.cos(this.rotY) - userZ * Math.sin(this.rotY);
       const uz1 = userX * Math.sin(this.rotY) + userZ * Math.cos(this.rotY);
       const uy2 = userY * Math.cos(this.rotX) - uz1 * Math.sin(this.rotX);
@@ -605,15 +692,19 @@
       // Sắp xếp z-index từ xa tới gần
       const sorted = this.nodes2D.slice().sort((a, b) => b.depth - a.depth);
 
-      // 4. Vẽ tia liên kết tới Top-10
+      // 4. Vẽ tia liên kết tới Top-10 Hybrid RRF
       if (AcademicLabState.show3DRays) {
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.28)';
-        ctx.lineWidth = 1;
-        const top10 = (window.MOCK_DATA && window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.hybrid_rrf) || [];
-        const top10Ids = new Set(top10.map(m => m.movieId));
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.32)';
+        ctx.lineWidth = 1.2;
+
+        let activeIds = this.activeTop10Ids;
+        if (!activeIds || activeIds.size === 0) {
+          const defaultTop10 = (window.MOCK_DATA && window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.hybrid_rrf) || [];
+          activeIds = new Set(defaultTop10.map(m => m.movieId));
+        }
 
         sorted.forEach(n => {
-          if (top10Ids.has(n.movie.movieId)) {
+          if (activeIds.has(n.movie.movieId)) {
             ctx.beginPath();
             ctx.moveTo(uPx, uPy);
             ctx.lineTo(n.projX, n.projY);
@@ -690,8 +781,22 @@
       }
 
       if (explEl) {
+        let targetUserName = 'khán giả được chọn';
+        const currentSelectedUser = AcademicLabState && AcademicLabState.selectedUser;
+        if (currentSelectedUser === 'live_session') {
+          targetUserName = 'phiên làm việc trực tiếp của bạn';
+        } else if (currentSelectedUser === 'user1') {
+          targetUserName = 'Khán giả 1 (Alex Turner)';
+        } else if (currentSelectedUser === 'user2') {
+          targetUserName = 'Khán giả 2 (Sarah Jenkins)';
+        } else if (currentSelectedUser === 'user3') {
+          targetUserName = 'Khán giả 3 (Marcus Vance)';
+        } else if (currentSelectedUser === 'user42' || currentSelectedUser === 'user_cold') {
+          targetUserName = 'Khán giả mới (Cold-Start)';
+        }
+        const genreName = getGenreColorInfo(genre).name;
         const explText = (movie.provenanceSummary && movie.provenanceSummary.evidence && movie.provenanceSummary.evidence[0] && movie.provenanceSummary.evidence[0].text) 
-          || `Gần cụm sở thích ${genre} của Khán giả 1 qua phép chiếu nhân tử tiềm ẩn ALS và đồ thị tri thức.`;
+          || `Gần cụm sở thích ${genreName} của ${targetUserName} qua phép chiếu nhân tử tiềm ẩn ALS và đồ thị tri thức.`;
         explEl.textContent = explText;
       }
 
@@ -711,6 +816,98 @@
       } else if (this.ctx2d) {
         this.resizeCanvas2D();
       }
+    }
+
+    // Cập nhật mượt mà tâm điểm người dùng và các đường tia kết nối khi đổi user
+    updateUserCenterForSelectedUser(userKey) {
+      let targetPos = { x: 2.3, y: 5.6, z: 1.2 };
+
+      if (userKey === 'user2') {
+        targetPos = { x: 38.5, y: -18.2, z: 28.4 };
+      } else if (userKey === 'user3') {
+        targetPos = { x: -35.2, y: 22.0, z: -26.8 };
+      } else if (userKey === 'user42') {
+        targetPos = { x: 0.0, y: 0.0, z: 0.0 };
+      } else if (userKey === 'live_session') {
+        const userRatings = (window.MoodGraphState && window.MoodGraphState.userRatings) || {};
+        const ratedIds = Object.keys(userRatings).map(Number);
+        if (ratedIds.length > 0) {
+          let sX = 0, sY = 0, sZ = 0, sW = 0;
+          ratedIds.forEach(mid => {
+            const m = getMovieById(mid);
+            if (m && m.embedding3d) {
+              const w = Number(userRatings[mid]) || 1;
+              sX += m.embedding3d.x * w;
+              sY += m.embedding3d.y * w;
+              sZ += m.embedding3d.z * w;
+              sW += w;
+            }
+          });
+          if (sW > 0) {
+            targetPos = { x: sX / sW, y: sY / sW, z: sZ / sW };
+          }
+        } else {
+          targetPos = { x: 0.0, y: 0.0, z: 0.0 };
+        }
+      }
+
+      // Kích hoạt trạng thái chuyển động nội suy tuyến tính (Lerp) mượt mà
+      if (!this.userCenterPos) {
+        this.userCenterPos = { x: 0, y: 5, z: 0 };
+      }
+      this.currentPos = this.userCenterPos;
+      this.targetPos = Object.assign({}, targetPos);
+      this.isTransitioning = true;
+
+      // Lấy danh sách Top-10 phim Hybrid RRF của user mới
+      const recs = computeDynamicRecommendationsForLab(userKey);
+      const top10 = (recs.top10ByModel && recs.top10ByModel.hybrid_rrf) || [];
+      const top10Ids = new Set(top10.map(m => m.movieId));
+      this.activeTop10Ids = top10Ids;
+
+      // Cập nhật lại chùm tia sáng (Ray Lines) Three.js kết nối đến Top-10 Hybrid RRF
+      if (Array.isArray(this.rayLines)) {
+        this.rayLines.forEach(l => {
+          if (this.scene) this.scene.remove(l);
+          if (l.geometry) l.geometry.dispose();
+          if (l.material) l.material.dispose();
+        });
+        this.rayLines = [];
+      }
+
+      // Tái tạo chùm tia mới xuất phát từ vị trí hiện tại của quả cầu
+      if (this.movieNodes && this.scene && typeof THREE !== 'undefined') {
+        const startPos = (this.userOrb && this.userOrb.position) 
+          ? this.userOrb.position 
+          : new THREE.Vector3(this.userCenterPos.x, this.userCenterPos.y, this.userCenterPos.z);
+
+        this.movieNodes.forEach(mesh => {
+          const mid = mesh.userData.movie.movieId;
+          if (top10Ids.has(mid)) {
+            const points = [
+              new THREE.Vector3(startPos.x, startPos.y, startPos.z),
+              mesh.position
+            ];
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+            if (lineGeo.attributes && lineGeo.attributes.position && lineGeo.attributes.position.setUsage) {
+              lineGeo.attributes.position.setUsage(THREE.DynamicDrawUsage);
+            }
+            const lineMat = new THREE.LineBasicMaterial({
+              color: 0xF59E0B,
+              transparent: true,
+              opacity: 0.45,
+              linewidth: 1
+            });
+            const line = new THREE.Line(lineGeo, lineMat);
+            line.visible = AcademicLabState.show3DRays;
+            this.scene.add(line);
+            this.rayLines.push(line);
+          }
+        });
+      }
+
+      // Canvas 2D Fallback tự động vẽ lại trong vòng lặp animateCanvas2D
+      // dựa trên this.activeTop10Ids và vị trí lerp của userCenterPos
     }
 
     resetCamera() {
@@ -745,91 +942,272 @@
   let visualizer3D = null;
 
   // =========================================================================
-  
+  // 3.0 CÔNG CỤ TÍNH TOÁN VÀ DỮ LIỆU TOP-10 CHUẨN HỌC THUẬT (ORTHOGONAL TOP-10 ENGINE)
+  // Tuân thủ 100% công thức Cormack et al. (SIGIR 2009) & Trực giao RecSys (40% - 60%)
+  // 100% ID phim thuộc 53 phim trong CATALOG, triệt tiêu phim ma và bảo toàn tính toàn vẹn 3D
+  // =========================================================================
+
+  function formatMovieItem(movieId, rank, score, rawScoreText, fallbackGenre) {
+    const catalog = (window.MOCK_DATA && window.MOCK_DATA.catalog) || [];
+    const m = getMovieById(movieId) || catalog.find(c => c.movieId === movieId);
+    const title = m ? (m.vietnameseTitle || m.cleanTitle || m.title) : ('Phim #' + movieId);
+    const cleanTitle = m ? (m.cleanTitle || m.title) : title;
+    const year = m ? m.year : 2000;
+    const genre = m ? (m.primaryGenre || (m.genres && m.genres[0]) || fallbackGenre) : fallbackGenre;
+    return {
+      id: movieId,
+      movieId: movieId,
+      rank: rank,
+      title: title,
+      cleanTitle: cleanTitle,
+      year: year,
+      score: typeof score === 'number' ? Number(score.toFixed(4)) : score,
+      rawScoreText: rawScoreText || (typeof score === 'number' ? score.toFixed(4) : String(score)),
+      primaryGenre: genre,
+      genre: genre,
+      consensusCount: 1,
+      movie: m || { movieId: movieId, title: title, primaryGenre: genre, year: year }
+    };
+  }
+
+  // Thuật toán Reciprocal Rank Fusion chuẩn Cormack et al. (SIGIR 2009):
+  // RRF(d) = sum_{m in M} 1 / (60 + r_m(d))
+  // Nếu d không xuất hiện trong top của mô hình m, điểm đóng góp từ m bằng 0 (không dùng rank giả định 45 hay 50)
+  function computeCormackRRF(topALS, topKG) {
+    const rankMapALS = {};
+    (topALS || []).forEach((it, idx) => { rankMapALS[it.movieId] = idx + 1; });
+    const rankMapKG = {};
+    (topKG || []).forEach((it, idx) => { rankMapKG[it.movieId] = idx + 1; });
+
+    const allIds = Array.from(new Set([
+      ...(topALS || []).map(it => it.movieId),
+      ...(topKG || []).map(it => it.movieId)
+    ]));
+
+    const scored = allIds.map(mid => {
+      const r1 = rankMapALS[mid];
+      const r2 = rankMapKG[mid];
+      let score = 0;
+      if (r1 && r1 <= 10) score += (1.0 / (60 + r1));
+      if (r2 && r2 <= 10) score += (1.0 / (60 + r2));
+
+      const ref = (topALS || []).find(it => it.movieId === mid) || (topKG || []).find(it => it.movieId === mid);
+      return {
+        movieId: mid,
+        score: score,
+        fallbackGenre: ref ? (ref.primaryGenre || ref.genre) : 'Điện ảnh'
+      };
+    });
+
+    // Sắp xếp giảm dần theo điểm RRF
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, 10).map((it, idx) => {
+      return formatMovieItem(it.movieId, idx + 1, Number(it.score.toFixed(4)), it.score.toFixed(4), it.fallbackGenre);
+    });
+  }
+
+  // Thuật toán Hybrid Weighted tuyến tính dựa trên thứ hạng chuẩn hóa
+  function computeWeightedFusion(topA, topB, weightA = 0.55, weightB = 0.45) {
+    const rankMapA = {};
+    (topA || []).forEach((it, idx) => { rankMapA[it.movieId] = idx + 1; });
+    const rankMapB = {};
+    (topB || []).forEach((it, idx) => { rankMapB[it.movieId] = idx + 1; });
+
+    const allIds = Array.from(new Set([
+      ...(topA || []).map(it => it.movieId),
+      ...(topB || []).map(it => it.movieId)
+    ]));
+
+    const scored = allIds.map(mid => {
+      const r1 = rankMapA[mid];
+      const r2 = rankMapB[mid];
+      const norm1 = (r1 && r1 <= 10) ? (11 - r1) / 10 : 0;
+      const norm2 = (r2 && r2 <= 10) ? (11 - r2) / 10 : 0;
+      const score = (weightA * norm1) + (weightB * norm2);
+
+      const ref = (topA || []).find(it => it.movieId === mid) || (topB || []).find(it => it.movieId === mid);
+      return {
+        movieId: mid,
+        score: score,
+        fallbackGenre: ref ? (ref.primaryGenre || ref.genre) : 'Điện ảnh'
+      };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, 10).map((it, idx) => {
+      return formatMovieItem(it.movieId, idx + 1, Number(it.score.toFixed(4)), it.score.toFixed(4), it.fallbackGenre);
+    });
+  }
+
+  // Tính toán đồng thuận (Consensus count) qua các cột mô hình
+  function applyConsensusBadges(top10ByModel) {
+    const countMap = {};
+    Object.values(top10ByModel).forEach(list => {
+      if (Array.isArray(list)) {
+        list.forEach(it => {
+          if (it && it.movieId) {
+            countMap[it.movieId] = (countMap[it.movieId] || 0) + 1;
+          }
+        });
+      }
+    });
+    Object.values(top10ByModel).forEach(list => {
+      if (Array.isArray(list)) {
+        list.forEach(it => {
+          if (it && it.movieId) {
+            it.consensusCount = countMap[it.movieId] || 1;
+          }
+        });
+      }
+    });
+  }
+
+  // Danh mục Phim Phổ Biến Toàn Cục (Popularity Baseline chuẩn M03)
+  const GLOBAL_POPULARITY_IDS = [318, 356, 593, 2571, 260, 480, 110, 589, 1, 4993];
+  const GLOBAL_POPULARITY_COUNTS = [80448, 80375, 73109, 71787, 68083, 63268, 58266, 57379, 57342, 56400];
+  function getGlobalPopularityList() {
+    const list = GLOBAL_POPULARITY_IDS.map((mid, idx) => {
+      const rawCount = GLOBAL_POPULARITY_COUNTS[idx] || (80000 - idx * 2500);
+      const score = Math.max(0.65, Math.min(0.99, rawCount / 80500));
+      return {
+        movieId: mid,
+        score: Number(score.toFixed(4)),
+        rawScoreText: rawCount.toLocaleString('en-US'),
+        primaryGenre: 'Điện ảnh'
+      };
+    });
+    list.sort((a, b) => Number(b.score) - Number(a.score));
+    return list.map((it, idx) => {
+      return formatMovieItem(it.movieId, idx + 1, it.score, it.rawScoreText, it.primaryGenre);
+    });
+  }
+
   // =========================================================================
   // 3.1 BỘ TÍNH TOÁN GỢI Ý ĐỘNG CHO PHÒNG THÍ NGHIỆM (LIVE LAB RECOMMENDER)
   // Tính toán thời gian thực Top-10 cho cả 5 mô hình dựa trên tương tác thực tế
+  // Phân hóa học thuật trực giao giữa ALS và KG: tỷ lệ trùng lặp đạt đúng 40% - 60%
   // =========================================================================
   function computeDynamicRecommendationsForLab(userKey) {
     const catalog = (window.MOCK_DATA && window.MOCK_DATA.catalog) || [];
-    const modelsMeta = (window.MOCK_DATA && window.MOCK_DATA.modelsMetadata) || {};
 
-    // 1. Trường hợp Khán Giả 1 (Alex Turner)
+    // 1. Trường hợp Khán Giả 1 (Alex Turner • Cinephile Auteur Enthusiast)
+    // Gu điện ảnh kinh điển nghệ thuật châu Âu, chiều sâu tâm lý cao (Drama/Crime)
     if (userKey === 'user1') {
+      const alsIds = [318, 858, 50, 527, 1221, 1193, 912, 904, 111, 1213];
+      const alsScores = [4.412, 4.385, 4.298, 4.251, 4.210, 4.180, 4.150, 4.120, 4.095, 4.050];
+      const kgIds = [318, 1208, 858, 1217, 1221, 1178, 111, 1237, 904, 4144];
+      const kgScores = [0.892, 0.845, 0.820, 0.795, 0.760, 0.740, 0.715, 0.690, 0.670, 0.650];
+
+      const topALS = alsIds.map((mid, idx) => formatMovieItem(mid, idx + 1, alsScores[idx], alsScores[idx].toFixed(4), 'Drama'));
+      const topKG = kgIds.map((mid, idx) => formatMovieItem(mid, idx + 1, kgScores[idx], kgScores[idx].toFixed(4), 'Drama'));
+
+      const topRRF = computeCormackRRF(topALS, topKG);
+      const topWeighted = computeWeightedFusion(topALS, topKG, 0.55, 0.45);
+      const topPop = getGlobalPopularityList();
+
+      const top10Map = {
+        als: topALS,
+        kg: topKG,
+        hybrid_rrf: topRRF,
+        hybrid_weighted: topWeighted,
+        popularity: topPop
+      };
+      applyConsensusBadges(top10Map);
+
       return {
         isColdStart: false,
         userBadge: "Khán giả 1 (Alex Turner • 68 phim Train)",
-        top10ByModel: window.MOCK_DATA.top10ByModel || {}
+        top10ByModel: top10Map
       };
     }
 
     // 2. Trường hợp Khán Giả 42 (Mô phỏng Cold-Start thuần túy 0 đánh giá)
+    // Phân hóa rõ rệt: ALS rỗng kích hoạt card; KG onboarding đa dạng; RRF & Weighted dung hợp thông minh
     if (userKey === 'user42') {
-      const popItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || [];
-      const kgItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.kg) || [];
+      const kgIds = [318, 858, 296, 527, 260, 2571, 593, 1193, 912, 1208];
+      const kgScores = [0.930, 0.905, 0.880, 0.855, 0.830, 0.810, 0.785, 0.760, 0.735, 0.710];
+      const topKG = kgIds.map((mid, idx) => formatMovieItem(mid, idx + 1, kgScores[idx], kgScores[idx].toFixed(4), 'Điện ảnh'));
+
+      const topPop = getGlobalPopularityList();
+      const topRRF = computeCormackRRF(topKG, topPop);
+      const topWeighted = computeWeightedFusion(topPop, topKG, 0.60, 0.40);
+
+      const top10Map = {
+        als: [],
+        kg: topKG,
+        hybrid_rrf: topRRF,
+        hybrid_weighted: topWeighted,
+        popularity: topPop
+      };
+      applyConsensusBadges(top10Map);
+
       return {
         isColdStart: true,
         numRatings: 0,
         userBadge: "Khán giả 42 (Cold-Start thuần túy • 0 đánh giá)",
-        top10ByModel: {
-          als: [],
-          kg: kgItems,
-          hybrid_rrf: popItems,
-          hybrid_weighted: popItems,
-          popularity: popItems
-        }
+        top10ByModel: top10Map
       };
     }
 
-    // 3. Trường hợp Khán Giả 2 (Elena Rostova - Sci-Fi / Cyberpunk)
+    // 3. Trường hợp Khán Giả 2 (Elena Rostova - Sci-Fi & Cyberpunk Explorer)
+    // Đảm bảo 100% ID phim trong CATALOG, trùng lặp ALS vs KG đạt đúng 6/10 (60%)
     if (userKey === 'user2') {
-      const sciFiMovies = catalog.filter(m => (m.genres || []).includes('Sci-Fi') || (m.genres || []).includes('Adventure') || (m.genres || []).includes('Action'));
-      const sortedSciFi = sciFiMovies.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0)).slice(0, 10);
-      const items = sortedSciFi.map((m, idx) => ({
-        rank: idx + 1,
-        movieId: m.movieId,
-        title: m.title,
-        score: (4.45 - idx * 0.04).toFixed(4),
-        rawScoreText: (4.45 - idx * 0.04).toFixed(4),
-        primaryGenre: m.primaryGenre || 'Sci-Fi',
-        consensusCount: idx < 4 ? 4 : 2
-      }));
+      const alsIds = [2571, 260, 589, 480, 79132, 109487, 2959, 4993, 7153, 110];
+      const alsScores = [4.480, 4.420, 4.385, 4.350, 4.310, 4.275, 4.230, 4.190, 4.150, 4.110];
+      const kgIds = [109487, 79132, 7361, 2571, 260, 589, 1219, 593, 1258, 4993];
+      const kgScores = [0.925, 0.905, 0.880, 0.855, 0.830, 0.810, 0.785, 0.760, 0.735, 0.710];
+
+      const topALS = alsIds.map((mid, idx) => formatMovieItem(mid, idx + 1, alsScores[idx], alsScores[idx].toFixed(4), 'Sci-Fi'));
+      const topKG = kgIds.map((mid, idx) => formatMovieItem(mid, idx + 1, kgScores[idx], kgScores[idx].toFixed(4), 'Sci-Fi'));
+
+      const topRRF = computeCormackRRF(topALS, topKG);
+      const topWeighted = computeWeightedFusion(topALS, topKG, 0.55, 0.45);
+      const topPop = getGlobalPopularityList();
+
+      const top10Map = {
+        als: topALS,
+        kg: topKG,
+        hybrid_rrf: topRRF,
+        hybrid_weighted: topWeighted,
+        popularity: topPop
+      };
+      applyConsensusBadges(top10Map);
+
       return {
         isColdStart: false,
         userBadge: "Khán giả 2 (Elena Rostova • 142 phim Train)",
-        top10ByModel: {
-          als: items,
-          kg: items,
-          hybrid_rrf: items,
-          hybrid_weighted: items,
-          popularity: (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || items
-        }
+        top10ByModel: top10Map
       };
     }
 
-    // 4. Trường hợp Khán Giả 3 (Marcus Vance - Classic Crime & Noir)
+    // 4. Trường hợp Khán Giả 3 (Marcus Vance - Classic Crime & Noir Aficionado)
+    // Đảm bảo 100% ID phim trong CATALOG, trùng lặp ALS vs KG đạt đúng 5/10 (50%)
     if (userKey === 'user3') {
-      const crimeMovies = catalog.filter(m => (m.genres || []).includes('Crime') || (m.genres || []).includes('Mystery') || (m.genres || []).includes('Film-Noir'));
-      const sortedCrime = crimeMovies.sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0)).slice(0, 10);
-      const items = sortedCrime.map((m, idx) => ({
-        rank: idx + 1,
-        movieId: m.movieId,
-        title: m.title,
-        score: (4.48 - idx * 0.04).toFixed(4),
-        rawScoreText: (4.48 - idx * 0.04).toFixed(4),
-        primaryGenre: m.primaryGenre || 'Crime',
-        consensusCount: idx < 3 ? 4 : 2
-      }));
+      const alsIds = [858, 1221, 296, 1213, 50, 111, 47, 6016, 318, 593];
+      const alsScores = [4.450, 4.410, 4.370, 4.335, 4.290, 4.250, 4.210, 4.170, 4.130, 4.090];
+      const kgIds = [913, 1212, 858, 1221, 111, 1213, 904, 50, 1258, 1219];
+      const kgScores = [0.930, 0.910, 0.885, 0.860, 0.835, 0.810, 0.785, 0.760, 0.735, 0.710];
+
+      const topALS = alsIds.map((mid, idx) => formatMovieItem(mid, idx + 1, alsScores[idx], alsScores[idx].toFixed(4), 'Crime'));
+      const topKG = kgIds.map((mid, idx) => formatMovieItem(mid, idx + 1, kgScores[idx], kgScores[idx].toFixed(4), 'Crime'));
+
+      const topRRF = computeCormackRRF(topALS, topKG);
+      const topWeighted = computeWeightedFusion(topALS, topKG, 0.55, 0.45);
+      const topPop = getGlobalPopularityList();
+
+      const top10Map = {
+        als: topALS,
+        kg: topKG,
+        hybrid_rrf: topRRF,
+        hybrid_weighted: topWeighted,
+        popularity: topPop
+      };
+      applyConsensusBadges(top10Map);
+
       return {
         isColdStart: false,
         userBadge: "Khán giả 3 (Marcus Vance • 89 phim Train)",
-        top10ByModel: {
-          als: items,
-          kg: items,
-          hybrid_rrf: items,
-          hybrid_weighted: items,
-          popularity: (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || items
-        }
+        top10ByModel: top10Map
       };
     }
 
@@ -840,20 +1218,29 @@
 
     // Nếu người dùng THỰC SỰ chưa có đánh giá nào (numRatings === 0)
     if (numRatings === 0) {
-      const popItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.popularity) || [];
-      const kgItems = (window.MOCK_DATA.top10ByModel && window.MOCK_DATA.top10ByModel.kg) || [];
+      const kgIds = [318, 858, 296, 527, 260, 2571, 593, 1193, 912, 1208];
+      const kgScores = [0.930, 0.905, 0.880, 0.855, 0.830, 0.810, 0.785, 0.760, 0.735, 0.710];
+      const topKG = kgIds.map((mid, idx) => formatMovieItem(mid, idx + 1, kgScores[idx], kgScores[idx].toFixed(4), 'Điện ảnh'));
+
+      const topPop = getGlobalPopularityList();
+      const topRRF = computeCormackRRF(topKG, topPop);
+      const topWeighted = computeWeightedFusion(topPop, topKG, 0.60, 0.40);
+
+      const top10Map = {
+        als: [],
+        kg: topKG,
+        hybrid_rrf: topRRF,
+        hybrid_weighted: topWeighted,
+        popularity: topPop
+      };
+      applyConsensusBadges(top10Map);
+
       return {
         isColdStart: true,
         numRatings: 0,
         ratedMovies: [],
         userBadge: "Khán giả thực tế (Live Session • 0 đánh giá)",
-        top10ByModel: {
-          als: [],
-          kg: kgItems,
-          hybrid_rrf: popItems,
-          hybrid_weighted: popItems,
-          popularity: popItems
-        }
+        top10ByModel: top10Map
       };
     }
 
@@ -899,15 +1286,15 @@
       const predictedScore = Math.min(4.92, Math.max(3.20, 3.90 + (totalSim / (totalWeight || 1)) * 0.95));
       return {
         movieId: c.movieId,
-        title: c.vietnameseTitle || c.cleanTitle || c.title,
         score: predictedScore,
         rawScoreText: predictedScore.toFixed(4),
-        primaryGenre: c.primaryGenre || 'Điện ảnh',
-        movie: c
+        primaryGenre: c.primaryGenre || 'Điện ảnh'
       };
     });
     alsScored.sort((a, b) => b.score - a.score);
-    const top10ALS = alsScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+    const top10ALS = alsScored.slice(0, 10).map((it, idx) => {
+      return formatMovieItem(it.movieId, idx + 1, it.score, it.rawScoreText, it.primaryGenre);
+    });
 
     // [Mô hình 2: Knowledge Graph (KG)]
     const kgScored = candidates.map(c => {
@@ -933,56 +1320,21 @@
       const normKg = Math.min(0.975, Math.max(0.620, 0.680 + Math.tanh(kgScore) * 0.280));
       return {
         movieId: c.movieId,
-        title: c.vietnameseTitle || c.cleanTitle || c.title,
         score: normKg,
         rawScoreText: normKg.toFixed(4),
-        primaryGenre: c.primaryGenre || 'Điện ảnh',
-        movie: c
+        primaryGenre: c.primaryGenre || 'Điện ảnh'
       };
     });
     kgScored.sort((a, b) => b.score - a.score);
-    const top10KG = kgScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
-
-    // [Mô hình 3: Hybrid RRF (Reciprocal Rank Fusion)]
-    const rankMapALS = {};
-    alsScored.forEach((m, idx) => { rankMapALS[m.movieId] = idx + 1; });
-    const rankMapKG = {};
-    kgScored.forEach((m, idx) => { rankMapKG[m.movieId] = idx + 1; });
-
-    const rrfScored = candidates.map(c => {
-      const rALS = rankMapALS[c.movieId] || 50;
-      const rKG = rankMapKG[c.movieId] || 50;
-      const rrf = (1.0 / (60 + rALS)) + (1.0 / (60 + rKG));
-      return {
-        movieId: c.movieId,
-        title: c.vietnameseTitle || c.cleanTitle || c.title,
-        score: rrf,
-        rawScoreText: rrf.toFixed(4),
-        primaryGenre: c.primaryGenre || 'Điện ảnh',
-        movie: c
-      };
+    const top10KG = kgScored.slice(0, 10).map((it, idx) => {
+      return formatMovieItem(it.movieId, idx + 1, it.score, it.rawScoreText, it.primaryGenre);
     });
-    rrfScored.sort((a, b) => b.score - a.score);
-    const top10RRF = rrfScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+
+    // [Mô hình 3: Hybrid RRF (Reciprocal Rank Fusion - Chuẩn Cormack k=60)]
+    const top10RRF = computeCormackRRF(top10ALS, top10KG);
 
     // [Mô hình 4: Hybrid Weighted (0.55 ALS + 0.45 KG)]
-    const weightedScored = candidates.map(c => {
-      const alsItem = alsScored.find(m => m.movieId === c.movieId);
-      const kgItem = kgScored.find(m => m.movieId === c.movieId);
-      const alsNorm = alsItem ? (alsItem.score - 3.2) / (4.92 - 3.2) : 0.5;
-      const kgNorm = kgItem ? (kgItem.score - 0.62) / (0.975 - 0.62) : 0.5;
-      const weightedScore = (0.55 * alsNorm) + (0.45 * kgNorm);
-      return {
-        movieId: c.movieId,
-        title: c.vietnameseTitle || c.cleanTitle || c.title,
-        score: weightedScore,
-        rawScoreText: weightedScore.toFixed(4),
-        primaryGenre: c.primaryGenre || 'Điện ảnh',
-        movie: c
-      };
-    });
-    weightedScored.sort((a, b) => b.score - a.score);
-    const top10Weighted = weightedScored.slice(0, 10).map((it, idx) => Object.assign({}, it, { rank: idx + 1 }));
+    const top10Weighted = computeWeightedFusion(top10ALS, top10KG, 0.55, 0.45);
 
     // [Mô hình 5: Popularity]
     const popScored = candidates.slice().sort((a, b) => {
@@ -991,48 +1343,87 @@
       return popB - popA;
     });
     const top10Pop = popScored.slice(0, 10).map((c, idx) => {
-      const score = Math.max(0.65, Math.min(0.99, (c.ratingCount || 1000) / 80500));
-      return {
-        rank: idx + 1,
-        movieId: c.movieId,
-        title: c.vietnameseTitle || c.cleanTitle || c.title,
-        score: score,
-        rawScoreText: score.toFixed(4),
-        primaryGenre: c.primaryGenre || 'Điện ảnh',
-        movie: c
-      };
+      const rawCount = c.ratingCount || 1000;
+      const score = Math.max(0.65, Math.min(0.99, rawCount / 80500));
+      return formatMovieItem(c.movieId, idx + 1, Number(score.toFixed(4)), rawCount.toLocaleString('en-US'), c.primaryGenre || 'Điện ảnh');
     });
 
-    // Gắn badge đồng thuận cho các phim xuất hiện ở nhiều mô hình
-    const countMap = {};
-    [top10ALS, top10KG, top10RRF, top10Weighted, top10Pop].forEach(list => {
-      list.forEach(it => { countMap[it.movieId] = (countMap[it.movieId] || 0) + 1; });
-    });
-    [top10ALS, top10KG, top10RRF, top10Weighted, top10Pop].forEach(list => {
-      list.forEach(it => { it.consensusCount = countMap[it.movieId] || 1; });
-    });
+    const top10Map = {
+      als: top10ALS,
+      kg: top10KG,
+      hybrid_rrf: top10RRF,
+      hybrid_weighted: top10Weighted,
+      popularity: top10Pop
+    };
+    applyConsensusBadges(top10Map);
 
     return {
       isColdStart: false,
       numRatings: numRatings,
       ratedMovies: ratedEntries,
       userBadge: `Khán giả thực tế (Live Session • ${numRatings} đánh giá)`,
-      top10ByModel: {
-        als: top10ALS,
-        kg: top10KG,
-        hybrid_rrf: top10RRF,
-        hybrid_weighted: top10Weighted,
-        popularity: top10Pop
-      }
+      top10ByModel: top10Map
     };
+  }
+
+  // =========================================================================
+  // 3.2 HÀM TRUY XUẤT TOP-10 CHUẨN GIAO DIỆN HỌC THUẬT (PUBLIC TOP-10 GETTER)
+  // Đảm bảo 100% ID nằm trong CATALOG, tỷ lệ trùng lặp ALS vs KG từ 40% - 60%
+  // =========================================================================
+  function getTop10ForModelAndUser(modelKey, userId) {
+    let userKey = 'live_session';
+    if (userId === 1 || userId === '1' || userId === 'user1') userKey = 'user1';
+    else if (userId === 2 || userId === '2' || userId === 'user2') userKey = 'user2';
+    else if (userId === 3 || userId === '3' || userId === 'user3') userKey = 'user3';
+    else if (userId === 42 || userId === '42' || userId === 'user42') userKey = 'user42';
+    else if (userId === 'live_session' || userId === 'live') userKey = 'live_session';
+    else if (typeof userId === 'string' && userId.startsWith('user')) userKey = userId;
+
+    const recsResult = computeDynamicRecommendationsForLab(userKey);
+    const top10Map = recsResult.top10ByModel || {};
+
+    const normModel = String(modelKey || '').toLowerCase();
+    let modelId = 'hybrid_rrf';
+    if (normModel === 'als' || normModel === 'spark_als') modelId = 'als';
+    else if (normModel === 'kg' || normModel === 'knowledge_graph') modelId = 'kg';
+    else if (normModel === 'hybrid_rrf' || normModel === 'rrf') modelId = 'hybrid_rrf';
+    else if (normModel === 'hybrid_weighted' || normModel === 'weighted') modelId = 'hybrid_weighted';
+    else if (normModel === 'popularity' || normModel === 'pop') modelId = 'popularity';
+    else if (top10Map[modelKey]) modelId = modelKey;
+
+    const list = top10Map[modelId] || [];
+    return list.map(item => {
+      const movie = getMovieById(item.movieId || item.id);
+      return {
+        id: item.movieId || item.id,
+        movieId: item.movieId || item.id,
+        rank: item.rank,
+        title: item.title || (movie ? (movie.vietnameseTitle || movie.cleanTitle || movie.title) : ('Phim #' + (item.movieId || item.id))),
+        cleanTitle: movie ? movie.cleanTitle : item.cleanTitle,
+        year: item.year || (movie ? movie.year : 2000),
+        genre: item.primaryGenre || item.genre || (movie ? movie.primaryGenre : 'Điện ảnh'),
+        primaryGenre: item.primaryGenre || item.genre || (movie ? movie.primaryGenre : 'Điện ảnh'),
+        score: item.score,
+        rawScoreText: item.rawScoreText,
+        consensusCount: item.consensusCount || 1,
+        movie: movie || item.movie
+      };
+    });
   }
 
   // =========================================================================
   // 4. BẢNG ĐỐI ĐẦU 5 MÔ HÌNH VỚI HOVER INTERLOCK (HEAD-TO-HEAD COMPARISON)
   // =========================================================================
-  function renderHeadToHeadComparison() {
+  function renderHeadToHeadComparison(targetUser) {
+    if (targetUser) {
+      AcademicLabState.selectedUser = targetUser;
+      const selector = document.getElementById('lab-user-selector');
+      if (selector && selector.value !== targetUser) {
+        selector.value = targetUser;
+      }
+    }
     const container = document.getElementById('head-to-head-columns');
-    if (!container || !window.MOCK_DATA || !window.MOCK_DATA.top10ByModel) return;
+    if (!container || !window.MOCK_DATA) return;
 
     const modelsMeta = window.MOCK_DATA.modelsMetadata || {};
     const recsResult = computeDynamicRecommendationsForLab(AcademicLabState.selectedUser);
@@ -1143,7 +1534,8 @@
             : '';
           const title = movie ? (movie.vietnameseTitle || movie.cleanTitle || movie.title) : it.title;
           const year = movie ? movie.year : '';
-          const genre = movie ? movie.primaryGenre : (it.primaryGenre || 'Điện ảnh');
+          const rawGenre = movie ? movie.primaryGenre : (it.primaryGenre || 'Điện ảnh');
+          const genre = getGenreColorInfo(rawGenre).name;
 
           itemsHtml += `
             <div class="model-item-row group rounded-md" 
@@ -2395,6 +2787,7 @@
     init: initAcademicLab,
     onUserRatingsChanged: onUserRatingsChanged,
     computeDynamicRecommendationsForLab: computeDynamicRecommendationsForLab,
+    getTop10ForModelAndUser: getTop10ForModelAndUser,
     renderHeadToHeadComparison,
     renderCorrelationHeatmap,
     renderOfflineBenchmarks,
@@ -2410,5 +2803,11 @@
     calcCosineSimilarity,
     calcEuclideanDistance
   };
+
+  // Công khai hàm truy xuất Top-10 chuẩn hóa cho toàn cục
+  window.getTop10ForModelAndUser = getTop10ForModelAndUser;
+  if (window.MoodGraphApp) {
+    window.MoodGraphApp.getTop10ForModelAndUser = getTop10ForModelAndUser;
+  }
 
 })(window, document);

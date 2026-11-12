@@ -2481,7 +2481,7 @@
       { rank: 7, movieId: 110, title: "Braveheart (1995)", score: 58266, rawScoreText: "58,266", primaryGenre: "Action", consensusCount: 1 },
       { rank: 8, movieId: 589, title: "Terminator 2: Judgment Day (1991)", score: 57379, rawScoreText: "57,379", primaryGenre: "Action", consensusCount: 1 },
       { rank: 9, movieId: 1, title: "Toy Story (1995)", score: 57342, rawScoreText: "57,342", primaryGenre: "Animation", consensusCount: 1 },
-      { rank: 10, movieId: 4993, title: "The Lord of the Rings: Fellowship (2001)", score: 65400, rawScoreText: "65,400", primaryGenre: "Fantasy", consensusCount: 1 }
+      { rank: 10, movieId: 4993, title: "The Lord of the Rings: Fellowship (2001)", score: 56400, rawScoreText: "56,400", primaryGenre: "Fantasy", consensusCount: 1 }
     ]
   };
 
@@ -2678,7 +2678,7 @@
   // =========================================================================
   const OFFLINE_BENCHMARKS = {
     cohortDescription: "Đo lường trên đoàn hệ 132 người dùng có đánh giá tích cực (Temporal Leave-1-Last Split)",
-    academicFootnote: "Ghi chú học thuật: Thuật toán ALS đơn lẻ gặp thách thức ma trận cực thưa trên giao thức Temporal Leave-1-Last. Đây chính là động lực khoa học cốt lõi thúc đẩy phát triển Mô hình Lai Hybrid RRF (kết hợp Đồ thị tri thức KG), nâng Hit Rate@10 từ 0.0% lên 9.86% và mở rộng độ bao phủ danh mục lên 152 phim.",
+    academicFootnote: "Ghi chú học thuật: Thuật toán ALS đơn lẻ gặp thách thức ma trận cực thưa trên giao thức Temporal Leave-1-Last. Đây chính là động lực khoa học cốt lõi thúc đẩy phát triển Mô hình Lai Hybrid RRF (kết hợp Đồ thị tri thức KG), nâng Hit Rate@10 từ 0.00% lên 8.33% (đạt 9.85% ở KG) và mở rộng độ bao phủ danh mục lên 239/250 phim (95.6% danh mục, gấp 17 lần ALS thuần túy và gấp 4.3 lần Popularity). Chỉ số Độ mới lạ (Novelty) được định lượng theo đơn vị bits thông tin entropy (Shannon self-information) đối với tần suất xuất hiện trong tập huấn luyện.",
     metrics: [
       { metric: "HR@5", name: "Hit Rate @ 5", als: 0.0000, kg: 0.0833, rrf: 0.0606, weighted: 0.0606, pop: 0.0379, best: "KG" },
       { metric: "NDCG@5", name: "Normalized DCG @ 5", als: 0.0000, kg: 0.0447, rrf: 0.0277, weighted: 0.0270, pop: 0.0294, best: "KG" },

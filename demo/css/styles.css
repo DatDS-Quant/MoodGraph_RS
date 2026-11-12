@@ -61,10 +61,11 @@
   --text-muted: #64748B;          /* Xám mờ cho ghi chú phụ */
   --text-amber: #FBBF24;          /* Chữ nhấn màu hổ phách */
 
-  /* Typography Fonts */
-  --font-serif: 'Newsreader', 'Source Serif 4', Georgia, 'Times New Roman', serif;
-  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', SFMono-Regular, Consolas, monospace;
+  /* Typography Fonts - ĐỒNG NHẤT 1 PHÔNG TRÒN GỌN DỊU MẮT, 100% KHÔNG LỖI FONT */
+  --font-main: 'Nunito', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: var(--font-main);
+  --font-sans: var(--font-main);
+  --font-mono: var(--font-main);
 
   /* Restrained Radii & Shadows */
   --radius-sm: 6px;
@@ -977,4 +978,12 @@ h3 { font-size: 1.25rem; }
 .btn-emerald:hover {
   background-color: rgba(16, 185, 129, 0.25);
   border-color: var(--emerald-success);
+}
+
+/* ==========================================================================
+   QUY CHUẨN ĐỒNG NHẤT TOÀN DIỆN: 1 PHÔNG CHỮ TRÒN DỊU MẮT, KHÔNG LỖI DẤU
+   ========================================================================== */
+html, body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, span, div, a, 
+.brand-badge, .font-serif, .font-editorial, .font-mono, .tabular-nums, .metric-number {
+  font-family: 'Nunito', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }
