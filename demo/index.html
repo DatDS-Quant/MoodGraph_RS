@@ -57,8 +57,8 @@
   <!-- =========================================================================
        1. UNIVERSAL HEADER & NAVIGATION BAR (Cinematic Obsidian Glass)
        ========================================================================= -->
-  <header class="sticky top-0 z-50 h-16 bg-[#070A0F]/90 backdrop-blur-xl border-b border-white/[0.08] px-4 lg:px-6 transition-all duration-200">
-    <div class="max-w-7xl mx-auto h-full flex items-center justify-between gap-4">
+  <header class="sticky top-0 z-50 h-16 bg-[#070A0F]/90 backdrop-blur-xl border-b border-white/[0.08] px-3 sm:px-4 lg:px-6 transition-all duration-200">
+    <div class="max-w-7xl 2xl:max-w-[1680px] w-full mx-auto h-full flex items-center justify-between gap-2 sm:gap-4">
       
       <!-- Logo MoodGraph (Bên trái) -->
       <div class="flex items-center gap-3 cursor-pointer shrink-0 select-none" onclick="MoodGraphApp.switchMode('modeA')">
@@ -152,8 +152,10 @@
                   onchange="MoodGraphApp.switchPersona(this.value)" 
                   class="bg-transparent text-xs font-medium text-slate-200 hover:text-white focus:outline-none cursor-pointer pr-4 appearance-none">
             <option value="user1" class="bg-[#070A0F] text-white">Alex Turner</option>
-            <option value="user2" class="bg-[#070A0F] text-white">Sarah Jenkins</option>
-            <option value="user_cold" class="bg-[#070A0F] text-white">Khán giả mới</option>
+            <option value="user2" class="bg-[#070A0F] text-white">Elena Rostova</option>
+            <option value="user3" class="bg-[#070A0F] text-white">Marcus Vance</option>
+            <option value="user42" class="bg-[#070A0F] text-white">Khán giả 42 (Cold-Start)</option>
+            <option value="live_session" class="bg-[#070A0F] text-white">Tài khoản của bạn</option>
           </select>
           
           <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-white pointer-events-none transition-colors -ml-2 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

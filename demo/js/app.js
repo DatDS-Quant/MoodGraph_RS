@@ -291,19 +291,10 @@
       // Khởi động các thành phần Trang 2 nếu có sẵn
       if (window.AcademicLab && typeof window.AcademicLab.init === 'function') {
         // Tự động đồng bộ Persona từ Trang 1 sang Trang 2
-        const numRatings = Object.keys(MoodGraphState.userRatings || {}).length;
-        if (MoodGraphState.activePersonaId === 'user_cold' || numRatings > 0) {
-          if (typeof window.MoodGraphApp.changeLabUser === 'function') {
-            window.MoodGraphApp.changeLabUser('live_session', true);
-          }
-        } else if (MoodGraphState.activePersonaId === 'user2') {
-          if (typeof window.MoodGraphApp.changeLabUser === 'function') {
-            window.MoodGraphApp.changeLabUser('user2', true);
-          }
-        } else {
-          if (typeof window.MoodGraphApp.changeLabUser === 'function') {
-            window.MoodGraphApp.changeLabUser('user1', true);
-          }
+        let currentPid = MoodGraphState.activePersonaId || 'user1';
+        if (currentPid === 'user_cold') currentPid = 'user42';
+        if (typeof window.MoodGraphApp.changeLabUser === 'function') {
+          window.MoodGraphApp.changeLabUser(currentPid, true);
         }
         window.AcademicLab.init();
       } else {
@@ -1683,14 +1674,19 @@
   // 14. HỘP THOẠI HỒ SƠ NGƯỜI DÙNG & BỘ CHUYỂN ĐỔI PERSONA (Item 4)
   // =========================================================================
 
-  function switchPersona(personaId) {
+  function switchPersona(rawPersonaId, silent) {
     if (!window.MOCK_DATA || !window.MOCK_DATA.presetPersonas) return;
-    const persona = window.MOCK_DATA.presetPersonas[personaId];
+    
+    // Chuẩn hóa alias
+    let personaId = rawPersonaId;
+    if (personaId === 'user_cold') personaId = 'user42';
+
+    const persona = window.MOCK_DATA.presetPersonas[personaId] || window.MOCK_DATA.presetPersonas[rawPersonaId];
     if (!persona) return;
 
     MoodGraphState.activePersonaId = personaId;
     MoodGraphState.currentUser = JSON.parse(JSON.stringify(persona));
-    MoodGraphState.isColdStart = (personaId === 'user_cold');
+    MoodGraphState.isColdStart = (personaId === 'user42' || personaId === 'user_cold');
     MoodGraphState.boostedGenres = [];
 
     // Cập nhật cấu hình slider theo Persona
@@ -1699,35 +1695,41 @@
     }
 
     // Cập nhật tập đánh giá theo Persona
-    MoodGraphState.userRatings = Object.assign({}, persona.initialRatings || {});
-    saveStorageJson("moodgraph_user_ratings", MoodGraphState.userRatings);
+    if (personaId === 'live_session') {
+      MoodGraphState.userRatings = loadStorageJson("moodgraph_user_ratings", {}) || {};
+    } else {
+      MoodGraphState.userRatings = Object.assign({}, persona.initialRatings || {});
+    }
 
     // Đồng bộ Slider và Chú giải
     syncSliderInputs();
 
     // Đồng bộ giá trị trên Header Selector
     const headerSel = document.getElementById('header-persona-selector');
-    if (headerSel) headerSel.value = personaId;
+    if (headerSel && headerSel.value !== personaId) {
+      headerSel.value = personaId;
+    }
 
     const avatarSpan = document.getElementById('header-user-avatar');
     if (avatarSpan) avatarSpan.textContent = persona.avatarLetter || persona.name.charAt(0);
 
-    // Đồng bộ trạng thái 3 nút trên thanh Persona Bar Trang 1
+    // Đồng bộ trạng thái các nút trên thanh Persona Bar Trang 1
     const personaMap = {
       user1: 'btn-persona-user1',
       user2: 'btn-persona-user2',
+      user42: 'btn-persona-user-cold',
       user_cold: 'btn-persona-user-cold'
     };
     Object.keys(personaMap).forEach(pid => {
       const btn = document.getElementById(personaMap[pid]);
       if (btn) {
-        if (pid === personaId) {
+        if (pid === personaId || (pid === 'user_cold' && personaId === 'user42')) {
           btn.className = "persona-btn active px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#D97706] text-white border border-[#F59E0B] transition-all shadow-md";
           const numSpan = btn.querySelector('span');
           if (numSpan) numSpan.className = "w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-[11px] font-bold";
         } else {
-          const borderColor = pid === 'user_cold' ? 'hover:border-[#10B981]' : 'hover:border-[#F59E0B]';
-          const iconColor = pid === 'user_cold' ? 'text-[#10B981]' : 'text-[#F59E0B]';
+          const borderColor = (pid === 'user_cold' || pid === 'user42') ? 'hover:border-[#10B981]' : 'hover:border-[#F59E0B]';
+          const iconColor = (pid === 'user_cold' || pid === 'user42') ? 'text-[#10B981]' : 'text-[#F59E0B]';
           btn.className = `persona-btn px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#0B0F14] text-[#94A3B8] hover:text-white border border-[rgba(255,255,255,0.08)] ${borderColor} transition-all`;
           const numSpan = btn.querySelector('span');
           if (numSpan) numSpan.className = `w-6 h-6 rounded-full bg-[#1B2230] flex items-center justify-center text-[11px] font-bold ${iconColor}`;
@@ -1735,14 +1737,24 @@
       }
     });
 
-    // Tái tính toán và kết xuất đề xuất
+    // Tái tính toán và kết xuất đề xuất Mode A
     updateDynamicRecommendations();
 
-    showToast(
-      "Đã Chuyển Hồ Sơ Khán Giả",
-      `Đang trải nghiệm theo góc nhìn của ${persona.name} (${persona.roleDescription}).`,
-      'info'
-    );
+    // Đồng bộ sang Mode B (Phòng Thí Nghiệm Học Thuật)
+    if (window.MoodGraphApp && typeof window.MoodGraphApp.changeLabUser === 'function') {
+      const labState = window.AcademicLab && window.AcademicLab.state;
+      if (labState && labState.selectedUser !== personaId) {
+        window.MoodGraphApp.changeLabUser(personaId, true);
+      }
+    }
+
+    if (!silent) {
+      showToast(
+        "Đã Chuyển Hồ Sơ Khán Giả",
+        `Đang trải nghiệm theo góc nhìn của ${persona.name} (${persona.roleDescription}).`,
+        'info'
+      );
+    }
   }
 
   function openUserProfileModal() {
