@@ -82,6 +82,10 @@
       6016: 5.0
     }),
 
+    // Lưu trữ ratings của phiên tương tác trực tiếp Live Session tách biệt
+    liveSessionRatings: loadStorageJson("moodgraph_live_user_ratings", {}),
+    hasUserRatedInLiveSession: false,
+
     // Trạng thái cho Mode B (Phòng Thí Nghiệm)
     selectedLabUser: "user1",
     consensusFilter: "all", // "all" | "overlap" | "unique"
@@ -94,6 +98,74 @@
 
   // Công khai trạng thái toàn cục để kiểm thử và liên kết
   window.MoodGraphState = MoodGraphState;
+
+  // Đảm bảo đầy đủ 5 Persona trong presetPersonas: user1, user2, user3, user42/user_cold, live_session
+  function ensurePresetPersonas() {
+    if (!window.MOCK_DATA) return;
+    if (!window.MOCK_DATA.presetPersonas) {
+      window.MOCK_DATA.presetPersonas = {};
+    }
+    const pp = window.MOCK_DATA.presetPersonas;
+
+    // Bổ sung Khán giả 3 (Marcus Vance - Phim Đen Tội Phạm Cổ Điển)
+    if (!pp.user3) {
+      pp.user3 = {
+        id: "user3",
+        userId: 3,
+        name: "Marcus Vance",
+        displayName: "Marcus Vance (Crime & Film-Noir)",
+        roleDescription: "Phim Đen & Tội Phạm Cổ Điển",
+        avatarLetter: "M",
+        avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+        bio: "Khán giả đam mê dòng phim tội phạm kinh điển, Neo-Noir, các cuộc điều tra tâm lý gai góc và những kiệt tác gangster thế kỷ 20.",
+        ratingsCount: 89,
+        meanRating: 4.10,
+        activityLevel: "high",
+        isInAlsTrain: true,
+        defaultSliders: { depth: 0.85, pacing: 0.45, auteur: 0.80, tone: 0.30 },
+        initialRatings: { 858: 5.0, 50: 5.0, 296: 4.5, 1213: 5.0, 111: 4.5, 6016: 5.0 },
+        genreDistribution: {
+          "Crime": 48, "Drama": 42, "Film-Noir": 30, "Mystery": 25, "Thriller": 22
+        },
+        topFavoriteGenres: ["Crime", "Drama", "Film-Noir", "Mystery", "Thriller"],
+        recentRatedMovies: [
+          { movieId: 858, title: "The Godfather (1972)", genres: ["Crime", "Drama"], userRating: 5.0, rating: 5.0, timestamp: 1250000000 },
+          { movieId: 50, title: "The Usual Suspects (1995)", genres: ["Crime", "Mystery", "Thriller"], userRating: 5.0, rating: 5.0, timestamp: 1250100000 },
+          { movieId: 1213, title: "Goodfellas (1990)", genres: ["Biography", "Crime", "Drama"], userRating: 5.0, rating: 5.0, timestamp: 1250200000 }
+        ]
+      };
+    }
+
+    // Bổ sung bí danh user42 cho Khán giả Mới
+    if (!pp.user42 && pp.user_cold) {
+      pp.user42 = Object.assign({}, pp.user_cold, { id: "user42", userId: 42 });
+    }
+
+    // Bổ sung Tài Khoản Trực Tiếp (Live Session)
+    if (!pp.live_session) {
+      const liveCount = Object.keys(MoodGraphState.liveSessionRatings || {}).length;
+      pp.live_session = {
+        id: "live_session",
+        userId: 9999,
+        name: "Tài Khoản Trực Tiếp",
+        displayName: "Tài Khoản Trực Tiếp (Live Session)",
+        roleDescription: `Phiên Tương Tác Trực Tiếp • ${liveCount} đánh giá`,
+        avatarLetter: "L",
+        avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
+        bio: "Phiên làm việc trực tiếp của người dùng. Hệ thống tự động thu thập và suy luận gợi ý theo thời gian thực khép kín.",
+        ratingsCount: liveCount,
+        meanRating: 0.0,
+        activityLevel: "live",
+        isInAlsTrain: false,
+        defaultSliders: { depth: 0.75, pacing: 0.60, auteur: 0.85, tone: 0.50 },
+        initialRatings: {},
+        genreDistribution: {},
+        topFavoriteGenres: [],
+        recentRatedMovies: []
+      };
+    }
+  }
+  ensurePresetPersonas();
 
   // Bảng nhãn cảm xúc điện ảnh chuẩn mực cho thang điểm 1-5 sao
   const RATING_LABELS = {
@@ -275,6 +347,13 @@
       if (containerModeB) {
         containerModeB.classList.add('hidden');
       }
+
+      // Đồng bộ giá trị hiển thị trên Header Selector
+      const headerSel = document.getElementById('header-persona-selector');
+      if (headerSel && MoodGraphState.activePersonaId) {
+        headerSel.value = (MoodGraphState.activePersonaId === 'user42') ? 'user_cold' : MoodGraphState.activePersonaId;
+      }
+
       // Đảm bảo dữ liệu Trang 1 luôn tươi mới
       updateDynamicRecommendations();
     } else {
@@ -290,11 +369,31 @@
 
       // Khởi động các thành phần Trang 2 nếu có sẵn
       if (window.AcademicLab && typeof window.AcademicLab.init === 'function') {
-        // Tự động đồng bộ Persona từ Trang 1 sang Trang 2
-        let currentPid = MoodGraphState.activePersonaId || 'user1';
-        if (currentPid === 'user_cold') currentPid = 'user42';
+        // Tự động đồng bộ Persona từ Trang 1 sang Trang 2 chuẩn xác
+        let targetLabUser = 'user1';
+        if (MoodGraphState.activePersonaId === 'user2') {
+          targetLabUser = 'user2';
+        } else if (MoodGraphState.activePersonaId === 'user3') {
+          targetLabUser = 'user3';
+        } else if (MoodGraphState.activePersonaId === 'live_session') {
+          targetLabUser = 'live_session';
+        } else if (MoodGraphState.activePersonaId === 'user_cold' || MoodGraphState.activePersonaId === 'user42') {
+          // Chỉ chuyển sang live_session khi người dùng thực sự có đánh giá trực tiếp trong phiên
+          const liveRatingsCount = Object.keys(MoodGraphState.liveSessionRatings || {}).length;
+          const userRatingsCount = Object.keys(MoodGraphState.userRatings || {}).length;
+          if (MoodGraphState.hasUserRatedInLiveSession || liveRatingsCount > 0 || userRatingsCount > 0) {
+            targetLabUser = 'live_session';
+          } else {
+            targetLabUser = 'user42';
+          }
+        } else {
+          targetLabUser = MoodGraphState.activePersonaId || 'user1';
+        }
+
         if (typeof window.MoodGraphApp.changeLabUser === 'function') {
-          window.MoodGraphApp.changeLabUser(currentPid, true);
+          window.MoodGraphApp.changeLabUser(targetLabUser, true);
+        } else if (typeof changeLabUser === 'function') {
+          changeLabUser(targetLabUser, true);
         }
         window.AcademicLab.init();
       } else {
@@ -1112,16 +1211,42 @@
   function submitRating(movieId, score) {
     const mid = Number(movieId);
     const scoreNum = Number(score);
+
+    // 1. Cập nhật vào userRatings hiện hành
     MoodGraphState.userRatings[mid] = scoreNum;
     saveStorageJson("moodgraph_user_ratings", MoodGraphState.userRatings);
 
-    // Đồng bộ nhãn dropdown Live Session trên Trang 2
+    // 2. Bảo toàn độc lập vào liveSessionRatings của Live Session
+    if (!MoodGraphState.liveSessionRatings) {
+      MoodGraphState.liveSessionRatings = {};
+    }
+    MoodGraphState.liveSessionRatings[mid] = scoreNum;
+    MoodGraphState.hasUserRatedInLiveSession = true;
+    saveStorageJson("moodgraph_live_user_ratings", MoodGraphState.liveSessionRatings);
+
+    // Nếu đang ở Persona Khán giả Mới, người dùng đã có tương tác nên không còn là cold-start
+    if (MoodGraphState.activePersonaId === 'user_cold' || MoodGraphState.activePersonaId === 'user42') {
+      MoodGraphState.isColdStart = false;
+    }
+
+    // 3. Đồng bộ nhãn dropdown Live Session trên Mode B và phụ đề nút Persona
     try {
       const optLive = document.getElementById('opt-lab-live');
-      const numRatings = Object.keys(MoodGraphState.userRatings).length;
+      const liveCount = Object.keys(MoodGraphState.liveSessionRatings).length;
       if (optLive) {
-        optLive.textContent = `🎬 Tài khoản của bạn (Live Session • ${numRatings} đánh giá)`;
+        optLive.textContent = `🎬 Tài khoản của bạn (Live Session • ${liveCount} đánh giá)`;
       }
+      const liveSub = document.getElementById('btn-live-session-subtitle');
+      if (liveSub) {
+        liveSub.textContent = `${liveCount} đánh giá`;
+      }
+
+      // Cập nhật persona live_session trong presetPersonas nếu có
+      if (window.MOCK_DATA && window.MOCK_DATA.presetPersonas && window.MOCK_DATA.presetPersonas.live_session) {
+        window.MOCK_DATA.presetPersonas.live_session.ratingsCount = liveCount;
+        window.MOCK_DATA.presetPersonas.live_session.roleDescription = `Phiên Tương Tác Trực Tiếp • ${liveCount} đánh giá`;
+      }
+
       // Nếu AcademicLab đang mở ở chế độ live_session, tự động cập nhật lại bảng đối đầu
       if (window.AcademicLab && typeof window.AcademicLab.onUserRatingsChanged === 'function') {
         window.AcademicLab.onUserRatingsChanged();
@@ -1674,19 +1799,19 @@
   // 14. HỘP THOẠI HỒ SƠ NGƯỜI DÙNG & BỘ CHUYỂN ĐỔI PERSONA (Item 4)
   // =========================================================================
 
-  function switchPersona(rawPersonaId, silent) {
-    if (!window.MOCK_DATA || !window.MOCK_DATA.presetPersonas) return;
-    
-    // Chuẩn hóa alias
-    let personaId = rawPersonaId;
-    if (personaId === 'user_cold') personaId = 'user42';
+  function switchPersona(personaId, silent) {
+    let pid = personaId;
+    if (pid === 'user42') pid = 'user_cold';
 
-    const persona = window.MOCK_DATA.presetPersonas[personaId] || window.MOCK_DATA.presetPersonas[rawPersonaId];
+    ensurePresetPersonas();
+
+    if (!window.MOCK_DATA || !window.MOCK_DATA.presetPersonas) return;
+    const persona = window.MOCK_DATA.presetPersonas[pid] || window.MOCK_DATA.presetPersonas[personaId];
     if (!persona) return;
 
-    MoodGraphState.activePersonaId = personaId;
+    MoodGraphState.activePersonaId = pid;
     MoodGraphState.currentUser = JSON.parse(JSON.stringify(persona));
-    MoodGraphState.isColdStart = (personaId === 'user42' || personaId === 'user_cold');
+    MoodGraphState.isColdStart = (pid === 'user_cold' || pid === 'user42');
     MoodGraphState.boostedGenres = [];
 
     // Cập nhật cấu hình slider theo Persona
@@ -1694,42 +1819,55 @@
       MoodGraphState.sliders = Object.assign({}, persona.defaultSliders);
     }
 
-    // Cập nhật tập đánh giá theo Persona
-    if (personaId === 'live_session') {
-      MoodGraphState.userRatings = loadStorageJson("moodgraph_user_ratings", {}) || {};
+    // Bảo toàn tách biệt dữ liệu đánh giá:
+    // Nếu chọn live_session: nạp lại tập đánh giá trực tiếp của Live Session
+    // Nếu chọn user_cold / user42: rỗng {} (cold-start)
+    // Nếu chọn user1, user2, user3: nạp initialRatings mẫu của persona đó
+    if (pid === 'live_session') {
+      MoodGraphState.userRatings = Object.assign({}, MoodGraphState.liveSessionRatings || {});
+      MoodGraphState.isColdStart = Object.keys(MoodGraphState.userRatings).length === 0;
+    } else if (pid === 'user_cold' || pid === 'user42') {
+      MoodGraphState.userRatings = {};
+      MoodGraphState.isColdStart = true;
     } else {
       MoodGraphState.userRatings = Object.assign({}, persona.initialRatings || {});
+      MoodGraphState.isColdStart = false;
     }
+    saveStorageJson("moodgraph_user_ratings", MoodGraphState.userRatings);
 
     // Đồng bộ Slider và Chú giải
     syncSliderInputs();
 
     // Đồng bộ giá trị trên Header Selector
     const headerSel = document.getElementById('header-persona-selector');
-    if (headerSel && headerSel.value !== personaId) {
+    if (headerSel) {
       headerSel.value = personaId;
+      if (headerSel.value !== personaId) {
+        headerSel.value = (pid === 'user42') ? 'user_cold' : pid;
+      }
     }
 
     const avatarSpan = document.getElementById('header-user-avatar');
     if (avatarSpan) avatarSpan.textContent = persona.avatarLetter || persona.name.charAt(0);
 
-    // Đồng bộ trạng thái các nút trên thanh Persona Bar Trang 1
+    // Đồng bộ trạng thái 5 nút trên thanh Persona Bar Trang 1
     const personaMap = {
       user1: 'btn-persona-user1',
       user2: 'btn-persona-user2',
-      user42: 'btn-persona-user-cold',
-      user_cold: 'btn-persona-user-cold'
+      user3: 'btn-persona-user3',
+      user_cold: 'btn-persona-user-cold',
+      live_session: 'btn-persona-live'
     };
-    Object.keys(personaMap).forEach(pid => {
-      const btn = document.getElementById(personaMap[pid]);
+    Object.keys(personaMap).forEach(key => {
+      const btn = document.getElementById(personaMap[key]);
       if (btn) {
-        if (pid === personaId || (pid === 'user_cold' && personaId === 'user42')) {
+        if (key === pid || (key === 'user_cold' && pid === 'user42')) {
           btn.className = "persona-btn active px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#D97706] text-white border border-[#F59E0B] transition-all shadow-md";
           const numSpan = btn.querySelector('span');
           if (numSpan) numSpan.className = "w-6 h-6 rounded-full bg-black/30 flex items-center justify-center text-[11px] font-bold";
         } else {
-          const borderColor = (pid === 'user_cold' || pid === 'user42') ? 'hover:border-[#10B981]' : 'hover:border-[#F59E0B]';
-          const iconColor = (pid === 'user_cold' || pid === 'user42') ? 'text-[#10B981]' : 'text-[#F59E0B]';
+          const borderColor = key === 'user_cold' ? 'hover:border-[#10B981]' : (key === 'live_session' ? 'hover:border-[#38BDF8]' : 'hover:border-[#F59E0B]');
+          const iconColor = key === 'user_cold' ? 'text-[#10B981]' : (key === 'live_session' ? 'text-[#38BDF8]' : 'text-[#F59E0B]');
           btn.className = `persona-btn px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#0B0F14] text-[#94A3B8] hover:text-white border border-[rgba(255,255,255,0.08)] ${borderColor} transition-all`;
           const numSpan = btn.querySelector('span');
           if (numSpan) numSpan.className = `w-6 h-6 rounded-full bg-[#1B2230] flex items-center justify-center text-[11px] font-bold ${iconColor}`;
@@ -1737,7 +1875,26 @@
       }
     });
 
-    // Tái tính toán và kết xuất đề xuất Mode A
+    // Đồng bộ sang Mode B nếu có
+    const mapToLab = {
+      user1: 'user1',
+      user2: 'user2',
+      user3: 'user3',
+      user_cold: 'user42',
+      user42: 'user42',
+      live_session: 'live_session'
+    };
+    const targetLabUser = mapToLab[pid] || 'user1';
+    MoodGraphState.selectedLabUser = targetLabUser;
+    const labSel = document.getElementById('lab-user-selector');
+    if (labSel && labSel.value !== targetLabUser) {
+      labSel.value = targetLabUser;
+    }
+    if (window.AcademicLab && window.AcademicLab.state) {
+      window.AcademicLab.state.selectedUser = targetLabUser;
+    }
+
+    // Tái tính toán và kết xuất đề xuất
     updateDynamicRecommendations();
 
     // Đồng bộ sang Mode B (Phòng Thí Nghiệm Học Thuật)
@@ -2043,10 +2200,69 @@
     if (banner) banner.classList.add('hidden');
   }
 
-  function changeLabUser(userKey) {
+  function changeLabUser(userKey, silent) {
     MoodGraphState.selectedLabUser = userKey;
-    renderHeadToHeadComparison();
-    showToast("Đã Chuyển Tập Người Dùng", `Đã nạp đoàn hệ kiểm chuẩn: ${userKey.toUpperCase()}.`, 'info');
+
+    // 1. Đồng bộ sang AcademicLabState nếu tồn tại
+    if (window.AcademicLab && window.AcademicLab.state) {
+      window.AcademicLab.state.selectedUser = userKey;
+    }
+
+    // 2. Đồng bộ dropdown lab-user-selector
+    const selector = document.getElementById('lab-user-selector');
+    if (selector && selector.value !== userKey) {
+      selector.value = userKey;
+    }
+
+    // 3. Đồng bộ ngược lại Mode A (activePersonaId và header selector)
+    const mapToApp = {
+      'user1': 'user1',
+      'user2': 'user2',
+      'user3': 'user3',
+      'user42': 'user_cold',
+      'live_session': 'live_session'
+    };
+    const appPersonaId = mapToApp[userKey] || userKey;
+    MoodGraphState.activePersonaId = appPersonaId;
+    MoodGraphState.isColdStart = (appPersonaId === 'user_cold');
+
+    // Cập nhật header selector
+    const headerSel = document.getElementById('header-persona-selector');
+    if (headerSel && headerSel.value !== appPersonaId) {
+      headerSel.value = appPersonaId;
+    }
+
+    // Cập nhật avatar trên header
+    const avatarSpan = document.getElementById('header-user-avatar');
+    if (avatarSpan && window.MOCK_DATA && window.MOCK_DATA.presetPersonas) {
+      const p = window.MOCK_DATA.presetPersonas[appPersonaId];
+      if (p) {
+        avatarSpan.textContent = p.avatarLetter || p.name.charAt(0);
+      }
+    }
+
+    // Cập nhật nhãn option live nếu có
+    const optLive = document.getElementById('opt-lab-live');
+    const liveCount = (MoodGraphState.liveSessionRatings) ? Object.keys(MoodGraphState.liveSessionRatings).length : 0;
+    if (optLive) {
+      optLive.textContent = `🎬 Tài khoản của bạn (Live Session • ${liveCount} đánh giá)`;
+    }
+
+    // 4. Gọi kết xuất Mode B nếu có
+    if (window.AcademicLab && typeof window.AcademicLab.renderHeadToHeadComparison === 'function') {
+      window.AcademicLab.renderHeadToHeadComparison(userKey);
+    } else {
+      renderHeadToHeadComparison(userKey);
+    }
+
+    // 5. Cập nhật vị trí trọng tâm trong 3D / 2D
+    if (window.AcademicLab && window.AcademicLab.visualizer && typeof window.AcademicLab.visualizer.updateUserCenterForSelectedUser === 'function') {
+      window.AcademicLab.visualizer.updateUserCenterForSelectedUser(userKey);
+    }
+
+    if (!silent) {
+      showToast("Đã Chuyển Tập Người Dùng", `Đã nạp đoàn hệ kiểm chuẩn: ${userKey.toUpperCase()}.`, 'info');
+    }
   }
 
   function setConsensusFilter(filterType) {
@@ -2064,7 +2280,7 @@
     if (filterType === 'overlap' && btnOverlap) btnOverlap.className = 'px-2.5 py-1 rounded font-semibold bg-[#D97706] text-white';
     if (filterType === 'unique' && btnUnique) btnUnique.className = 'px-2.5 py-1 rounded font-semibold bg-[#D97706] text-white';
 
-    renderHeadToHeadComparison();
+    renderHeadToHeadComparison(MoodGraphState.selectedLabUser);
   }
 
   function toggleHeatmapMetric(metricType) {
@@ -2102,11 +2318,24 @@
     }
   }
 
-  function renderHeadToHeadComparison() {
+  function renderHeadToHeadComparison(userId) {
     const container = document.getElementById('head-to-head-columns');
-    if (!container || !window.MOCK_DATA || !window.MOCK_DATA.top10ByModel) return;
+    if (!container) return;
 
-    const top10 = window.MOCK_DATA.top10ByModel;
+    // Xác định userKey: ưu tiên tham số truyền vào
+    const targetUser = userId || MoodGraphState.selectedLabUser || (window.AcademicLab && window.AcademicLab.state && window.AcademicLab.state.selectedUser) || 'live_session';
+    MoodGraphState.selectedLabUser = targetUser;
+
+    // Nếu AcademicLab chuyên sâu đã sẵn sàng, ủy quyền trực tiếp cho academic_lab.js
+    if (window.AcademicLab && typeof window.AcademicLab.renderHeadToHeadComparison === 'function') {
+      if (window.AcademicLab.state) {
+        window.AcademicLab.state.selectedUser = targetUser;
+      }
+      window.AcademicLab.renderHeadToHeadComparison(targetUser);
+      return;
+    }
+
+    // Cơ chế dự phòng khi AcademicLab chưa tải xong: gọi hàm truy xuất Top-10 chuẩn hóa
     const models = [
       { id: 'als', name: 'Spark ALS', color: '#0284C7' },
       { id: 'kg', name: 'Knowledge Graph', color: '#059669' },
@@ -2117,7 +2346,15 @@
 
     let html = '';
     models.forEach(m => {
-      const list = top10[m.id] || [];
+      let list = [];
+      if (typeof window.getTop10ForModelAndUser === 'function') {
+        list = window.getTop10ForModelAndUser(m.id, targetUser);
+      } else if (window.AcademicLab && typeof window.AcademicLab.getTop10ForModelAndUser === 'function') {
+        list = window.AcademicLab.getTop10ForModelAndUser(m.id, targetUser);
+      } else if (window.MOCK_DATA && window.MOCK_DATA.top10ByModel) {
+        list = window.MOCK_DATA.top10ByModel[m.id] || [];
+      }
+
       html += `
         <div class="head-to-head-column">
           <div class="model-column-header" style="border-top: 3px solid ${m.color};">
@@ -2126,15 +2363,15 @@
           </div>
           <div class="divide-y divide-[rgba(255,255,255,0.04)]">
             ${list.map(item => {
-              const movie = getMovieById(item.movieId);
-              const title = movie ? (movie.vietnameseTitle || movie.cleanTitle || movie.title) : `Phim #${item.movieId}`;
+              const movie = getMovieById(item.movieId || item.id);
+              const title = movie ? (movie.vietnameseTitle || movie.cleanTitle || movie.title) : (item.title || `Phim #${item.movieId || item.id}`);
               return `
                 <div class="model-item-row" 
-                     data-interlock-movie-id="${item.movieId}" 
+                     data-interlock-movie-id="${item.movieId || item.id}" 
                      data-model-id="${m.id}"
-                     onmouseenter="MoodGraphApp.setInterlock(${item.movieId})"
+                     onmouseenter="MoodGraphApp.setInterlock(${item.movieId || item.id})"
                      onmouseleave="MoodGraphApp.clearInterlock()"
-                     onclick="MoodGraphApp.openMovieDetailModal(${item.movieId})">
+                     onclick="MoodGraphApp.openMovieDetailModal(${item.movieId || item.id})">
                   <div class="flex items-center gap-2 min-w-0">
                     <span class="movie-rank-badge w-5 h-5 rounded-full bg-[#1B2230] text-[10px] font-mono flex items-center justify-center text-white shrink-0">
                       ${item.rank}
@@ -2142,7 +2379,7 @@
                     <span class="truncate text-xs text-[#E2E8F0]">${title}</span>
                   </div>
                   <span class="text-[10px] font-mono text-[#94A3B8] ml-1 shrink-0">
-                    ${item.score ? item.score.toFixed(3) : ''}
+                    ${item.rawScoreText || (item.score ? (typeof item.score === 'number' ? item.score.toFixed(3) : item.score) : '')}
                   </span>
                 </div>
               `;
@@ -2429,7 +2666,8 @@
   // 19. CÔNG KHAI PUBLIC API CHO GIAO DIỆN & BỘ KIỂM THỬ (PUBLIC API)
   // =========================================================================
 
-  window.MoodGraphApp = {
+  const existingApp = (typeof window !== 'undefined' && window.MoodGraphApp) || {};
+  window.MoodGraphApp = Object.assign(existingApp, {
     // Mode Switcher
     switchMode,
 
@@ -2441,10 +2679,25 @@
     resetSliders,
     selectMood,
     updateSliderSemanticHints: updateAllSliderSemanticHints,
+    updateSlider: function (name, val) {
+      if (MoodGraphState.sliders && MoodGraphState.sliders[name] !== undefined) {
+        MoodGraphState.sliders[name] = Math.max(0.0, Math.min(1.0, Number(val)));
+        syncSliderInputs();
+      }
+    },
 
-    // Genre Filters
+    // Genre Filters & Closed-Loop Boost
     selectGenreFilter,
     resetFilters,
+    toggleGenreBoost: function (genre) {
+      if (!Array.isArray(MoodGraphState.boostedGenres)) MoodGraphState.boostedGenres = [];
+      const idx = MoodGraphState.boostedGenres.indexOf(genre);
+      if (idx >= 0) {
+        MoodGraphState.boostedGenres.splice(idx, 1);
+      } else {
+        MoodGraphState.boostedGenres.push(genre);
+      }
+    },
 
     // Movie Detail Modal & Provenance Explorer
     openMovieDetailModal,
@@ -2482,7 +2735,7 @@
 
     // Toast Engine
     showToast
-  };
+  });
 
   // Khởi tạo alias Module MovieDetailModalComponent để tương thích tối đa với các module ngoài
   window.MovieDetailModalComponent = {
