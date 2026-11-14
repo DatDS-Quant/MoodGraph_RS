@@ -1,11 +1,20 @@
 """
-Thuật toán tính điểm theo đường đi trên Đồ thị tri thức (Path-based Weighted Evidence Scorer).
-Hiện thực tối ưu hóa cao cho các đường suy luận:
-- P1: Genre Metapath
-- P2: Genome Metapath
-- P3: Collaborative Graph Metapath
-Tách biệt giai đoạn tích lũy điểm số (float accumulation) và trích xuất bằng chứng (top-candidate evidence extraction)
-để đạt hiệu năng xử lý < 30ms / user trên quy mô catalog lớn (62,000+ movies) bằng Inverted Index & Neighborhood Pruning.
+Động Cơ Tính Điểm Suy Luận Trên Đồ Thị Tri Thức (Path-based Weighted Evidence Scorer).
+
+Khai phá 3 đường siêu liên kết (Metapaths) từ người dùng đến ứng viên:
+  - P1 (Genre Metapath): User -> Phim đã thích -> Thể loại chung -> Phim ứng viên.
+    Độ tương đồng ngữ nghĩa cấp độ vĩ mô, độ đo Cosine chia căn bậc hai bậc đỉnh.
+  - P2 (Genome Mood Metapath): User -> Phim đã thích -> Thẻ tâm trạng Genome chung -> Phim ứng viên.
+    Độ tương quan cảm xúc vi mô (1,128 chiều), tích lũy relevance và phạt độ bão hòa 1 / log(1 + degree).
+  - P3 (Collaborative Graph Metapath): User -> Phim đã thích -> Khán giả đồng điệu -> Phim ứng viên.
+    Khai phá cộng đồng cùng gu (Co-occurrence Network) qua chỉ số tương đồng Salton Cosine.
+
+Điểm số tổng hợp của đồ thị:
+  Score_KG = α * P1_Genre + β * P2_Genome + γ * P3_Collab (với α = 0.35, β = 0.45, γ = 0.20)
+
+Tối ưu hóa hiệu năng:
+  Tách biệt giai đoạn tích lũy điểm số dạng số thực (Float Accumulation) và trích xuất bằng chứng giải thích
+  (Top Evidence Extraction), giúp duyệt đồ thị 62,000+ phim chỉ mất dưới 30ms trên RAM.
 """
 
 from __future__ import annotations

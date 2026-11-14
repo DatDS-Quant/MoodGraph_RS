@@ -62,14 +62,23 @@ def reciprocal_rank_fusion(
     top_n: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Dung hợp danh sách ứng viên từ ALS và KG theo giải thuật Reciprocal Rank Fusion (RRF).
+    Dung hợp danh sách ứng viên từ ALS và KG theo giải thuật Cormack Reciprocal Rank Fusion (RRF).
 
-    Công thức:
-        RRF_score(m) = sum_{s in {ALS, KG}} (1.0 / (k + rank_s(m))) nếu m in candidates_s else 0.0
+    Ưu điểm vượt trội của RRF trong bài toán gợi ý đa mô hình:
+    1. Bất biến với thang đo (Scale-Invariant):
+       ALS trả về điểm tích vô hướng (Dot-product float), trong khi KG trả về trọng số đường đi đồ thị (Path weight).
+       Hai thang đo này có phân phối hoàn toàn khác nhau. RRF chỉ quan tâm đến THỨ HẠNG (Rank) thay vì điểm thô.
+    2. Hằng số điều hòa Cormack (rrf_k = 60):
+       Theo nghiên cứu chuẩn của Cormack, Clarke & Buettcher (SIGIR 2009), k = 60 triệt tiêu ưu thế áp đảo của
+       các vị trí đầu bảng, đồng thời tạo cơ hội cho các ứng viên xuất hiện đồng thời ở cả 2 nguồn (Source = BOTH)
+       vươn lên dẫn đầu bảng xếp hạng hỗn hợp.
 
-    Tie-breaking:
-        1. RRF score giảm dần
-        2. movieId tăng dần
+    Công thức toán học:
+        RRF_Score(m) = Tổng_(nguồn s ∈ {ALS, KG}) [ 1.0 / (k + Rank_s(m)) ]
+
+    Chiến lược giải quyết hòa điểm (Deterministic Tie-Breaking):
+        Ưu tiên 1: hybrid_score giảm dần (điểm cao hơn xếp trước).
+        Ưu tiên 2: movieId tăng dần (đảm bảo tính tất định, kết quả luôn đồng nhất 100% qua mọi lần chạy).
     """
     if rrf_k <= 0:
         raise ValueError(f"rrf_k must be > 0, got {rrf_k}")

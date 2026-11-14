@@ -1,10 +1,14 @@
 """
-MoodGraph - Recommender System Exploratory Data Analysis (EDA)
-Dataset: MovieLens 25M
-Engine: Apache Spark (PySpark DataFrame / Spark SQL)
+MoodGraph: Phân Tích Khám Phá Dữ Liệu Lớn (Exploratory Data Analysis - EDA)
+Bộ dữ liệu: MovieLens 25M
+Động cơ tính toán: Apache Spark (PySpark DataFrame / Spark SQL) trên dữ liệu phân tán.
 
-This script performs full-scale EDA on the raw MovieLens 25M dataset
-using Spark distributed transformations without pulling large tables into memory.
+Mục tiêu nghiên cứu định lượng:
+  1. Tính toán Lực lượng (Cardinality) và Độ thưa Ma trận (Matrix Sparsity): Chứng minh tính cấp thiết của ALS & KG.
+  2. Kiểm tra trùng lặp bản ghi (Duplicate Check): Đảm bảo mỗi cặp (userId, movieId) là duy nhất.
+  3. Phân phối điểm số (Rating Distribution): Thống kê Mean, Std, Median, Skewness trên 25M tương tác.
+  4. Hiện tượng Đuôi Dài (Long-Tail Power-Law) & Hệ số Bất bình đẳng Gini: Phân tích phim phổ biến vs phim hiếm.
+  5. Đánh giá mật độ liên kết Genome: Kiểm tra độ phủ của 1,128 chiều tâm trạng cảm xúc trên danh mục phim.
 """
 
 import os

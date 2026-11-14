@@ -43,7 +43,18 @@ from pyspark.sql.types import DoubleType, FloatType, IntegerType, LongType, Stru
 @dataclass
 class ALSConfig:
     """
-    Cấu hình siêu tham số và thiết lập thực thi cho thuật toán Spark ALS.
+    Cấu hình siêu tham số và thiết lập thực thi cho thuật toán Spark ALS (Matrix Factorization):
+    
+    Hàm mục tiêu toán học (Loss Function) giải bằng phương pháp luân phiên (Alternating):
+      Mất mát = Tổng_(u, i có rating) [ r_ui - (User_u . Item_i) ]^2 + λ * [ Tổng_u ||User_u||^2 + Tổng_i ||Item_i||^2 ]
+    
+    Ý nghĩa các siêu tham số:
+    - rank (k = 16 hoặc 32): Số chiều của không gian nhân tố ẩn (Latent Dimension).
+    - max_iter (10 hoặc 15): Số vòng lặp luân phiên tối ưu giữa ma trận User và Item.
+    - reg_param (λ = 0.1): Hệ số điều chuẩn L2 (Regularization) chống hiện tượng quá khớp (Overfitting).
+    - implicit_prefs (False): Dữ liệu MovieLens 25M là rating tường minh (Explicit Feedback: 0.5 - 5.0 sao).
+    - cold_start_strategy ('nan'): Tránh gán nhãn 0 giả định; chuyển giao cho Đồ thị tri thức xử lý khi cold-start.
+    - intermediate_storage_level ('MEMORY_AND_DISK'): Cache phân vùng trung gian để chống tràn RAM máy trạm.
     """
     rank: int = 16
     max_iter: int = 10

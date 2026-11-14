@@ -1,9 +1,16 @@
 """
-MoodGraph: Automated Data Quality & Integrity Test Suite (Phase 4)
-Dataset: Processed MovieLens 25M Parquet Package
+MoodGraph: Bộ Kiểm Định Chất Lượng & Tính Toàn Vẹn Dữ Liệu Tự Động (Data Quality Test Suite)
+Bộ dữ liệu: Gói Parquet MovieLens 25M đã tiền xử lý.
 
-This module implements the 8 mandatory Automated Data Quality Tests
-mandated by the MoodGraph Technical Specification.
+Thực thi 8 bài kiểm định chất lượng bắt buộc (8 Mandatory Data Quality Tests):
+  1. Test 1 (Bảo toàn số lượng bản ghi - Record Preservation): Tổng Train (24.67M) + Val (162K) + Test (162K) = 25,000,095.
+  2. Test 2 (Độ chính xác phân chia - Split Correctness): Mỗi người dùng có đúng 1 bản ghi ở Test và 1 ở Val.
+  3. Test 3 (Tính thứ tự thời gian - Chronological Order): Thời gian Train <= Thời gian Val <= Thời gian Test.
+  4. Test 4 (Phân hoạch rời rạc - Disjoint Partitions): Giao thoa giữa các tập phân chia bằng rỗng 100%.
+  5. Test 5 (Chống rò rỉ tương tác - Interaction Leakage Guard): tags_train không chứa bất kỳ phim nào của Val/Test.
+  6. Test 6 (Toàn vẹn tham chiếu - Referential Integrity): 100% movieId và userId tồn tại hợp lệ trong danh mục.
+  7. Test 7 (Ranh giới giá trị & Khử Null - Value Bounds & Null Checks): Điểm số rating [0.5, 5.0], relevance [0.0, 1.0].
+  8. Test 8 (Tuân thủ Lược đồ chuẩn - Schema Compliance): Định dạng và kiểu dữ liệu Parquet khớp chính xác 100%.
 """
 
 import os

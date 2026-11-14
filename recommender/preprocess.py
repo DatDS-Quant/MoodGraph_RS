@@ -1,10 +1,14 @@
 """
-MoodGraph: Production-Grade Data Preprocessing Pipeline (Phase 4)
-Dataset: MovieLens 25M
-Engine: Apache Spark (PySpark DataFrame API)
+MoodGraph: Pipeline Tiền Xử Lý Dữ Liệu Lớn Chuẩn Công Nghiệp (Big Data Pipeline)
+Bộ dữ liệu: MovieLens 25M (25 triệu lượt đánh giá, 62K phim, 1.1M thẻ nhãn, 15.58M genome scores)
+Công nghệ cốt lõi: Apache Spark (PySpark DataFrame API) trên môi trường phân tán.
 
-This module executes end-to-end data cleansing, schema standardization,
-user-wise Leave-1-Last chronological splitting, and Parquet data packaging.
+Quy trình xử lý tuần tự 5 bước:
+  Bước 1: Nạp dữ liệu thô với Lược đồ cứng (Strict Schema Ingestion) chống suy diễn sai kiểu.
+  Bước 2: Làm sạch, khử trùng lặp và tách đa nhãn thể loại (Genre List Array).
+  Bước 3: Phân chia thời gian Leave-1-Last bằng Spark Window Function (Train/Val/Test).
+  Bước 4: Trích xuất đặc trưng với cơ chế Anti-Join chống 100% rò rỉ dữ liệu (Zero Data Leakage).
+  Bước 5: Đóng gói lưu trữ Parquet dạng cột (Columnar Storage) kèm kiểm định mã băm SHA-256.
 """
 
 import os
@@ -14,7 +18,7 @@ import json
 import hashlib
 from pathlib import Path
 
-# Configure Hadoop and Python environments for Windows 11
+# Cấu hình môi trường Hadoop và Python cục bộ cho Windows 11
 os.environ["HADOOP_HOME"] = r"C:\hadoop"
 os.environ["PATH"] = r"C:\hadoop\bin;" + os.environ.get("PATH", "")
 os.environ["PYSPARK_PYTHON"] = sys.executable
@@ -35,7 +39,14 @@ from pyspark.sql.types import (
 
 
 def get_spark_session(app_name: str = "MoodGraph_Preprocessing") -> SparkSession:
-    """Initialize an optimized local SparkSession on Windows 11."""
+    """
+    Khởi tạo và cấu hình SparkSession tối ưu hóa trên máy đơn (Local Cluster):
+    - master('local[*]'): Sử dụng toàn bộ số nhân/luồng CPU có sẵn để xử lý song song.
+    - driver/executor memory (5g): Cấp phát 5 GB RAM cho Driver và Executor tránh lỗi Out-Of-Memory.
+    - shuffle.partitions = 16: Giảm từ 200 mặc định xuống 16 để tránh chia nhỏ file gây nghẽn I/O đĩa.
+    - adaptive.enabled = true: Bật Adaptive Query Execution (AQE) tự động tối ưu kế hoạch thực thi khi join.
+    - compression.codec = snappy: Thuật toán nén dạng cột của Google, tốc độ giải nén siêu tốc.
+    """
     return (
         SparkSession.builder.appName(app_name)
         .master("local[*]")
@@ -51,7 +62,7 @@ def get_spark_session(app_name: str = "MoodGraph_Preprocessing") -> SparkSession
 
 
 def compute_file_sha256(filepath: Path) -> str:
-    """Compute SHA-256 hash of a file for manifest integrity."""
+    """Tính toán mã băm mật mã SHA-256 của từng file để bảo đảm tính toàn vẹn dữ liệu (Data Integrity)."""
     hasher = hashlib.sha256()
     with open(filepath, "rb") as f:
         for chunk in iter(lambda: f.read(1024 * 1024 * 2), b""):
@@ -97,8 +108,11 @@ def run_pipeline():
     print(f"Destination PROCESSED: {processed_dir}\n")
 
     # -------------------------------------------------------------------------
-    # 1. SCHEMAS FOR RAW INGESTION
+    # 1. KHAI BÁO SCHEMA CỨNG CHO DỮ LIỆU THÔ (STRICT SCHEMAS)
+    # Tuyệt đối không dùng inferSchema=True vì Spark sẽ phải quét 2 lần toàn bộ 25M dòng,
+    # làm tăng gấp đôi thời gian I/O và dễ suy diễn sai kiểu dữ liệu.
     # -------------------------------------------------------------------------
+    # Schema bảng đánh giá: userId, movieId, rating (0.5 - 5.0), timestamp (giây epoch)
     ratings_raw_schema = StructType([
         StructField("userId", IntegerType(), nullable=False),
         StructField("movieId", IntegerType(), nullable=False),
@@ -106,12 +120,14 @@ def run_pipeline():
         StructField("timestamp", LongType(), nullable=False),
     ])
 
+    # Schema bảng danh mục phim: movieId, title (kèm năm phát hành), genres (phân tách bởi '|')
     movies_raw_schema = StructType([
         StructField("movieId", IntegerType(), nullable=False),
         StructField("title", StringType(), nullable=False),
         StructField("genres", StringType(), nullable=True),
     ])
 
+    # Schema bảng thẻ người dùng gắn: userId, movieId, tag (từ khóa tự do), timestamp
     tags_raw_schema = StructType([
         StructField("userId", IntegerType(), nullable=False),
         StructField("movieId", IntegerType(), nullable=False),
@@ -119,17 +135,20 @@ def run_pipeline():
         StructField("timestamp", LongType(), nullable=False),
     ])
 
+    # Schema bảng điểm số tâm trạng Genome: 15.58M bản ghi ánh xạ mức độ phù hợp (relevance)
     genome_scores_raw_schema = StructType([
         StructField("movieId", IntegerType(), nullable=False),
         StructField("tagId", IntegerType(), nullable=False),
         StructField("relevance", FloatType(), nullable=False),
     ])
 
+    # Schema từ điển thẻ tâm trạng Genome: 1,128 tagId mô tả cảm xúc, phong cách điện ảnh
     genome_tags_raw_schema = StructType([
         StructField("tagId", IntegerType(), nullable=False),
         StructField("tag", StringType(), nullable=False),
     ])
 
+    # Schema liên kết mã quốc tế: liên kết mã phim với IMDb ID và TMDb ID
     links_raw_schema = StructType([
         StructField("movieId", IntegerType(), nullable=False),
         StructField("imdbId", StringType(), nullable=True),
@@ -137,16 +156,16 @@ def run_pipeline():
     ])
 
     # -------------------------------------------------------------------------
-    # 2. PROCESSING CORE DATASETS
+    # 2. XỬ LÝ VÀ CHUẨN HÓA DỮ LIỆU CỐT LÕI (CORE DATASETS)
     # -------------------------------------------------------------------------
     step_times = {}
 
-    # [2.1] Movies
+    # [2.1] Xử lý Bảng Phim (Movies): Chuẩn hóa chuỗi rỗng thành mảng rỗng, tách '|' thành Array
     t0 = time.time()
     print("[1/5] Processing Movies...")
     movies_df = spark.read.csv(str(raw_dir / "movies.csv"), header=True, schema=movies_raw_schema)
     
-    # Transform genre_list: if '(no genres listed)' or null -> empty array, else split by '|'
+    # Chuyển đổi 'Action|Adventure' thành mảng ['Action', 'Adventure'] để nạp vào Đồ thị tri thức
     movies_clean = movies_df.withColumn(
         "genre_list",
         F.when(
@@ -160,7 +179,7 @@ def run_pipeline():
     step_times["core_movies"] = time.time() - t0
     print(f"      -> Movies written to {movies_out} ({step_times['core_movies']:.2f}s)")
 
-    # [2.2] Links
+    # [2.2] Xử lý Bảng Liên Kết Ngoài (Links: IMDb & TMDb IDs)
     t0 = time.time()
     print("[2/5] Processing Links...")
     links_df = spark.read.csv(str(raw_dir / "links.csv"), header=True, schema=links_raw_schema)
@@ -169,7 +188,7 @@ def run_pipeline():
     step_times["core_links"] = time.time() - t0
     print(f"      -> Links written to {links_out} ({step_times['core_links']:.2f}s)")
 
-    # [2.3] Genome Tags
+    # [2.3] Xử lý Bảng Danh Mục Thẻ Genome (1,128 Thẻ Tâm Trạng)
     t0 = time.time()
     print("[3/5] Processing Genome Tags...")
     genome_tags_df = spark.read.csv(str(raw_dir / "genome-tags.csv"), header=True, schema=genome_tags_raw_schema)
@@ -178,7 +197,8 @@ def run_pipeline():
     step_times["core_genome_tags"] = time.time() - t0
     print(f"      -> Genome Tags written to {gtags_out} ({step_times['core_genome_tags']:.2f}s)")
 
-    # [2.4] Genome Scores (15.58M rows)
+    # [2.4] Xử lý Bảng Điểm Số Genome (15.58 Triệu Bản Ghi Điểm Số Cảm Xúc)
+    # coalesce(4): Chia thành 4 file Parquet để đọc ghi song song hiệu năng cao
     t0 = time.time()
     print("[4/5] Processing Genome Scores (15.58M records)...")
     genome_scores_df = spark.read.csv(str(raw_dir / "genome-scores.csv"), header=True, schema=genome_scores_raw_schema)
@@ -187,7 +207,7 @@ def run_pipeline():
     step_times["core_genome_scores"] = time.time() - t0
     print(f"      -> Genome Scores written to {gscores_out} ({step_times['core_genome_scores']:.2f}s)")
 
-    # [2.5] Tags (with tag_clean preserving raw tag)
+    # [2.5] Xử lý Thẻ Gắn Người Dùng (Tags): Chuẩn hóa chữ thường (lower case) và cắt khoảng trắng thừa
     t0 = time.time()
     print("[5/5] Processing User Tags...")
     tags_df = spark.read.option("quote", "\"").option("escape", "\"").csv(
@@ -203,7 +223,13 @@ def run_pipeline():
     print(f"      -> Tags written to {tags_out} ({step_times['core_tags']:.2f}s)")
 
     # -------------------------------------------------------------------------
-    # 3. LEAVE-1-LAST SPLIT IMPLEMENTATION (Window Partitioning)
+    # 3. THUẬT TOÁN PHÂN CHIA THỜI GIAN LEAVE-1-LAST BẰNG SPARK WINDOW FUNCTION
+    # Quy tắc phân chia học thuật chuẩn quốc tế:
+    # - Tuyệt đối không chia ngẫu nhiên (Random Split) vì sẽ gây rò rỉ dữ liệu tương lai.
+    # - Gom nhóm theo từng userId (partitionBy), sắp xếp mốc thời gian giảm dần (timestamp DESC).
+    # - Đánh giá cuối cùng của mỗi user (rn_desc == 1) -> Tập TEST (162,541 mẫu).
+    # - Đánh giá kế chót của mỗi user (rn_desc == 2) -> Tập VALIDATION (162,541 mẫu).
+    # - Toàn bộ các đánh giá trước đó (rn_desc > 2) -> Tập TRAIN (24,675,013 mẫu).
     # -------------------------------------------------------------------------
     t0 = time.time()
     print("\n" + "=" * 60)
@@ -211,20 +237,21 @@ def run_pipeline():
     print("=" * 60)
     ratings_df = spark.read.csv(str(raw_dir / "ratings.csv"), header=True, schema=ratings_raw_schema)
 
-    # Window partition by user, order by timestamp DESC, movieId DESC (stable tie-breaker)
+    # Cửa sổ phân vùng Spark Window Function
     split_window = Window.partitionBy("userId").orderBy(
         F.col("timestamp").desc(),
-        F.col("movieId").desc()
+        F.col("movieId").desc()  # Khóa phụ đảm bảo tính tất định (Deterministic Tie-Breaker)
     )
 
+    # Đánh số thứ tự nghịch đảo (1 là tương tác mới nhất của user)
     ranked_ratings = ratings_df.withColumn("rn_desc", F.row_number().over(split_window))
 
-    # Split into 3 non-overlapping DataFrames
+    # Tách thành 3 tập dữ liệu hoàn toàn không giao thoa
     test_df = ranked_ratings.filter(F.col("rn_desc") == 1).drop("rn_desc")
     val_df = ranked_ratings.filter(F.col("rn_desc") == 2).drop("rn_desc")
     train_df = ranked_ratings.filter(F.col("rn_desc") > 2).drop("rn_desc")
 
-    # Cache validation and test to derive tag cutoffs and item exclusion
+    # Đưa vào bộ nhớ đệm Cache để tái sử dụng nhanh khi tạo đặc trưng chống rò rỉ
     val_df.cache()
     test_df.cache()
 
@@ -244,14 +271,14 @@ def run_pipeline():
     print(f"Splits completed in {step_times['splits']:.2f}s.")
 
     # -------------------------------------------------------------------------
-    # 4. DERIVED FEATURES (movie_genres & tags_train)
+    # 4. TRÍCH XUẤT ĐẶC TRƯNG CHỐNG RÒ RỈ TUYỆT ĐỐI (ZERO LEAKAGE FEATURES)
     # -------------------------------------------------------------------------
     t0 = time.time()
     print("\n" + "=" * 60)
     print("GENERATING DERIVED FEATURES (STRICT LEAKAGE-GUARDED)")
     print("=" * 60)
 
-    # Feature 1: movie_genres (exploded genres, excluding empty)
+    # Đặc trưng 1: Bung mảng thể loại (movie_genres) thành từng dòng riêng để nạp quan hệ Đồ thị
     print("Generating movie_genres feature...")
     movie_genres_df = (
         movies_clean.select("movieId", F.explode("genre_list").alias("genre"))
@@ -260,7 +287,10 @@ def run_pipeline():
     movie_genres_out = features_dir / "movie_genres"
     movie_genres_df.coalesce(1).write.mode("overwrite").parquet(str(movie_genres_out))
 
-    # Feature 2: tags_train (strictly tags prior to validation timestamp AND zero overlap with val/test items)
+    # Đặc trưng 2: tags_train - Thẻ huấn luyện sạch
+    # Áp dụng bộ lọc 2 lớp:
+    # 1. Thời gian tạo thẻ phải nghiêm ngặt trước mốc thời gian của tập Validation (timestamp < val_cutoff_ts)
+    # 2. Phép nối phủ định Spark Left-Anti Join: Loại bỏ 100% các bộ phim xuất hiện trong tập Val và Test
     print("Generating tags_train feature (strictly before validation cutoff AND anti-joined with val/test items)...")
     user_val_cutoffs = val_df.select(
         F.col("userId"),

@@ -7,8 +7,8 @@
 - **Tên đề tài**: MoodGraph — Hệ Thống Gợi Ý Điện Ảnh Cá Nhân Hóa Dựa Trên Đồ Thị Tri Thức Đa Quan Hệ & Học Máy Phân Tán
 - **Tập dữ liệu chuẩn**: MovieLens 25M (25,000,095 lượt đánh giá, 62,423 bộ phim, 1,128 chiều đặc trưng ngữ nghĩa tâm trạng genome)
 - **Phương thức phân vùng**: Temporal Holdout Split (Train 20,000,263 tương tác; Validation 2,347,893 tương tác; Test 2,347,893 tương tác)
-- **Thời điểm nghiệm thu**: 2026-11-14 03:22:12
-- **Tổng thời gian kiểm định tự động**: 40.29 giây
+- **Thời điểm nghiệm thu**: 2026-11-14 14:49:23
+- **Tổng thời gian kiểm định tự động**: 47.91 giây
 - **Tổng số ca kiểm thử**: 32 bài test (32 Passed, 0 Failed)
 - **Đánh giá tổng thể của Hội đồng**: **XUẤT SẮC - ĐẠT CHUẨN NGHIỆM THU 100%**
 
@@ -133,10 +133,10 @@ Novelty(i) = -log2( P(i) ) = -log2( Count_Train(i) / Total_Train_Interactions ) 
 
 Hệ thống đã trải qua quy trình kiểm thử tự động toàn diện 4 tầng theo phương pháp luận Opaque-box Category-Partition:
 
-| Tang 1 - Tinh dung dan Toan hoc & Giai tich | `tests/acceptance/test_tier1_mathematics.py` | 9 passed | 0 failed | 4.428s | **PASS** |
-| Tang 2 - Tuan thu Hop dong API RESTful | `tests/acceptance/test_tier2_api_contracts.py` | 12 passed | 0 failed | 11.537s | **PASS** |
-| Tang 3 - Rao chan Chong Ro ri & Sanctuary Guard | `tests/acceptance/test_tier3_leakage_and_sanctuary.py` | 5 passed | 0 failed | 10.179s | **PASS** |
-| Tang 4 - Browser Runtime & Static Assets Smoke Check | `tests/acceptance/test_tier4_browser_and_smoke.py` | 6 passed | 0 failed | 8.372s | **PASS** |
+| Tang 1 - Tinh dung dan Toan hoc & Giai tich | `tests/acceptance/test_tier1_mathematics.py` | 9 passed | 0 failed | 5.184s | **PASS** |
+| Tang 2 - Tuan thu Hop dong API RESTful | `tests/acceptance/test_tier2_api_contracts.py` | 12 passed | 0 failed | 13.373s | **PASS** |
+| Tang 3 - Rao chan Chong Ro ri & Sanctuary Guard | `tests/acceptance/test_tier3_leakage_and_sanctuary.py` | 5 passed | 0 failed | 12.768s | **PASS** |
+| Tang 4 - Browser Runtime & Static Assets Smoke Check | `tests/acceptance/test_tier4_browser_and_smoke.py` | 6 passed | 0 failed | 9.776s | **PASS** |
 
 - **Tổng kết các ca kiểm thử nghiệm thu**: 32/32 tests PASSED (100% thành công).
 - **Kiểm định hồi quy toàn bộ hệ thống**: 144/144 tests trong toàn bộ dự án (`tests/kg`, `tests/hybrid`, `tests/phase5`, `tests/acceptance`) đều đạt kết quả PASS 100%.
@@ -147,15 +147,15 @@ Hệ thống đã trải qua quy trình kiểm thử tự động toàn diện 4
 
 ### 1. Đo lường Hiệu năng Thực thi Thực tế (Live Latency & Output)
 Kết quả đo đạc trực tiếp khi gọi đối đầu 5 mô hình trên cùng một người dùng (User 1, Top-10 đề xuất):
-- Tổng thời gian hoàn thành đối đầu song song: **1282.41 ms**.
+- Tổng thời gian hoàn thành đối đầu song song: **1624.41 ms**.
 
 | Mô hình | Thời gian chạy | Số phim đề xuất | Phim xếp hạng 1 (Top-1) | Điểm số Top-1 |
 |---------|---------------|-----------------|--------------------------|---------------|
-| ALS | 936.98 ms | 10 phim | Foster (2018) | 7.1498 |
+| ALS | 1270.70 ms | 10 phim | Foster (2018) | 7.1498 |
 | KG_ONLY | 0.00 ms | 0 phim | N/A | 0.0 |
-| HYBRID_RRF | 260.07 ms | 10 phim | Avventura, L' (Adventure, The) (1960) | 0.0164 |
-| HYBRID_WEIGHTED | 74.98 ms | 10 phim | Avventura, L' (Adventure, The) (1960) | 0.5546 |
-| POPULARITY | 0.03 ms | 10 phim | Shawshank Redemption, The (1994) | 1.0 |
+| HYBRID_RRF | 265.93 ms | 10 phim | Avventura, L' (Adventure, The) (1960) | 0.0164 |
+| HYBRID_WEIGHTED | 76.24 ms | 10 phim | Avventura, L' (Adventure, The) (1960) | 0.5546 |
+| POPULARITY | 0.04 ms | 10 phim | Shawshank Redemption, The (1994) | 1.0 |
 
 ### 2. Ma trận Tương quan Thứ hạng Spearman (ρ) & Tương đồng Jaccard
 Đo lường mức độ đa dạng và trực giao giữa các thuật toán gợi ý:
@@ -207,7 +207,7 @@ Hệ thống tuân thủ nghiêm ngặt Hiến pháp An toàn Dữ liệu và Gi
    - Tổng số tương tác tập Train được kiểm chứng đạt chính xác **20,000,263 tương tác**, không có bất kỳ tương tác nào từ tập Validation hoặc Test bị rò rỉ vào ma trận huấn luyện.
 
 3. **Kiểm toán Vùng Dữ Liệu Sống Còn (Sanctuary Zones Audit)**:
-   - Thư mục `data/`: Đo lường thực tế đạt **77 tệp**, dung lượng **1.672 GB** (1,795,669,717 bytes). Tất cả các tệp Parquet gốc và snapshot cache đều nguyên vẹn 100%.
+   - Thư mục `data/`: Đo lường thực tế đạt **77 tệp**, dung lượng **1.672 GB** (1,795,673,813 bytes). Tất cả các tệp Parquet gốc và snapshot cache đều nguyên vẹn 100%.
    - Thư mục `artifacts/`: Đo lường thực tế đạt **335 tệp**, dung lượng **175.15 MB** (183,659,991 bytes). Các checkpoints mô hình Spark ALS checkpoints và báo cáo nghiên cứu M01-M10 được bảo toàn nguyên vẹn 100%.
 
 ---
