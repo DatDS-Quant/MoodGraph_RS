@@ -154,6 +154,17 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Vô hiệu hóa cache trình duyệt cho static assets để mọi thay đổi UI phản hồi tức thì
+    @application.middleware("http")
+    async def add_no_cache_headers(request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path.startswith("/demo") or path.endswith((".js", ".css", ".html")) or path == "/":
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
     # Mount Routers
     application.include_router(system_router)
     application.include_router(discovery_router)
