@@ -71,7 +71,7 @@ def load_kg_config() -> KGConfig:
         credential_source = "default_placeholder"
 
     neo4j_database = os.getenv("NEO4J_DATABASE", "neo4j")
-    import_mode = os.getenv("KG_IMPORT_MODE", "synthetic")
+    import_mode = os.getenv("KG_IMPORT_MODE", "embedded")
     tag_top_m = int(os.getenv("KG_TAG_TOP_M", "20"))
     min_liked_rating = float(os.getenv("KG_MIN_LIKED_RATING", "3.5"))
     batch_size = int(os.getenv("KG_BATCH_SIZE", "5000"))

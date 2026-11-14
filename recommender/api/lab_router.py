@@ -18,6 +18,7 @@ from recommender.api.schemas import (
     LabMetricsResponse,
     RegisteredModelsResponse,
     SystemMetadataResponse,
+    SubgraphResponse,
 )
 from recommender.services.lab_service import LabService
 
@@ -80,4 +81,18 @@ def get_system_and_dataset_metadata(
     """
     res = lab_svc.get_system_metadata()
     return SystemMetadataResponse(**res)
+
+
+@router.get("/graph/subgraph", response_model=SubgraphResponse)
+def get_graph_subgraph(
+    user_id: int = Query(..., ge=1, description="ID người dùng"),
+    movie_id: int = Query(..., ge=1, description="ID phim đề xuất"),
+    lab_svc: LabService = Depends(get_lab_service),
+) -> SubgraphResponse:
+    """
+    Trích xuất cấu trúc mạng đồ thị con (Interactive Subgraph) giải thích liên kết giữa user và movie,
+    phục vụ trực quan hóa tương tác vis-network theo đúng Interface Contract trong PROJECT.md.
+    """
+    res = lab_svc.get_subgraph(user_id=user_id, movie_id=movie_id)
+    return SubgraphResponse(**res)
 

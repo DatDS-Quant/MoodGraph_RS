@@ -270,6 +270,36 @@ class SystemMetadataResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Mode B: Subgraph Visualization Schemas
+# ---------------------------------------------------------------------------
+
+class SubgraphNode(BaseModel):
+    id: str
+    label: str
+    type: str
+    color: str
+    movieId: Optional[int] = None
+    rating: Optional[float] = None
+    relevance: Optional[float] = None
+    score: Optional[float] = None
+
+
+class SubgraphEdge(BaseModel):
+    model_config = {"populate_by_name": True}
+    from_: str = Field(..., alias="from")
+    to: str
+    label: str
+    weight: float
+    type: str
+
+
+class SubgraphResponse(BaseModel):
+    nodes: List[SubgraphNode]
+    edges: List[SubgraphEdge]
+    academic_explanation: str
+
+
+# ---------------------------------------------------------------------------
 # Interaction & Mutable Application State Schemas
 # ---------------------------------------------------------------------------
 

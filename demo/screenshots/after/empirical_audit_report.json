@@ -1,0 +1,161 @@
+{
+  "mode_a_home": {
+    "onboardingVisible": true,
+    "heroBtnText": "",
+    "heroBtnHasInfoSvg": false,
+    "personaLiveLabel": "Tài Khoản Của Bạn (Phiên Trực Tiếp)",
+    "hasScrollLeftBtn": true,
+    "hasScrollRightBtn": true,
+    "hasMl25mLabel": false,
+    "catalogMovieCount": 53
+  },
+  "slider_latency": {
+    "badgeVisible": true,
+    "badgeText": "Độ trễ: 0.1 ms"
+  },
+  "search_test": {
+    "query": "Bố Già",
+    "matchedCardsCount": 53,
+    "titles": [
+      "Nhà Tù Shawshank",
+      "Tài Xế Taxi",
+      "Bố Già",
+      "Bố Già Phần II",
+      "Chuyện Tào Lao",
+      "Cuộc Đời Forrest Gump",
+      "Sự Im Lặng Của Bầy Cừu",
+      "Ma Trận",
+      "Chiến Tranh Giữa Các Vì Sao IV",
+      "Công Viên Kỷ Jura",
+      "Bản Danh Sách Của Schindler",
+      "Trái Tim Quả Cảm",
+      "Kẻ Hủy Diệt 2: Ngày Phán Xét",
+      "Nghi Phạm Vô Tội",
+      "Bay Trên Tổ Chim Cúc Cu",
+      "Chuyện Tình Casablanca",
+      "Khung Cửa Sổ Phía Sau",
+      "Ngày Tận Thế",
+      "Siêu Trộm Thân Thiết",
+      "Kẻ Cắp Giấc Mơ",
+      "Hố Đen Tử Thần",
+      "Sàn Đấu Sinh Tử",
+      "Bảy Tội Lỗi Chết Người",
+      "Tâm Thần Hoảng Loạn",
+      "Ngôi Nhà Ma Ám",
+      "Ma Cà Rồng Nosferatu",
+      "Câu Chuyện Đồ Chơi",
+      "Câu Chuyện Đồ Chơi 2",
+      "Vùng Đất Linh Hồn",
+      "Đi Tìm Nemo",
+      "Vua Sư Tử",
+      "Hát Dưới Mưa",
+      "Canh Vịt Nấu Măng",
+      "Lạc Lối Ở Tokyo",
+      "Ánh Dương Vĩnh Cửu",
+      "Khát Vọng Cho Một Giấc Mơ",
+      "Ba Màu: Xanh Lam",
+      "Phong Ấn Thứ Bảy",
+      "Tâm Trạng Khi Yêu",
+      "Thành Phố Của Chúa",
+      "Loạn",
+      "Con Tàu U-Boat",
+      "Võ Sĩ Giác Đấu Yojimbo",
+      "Hào Quang Danh Vọng",
+      "Người Thứ Ba",
+      "Chim Ưng Malta",
+      "Tốt, Xấu và Vô Lại",
+      "Không Thể Thứ Tha",
+      "Luân Hồi",
+      "9/11 và Nước Mỹ",
+      "Chúa Nhẫn: Sự Trở Về Của Vua",
+      "Chúa Nhẫn: Hiệp Hội Nhẫn Thần",
+      "Bán Đảo Araya"
+    ]
+  },
+  "movie_detail_modal": {
+    "modalVisible": true,
+    "starHalfButtonsCount": 10,
+    "userRatingValue": "0.0★",
+    "ratingLabelText": "THÔNG TIN CHI TIẾT",
+    "director": "John Lasseter",
+    "writer": "John Lasseter, Pete Docter, Andrew Stanton",
+    "cast": "Tom Hanks, Tim Allen, Don Rickles",
+    "accordionOpenByDefault": true,
+    "provenanceTabs": [
+      "P1 Thể Loại Tương đồng",
+      "P2 Tâm Trạng Đồng điệu",
+      "P3 Khán Giả Cùng gu",
+      "ALS Vector Tiềm ẩn"
+    ],
+    "hasImdbLink": true,
+    "imdbUrl": "https://www.imdb.com/title/tt0114709/",
+    "hasTmdbLink": true,
+    "tmdbUrl": "https://www.themoviedb.org/movie/862"
+  },
+  "watchlist_drawer": {
+    "drawerOpen": true,
+    "itemsInWatchlist": 5,
+    "clearButtonFound": true,
+    "clearButtonText": "Xóa Toàn Bộ Danh Sách",
+    "confirmPromptChecked": true
+  },
+  "user_profile": {
+    "profileModalVisible": true,
+    "stats": [
+      "Cơ chế bảo vệ thuật toán:"
+    ],
+    "genreBarsCount": 5
+  },
+  "three_3d_lab": {
+    "engineType": "unknown",
+    "canvasWidth": 1216,
+    "canvasHeight": 520,
+    "containerWidth": 1214,
+    "containerHeight": 518,
+    "isCanvasMatchingContainer": true,
+    "hudVisible": false,
+    "hudTitle": "Tên Phim",
+    "hudCoords": "x: 0, y: 0, z: 0",
+    "hudCosine": "0.942"
+  },
+  "hover_interlock": {
+    "bannerVisible": true,
+    "bannerText": "Đồng thuận 1/5 mô hình cho \"Câu Chuyện Đồ Chơi\": POPULARITY (#9)",
+    "columnsCount": 5,
+    "highlightedCardsOnTargetMovie": 0
+  },
+  "heatmap_null_fixed": {
+    "totalNullCells": 8,
+    "doubleNullDetected": false,
+    "sampleNullTexts": [
+      "null\nk=1 phim",
+      "null\nk=1 phim",
+      "null\nk=1 phim",
+      "null\nk=1 phim"
+    ],
+    "overlapModalOpen": true,
+    "overlapModalTitle": "Spark ALS Collaborative ↔ Popularity Baseline (M03)"
+  },
+  "offline_benchmarks": {
+    "benchmarksRowsCount": 12,
+    "chartsCount": 0,
+    "firstRowModel": "Hit Rate @ 5\nHR@5",
+    "firstRowNdcg": "0",
+    "firstRowMap": "0.0833",
+    "firstRowHitRate": "0.0606"
+  },
+  "system_audit": {
+    "totalImages": 74,
+    "brokenImagesCount": 0,
+    "brokenImagesList": [],
+    "svgFallbackPostersCount": 23,
+    "faviconHrefPresent": true,
+    "bodyFont": "Nunito, \"Be Vietnam Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+    "h1Font": "Nunito, \"Be Vietnam Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+    "btnFont": "Nunito, \"Be Vietnam Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+    "monospaceElementsCount": 0
+  },
+  "console_logs_total": 6,
+  "uncaught_exceptions_total": 0,
+  "network_failures_total": 0
+}

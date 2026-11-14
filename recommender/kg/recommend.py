@@ -9,8 +9,10 @@ from typing import List, Dict, Any, Set, Optional
 from recommender.kg.config import load_kg_config, KGConfig
 from recommender.kg.scorer import PathBasedScorer
 from recommender.kg.import_graph import InMemoryGraph, import_synthetic_data
+from recommender.kg.embedded_graph import EmbeddedKnowledgeGraph
+from recommender.kg.cache_manager import CacheManager
 
-# Singleton cache cho in-memory graph khi chạy ở chế độ synthetic
+# Singleton cache cho đồ thị tri thức
 _CACHED_GRAPH: Optional[Any] = None
 
 
@@ -20,7 +22,14 @@ def get_default_graph(config: Optional[KGConfig] = None) -> Any:
         return _CACHED_GRAPH
 
     cfg = config or load_kg_config()
-    # Kiểm tra kết nối Neo4j
+    import_mode = getattr(cfg, "import_mode", "embedded").lower()
+
+    # Chế độ Tier-1 Primary Backend: EmbeddedKnowledgeGraph (Đồ thị nhúng thuần in-process)
+    if import_mode == "embedded":
+        _CACHED_GRAPH = CacheManager.get_or_create_graph(data_root=cfg.data_root)
+        return _CACHED_GRAPH
+
+    # Các chế độ yêu cầu hoặc fallback Neo4j (pilot, neo4j, synthetic)
     try:
         from neo4j import GraphDatabase
         from recommender.kg.import_graph import Neo4jGraph
@@ -30,9 +39,8 @@ def get_default_graph(config: Optional[KGConfig] = None) -> Any:
         _CACHED_GRAPH = Neo4jGraph(cfg.neo4j_uri, auth=(cfg.neo4j_user, cfg.neo4j_password), database=cfg.neo4j_database)
         return _CACHED_GRAPH
     except Exception as exc:
-        # Kiểm tra chính sách fallback: tuyệt đối cấm âm thầm đưa synthetic graph vào production
         allow_fallback = (
-            cfg.import_mode == "synthetic"
+            import_mode == "synthetic"
             or os.getenv("KG_ALLOW_SYNTHETIC_FALLBACK", "false").lower() in ("true", "1", "yes")
         )
         safe_exc = str(exc)

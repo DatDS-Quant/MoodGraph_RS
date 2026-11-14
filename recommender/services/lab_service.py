@@ -54,6 +54,14 @@ class LabService:
         """Returns end-to-end dataset size, split provenance, model dims, and system info."""
         return self.metrics_repo.get_system_metadata()
 
+    def get_subgraph(self, user_id: int, movie_id: int) -> Dict[str, Any]:
+        """Trích xuất đồ thị con liên kết giải thích giữa user và movie."""
+        from recommender.kg.recommend import get_default_graph
+        from recommender.kg.explainability import extract_subgraph_for_pair
+
+        kg_graph = getattr(self.hybrid_engine, "kg_graph", None) or get_default_graph()
+        return extract_subgraph_for_pair(kg_graph, user_id=user_id, movie_id=movie_id)
+
     def compare_models(
         self,
         user_id: int,

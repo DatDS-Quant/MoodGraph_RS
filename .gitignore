@@ -57,8 +57,9 @@ coverage.xml
 *.cover
 *.py,cover
 
-# Type checking & Notebooks
+# Type checking & Notebooks & Linters
 .mypy_cache/
+.ruff_cache/
 .pyre/
 .pytype/
 .ipynb_checkpoints/
@@ -133,7 +134,13 @@ lerna-debug.log*
 # ==========================================
 logs/
 *.log
-tmp/
+tmp/*
+!tmp/.gitkeep
+
+# ==========================================
+# Quarantine & Trash Archive
+# ==========================================
+.trash_archive/
 
 # ==========================================
 # IDE & System Files

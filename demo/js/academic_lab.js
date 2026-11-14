@@ -1639,6 +1639,11 @@
       textEl.textContent = `Đồng thuận ${matchedModels.length}/5 mô hình cho "${title}": ${matchedModels.join(' • ')}`;
       banner.classList.remove('hidden');
     }
+
+    // Đồng bộ với Mạng lưới Đồ thị Tri thức Đa tầng Tương tác vis-network
+    if (window.KnowledgeGraphVisualizer && typeof window.KnowledgeGraphVisualizer.focusCandidate === 'function') {
+      window.KnowledgeGraphVisualizer.focusCandidate(mid, title);
+    }
   }
 
   function clearInterlock() {
@@ -1651,6 +1656,10 @@
 
     const banner = document.getElementById('interlock-status-banner');
     if (banner) banner.classList.add('hidden');
+
+    if (window.KnowledgeGraphVisualizer && typeof window.KnowledgeGraphVisualizer.resetHighlight === 'function') {
+      window.KnowledgeGraphVisualizer.resetHighlight();
+    }
   }
 
   // =========================================================================
@@ -2049,6 +2058,15 @@
       visualizer3D.updateUserCenterForSelectedUser(userKey);
     }
 
+    // Cập nhật đồ thị tri thức tương tác vis-network
+    if (window.KnowledgeGraphVisualizer && typeof window.KnowledgeGraphVisualizer.loadSubgraph === 'function') {
+      let uid = 1;
+      if (userKey === 'user2') uid = 2;
+      else if (userKey === 'user3') uid = 3;
+      else if (userKey === 'user42') uid = 42;
+      window.KnowledgeGraphVisualizer.loadSubgraph(uid, 1);
+    }
+
     if (!silent && window.MoodGraphApp.showToast) {
       const userObj = window.MOCK_DATA.testUsers ? window.MOCK_DATA.testUsers.find(u => 'user' + u.userId === userKey) : null;
       const name = userKey === 'live_session' ? `Tài khoản trực tiếp (${numR} đánh giá)` : (userObj ? userObj.name : userKey.toUpperCase());
@@ -2114,6 +2132,48 @@
   window.MoodGraphApp.closeMatrixOverlapModal = closeMatrixOverlapModal;
   window.MoodGraphApp.closeHeatmapCellModal = closeMatrixOverlapModal;
 
+  // Chuyển đổi khung nhìn trực quan giữa 3D Không Gian Nhúng và Mạng Lưới Đồ Thị Tri Thức
+  window.MoodGraphApp.switchVisualizerView = function (viewType) {
+    const wrap3D = document.getElementById('wrapper-3d-space');
+    const wrapGraph = document.getElementById('wrapper-graph-network');
+    const btn3D = document.getElementById('btn-view-3d-space');
+    const btnGraph = document.getElementById('btn-view-graph-network');
+
+    if (viewType === 'graph') {
+      if (wrap3D) wrap3D.classList.add('hidden');
+      if (wrapGraph) wrapGraph.classList.remove('hidden');
+
+      if (btn3D) {
+        btn3D.className = 'px-3 py-1.5 rounded font-medium text-[#94A3B8] hover:text-white transition-all flex items-center gap-1.5';
+      }
+      if (btnGraph) {
+        btnGraph.className = 'px-3 py-1.5 rounded font-semibold bg-[#D97706] text-white transition-all flex items-center gap-1.5';
+      }
+
+      if (window.KnowledgeGraphVisualizer) {
+        if (!window.KnowledgeGraphVisualizer.network) {
+          window.KnowledgeGraphVisualizer.init('vis-graph-container');
+        } else {
+          window.KnowledgeGraphVisualizer.resetCamera();
+        }
+      }
+    } else {
+      if (wrapGraph) wrapGraph.classList.add('hidden');
+      if (wrap3D) wrap3D.classList.remove('hidden');
+
+      if (btnGraph) {
+        btnGraph.className = 'px-3 py-1.5 rounded font-medium text-[#94A3B8] hover:text-white transition-all flex items-center gap-1.5';
+      }
+      if (btn3D) {
+        btn3D.className = 'px-3 py-1.5 rounded font-semibold bg-[#D97706] text-white transition-all flex items-center gap-1.5';
+      }
+
+      if (visualizer3D && typeof visualizer3D.handleResize === 'function') {
+        visualizer3D.handleResize();
+      }
+    }
+  };
+
   // Mở rộng switchMode để tự động nạp Trang 2 khi chuyển tab
   const originalSwitchMode = window.MoodGraphApp.switchMode;
   window.MoodGraphApp.switchMode = function (targetMode) {
@@ -2127,7 +2187,14 @@
         if (visualizer3D) {
           visualizer3D.handleResize();
         }
+        window.dispatchEvent(new Event('resize'));
       });
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        if (visualizer3D) {
+          visualizer3D.handleResize();
+        }
+      }, 100);
     }
   };
 

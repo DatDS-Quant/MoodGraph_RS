@@ -1,0 +1,135 @@
+{
+  "mode_a_home": {
+    "onboardingVisible": true,
+    "onboardingSteps": 1,
+    "heroBtnSvg": false,
+    "heroBtnText": "",
+    "leftScroll": true,
+    "rightScroll": true,
+    "ml25mLabel": false,
+    "cardsCount": 53
+  },
+  "slider_test": {
+    "badgeFound": true,
+    "badgeText": "Độ trễ: 0.2 ms",
+    "depthVal": "75"
+  },
+  "search_test": {
+    "resultCount": 53,
+    "titles": [
+      "Nhà Tù Shawshank",
+      "Tài Xế Taxi",
+      "Bố Già",
+      "Bố Già Phần II",
+      "Chuyện Tào Lao",
+      "Cuộc Đời Forrest Gump",
+      "Sự Im Lặng Của Bầy Cừu",
+      "Ma Trận",
+      "Chiến Tranh Giữa Các Vì Sao IV",
+      "Công Viên Kỷ Jura",
+      "Bản Danh Sách Của Schindler",
+      "Trái Tim Quả Cảm",
+      "Kẻ Hủy Diệt 2: Ngày Phán Xét",
+      "Nghi Phạm Vô Tội",
+      "Bay Trên Tổ Chim Cúc Cu",
+      "Chuyện Tình Casablanca",
+      "Khung Cửa Sổ Phía Sau",
+      "Ngày Tận Thế",
+      "Siêu Trộm Thân Thiết",
+      "Kẻ Cắp Giấc Mơ",
+      "Hố Đen Tử Thần",
+      "Sàn Đấu Sinh Tử",
+      "Bảy Tội Lỗi Chết Người",
+      "Tâm Thần Hoảng Loạn",
+      "Ngôi Nhà Ma Ám",
+      "Ma Cà Rồng Nosferatu",
+      "Câu Chuyện Đồ Chơi",
+      "Câu Chuyện Đồ Chơi 2",
+      "Vùng Đất Linh Hồn",
+      "Đi Tìm Nemo",
+      "Vua Sư Tử",
+      "Hát Dưới Mưa",
+      "Canh Vịt Nấu Măng",
+      "Lạc Lối Ở Tokyo",
+      "Ánh Dương Vĩnh Cửu",
+      "Khát Vọng Cho Một Giấc Mơ",
+      "Ba Màu: Xanh Lam",
+      "Phong Ấn Thứ Bảy",
+      "Tâm Trạng Khi Yêu",
+      "Thành Phố Của Chúa",
+      "Loạn",
+      "Con Tàu U-Boat",
+      "Võ Sĩ Giác Đấu Yojimbo",
+      "Hào Quang Danh Vọng",
+      "Người Thứ Ba",
+      "Chim Ưng Malta",
+      "Tốt, Xấu và Vô Lại",
+      "Không Thể Thứ Tha",
+      "Luân Hồi",
+      "9/11 và Nước Mỹ",
+      "Chúa Nhẫn: Sự Trở Về Của Vua",
+      "Chúa Nhẫn: Hiệp Hội Nhẫn Thần",
+      "Bán Đảo Araya"
+    ]
+  },
+  "modal_rating": null,
+  "watchlist_test": null,
+  "persona_test": {
+    "selectedPersona": null,
+    "topRecTitles": [
+      "Nhà Tù Shawshank",
+      "Tài Xế Taxi",
+      "Bố Già"
+    ]
+  },
+  "mode_b_canvas": {
+    "canvasFound": false,
+    "canvasWidth": 0,
+    "canvasHeight": 0,
+    "containerWidth": 0,
+    "containerHeight": 0,
+    "hudFound": false,
+    "hudText": null
+  },
+  "hover_interlock": {
+    "targetMovieId": "1",
+    "totalColumns": 0,
+    "highlightedCardsCount": 0
+  },
+  "heatmap_null": {
+    "totalCells": 36,
+    "nullCellsCount": 8,
+    "singleNullCount": 0,
+    "doubleNullCount": 0,
+    "sampleNullTexts": [
+      "null\nk=1 phim",
+      "null\nk=1 phim",
+      "null\nk=1 phim",
+      "null\nk=1 phim",
+      "null\nk=1 phim"
+    ],
+    "isPairwiseModalOpen": false
+  },
+  "benchmark": {
+    "hasTable": false,
+    "modelRowsCount": 0,
+    "chartsCount": 1
+  },
+  "system_audit": {
+    "totalImagesScanned": 68,
+    "brokenImagesCount": 0,
+    "brokenImagesList": [],
+    "svgFallbackCount": 31,
+    "faviconHref": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' v...",
+    "typographyReport": {
+      "body": "Nunito, \"Be Vietnam Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "h1": "Nunito, \"Be Vietnam Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "h2": "Nunito, \"Be Vietnam Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "h3": "Nunito, \"Be Vietnam Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "button": "Nunito, \"Be Vietnam Pro\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+    },
+    "monospaceDetected": false
+  },
+  "console_logs_count": 6,
+  "network_failures": []
+}

@@ -806,12 +806,7 @@ h3 { font-size: 1.25rem; }
   font-style: italic;
 }
 
-.heatmap-cell.null-cell::after {
-  content: "null";
-  font-size: 0.6875rem;
-  font-weight: 400;
-  opacity: 0.7;
-}
+/* ISS-01: Removed duplicate null pseudo-element */
 
 /* ==========================================================================
    12. WATCHLIST DRAWER & MODAL DIALOGS
@@ -981,9 +976,9 @@ h3 { font-size: 1.25rem; }
 }
 
 /* ==========================================================================
-   QUY CHUẨN ĐỒNG NHẤT TOÀN DIỆN: 1 PHÔNG CHỮ TRÒN DỊU MẮT, KHÔNG LỖI DẤU
+   QUY CHUẨN ĐỒNG NHẤT TOÀN DIỆN: 1 PHÔNG CHỮ TRÒN DỊU MẮT NUNITO + BE VIETNAM PRO
    ========================================================================== */
-html, body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, span, div, a, 
-.brand-badge, .font-serif, .font-editorial, .font-mono, .tabular-nums, .metric-number {
+*, *::before, *::after, html, body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, span, div, a, 
+code, pre, kbd, samp, .badge, .brand-badge, .mono, .font-mono, .tabular-nums, .metric-number, .font-serif, .font-editorial {
   font-family: 'Nunito', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 }

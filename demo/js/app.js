@@ -168,7 +168,9 @@
   ensurePresetPersonas();
 
   // Bảng nhãn cảm xúc điện ảnh chuẩn mực cho thang điểm 1-5 sao
+  // Bổ sung thang điểm 0.5 sao
   const RATING_LABELS = {
+    0.5: "0.5★ — Thất vọng hoàn toàn / Lỗi thời",
     1.0: "1.0★ — Rất thất vọng / Không đọng lại gì",
     1.5: "1.5★ — Dưới kỳ vọng",
     2.0: "2.0★ — Kịch bản gượng gạo / Xem tạm",
@@ -179,6 +181,33 @@
     4.5: "4.5★ — Tác phẩm xuất sắc / Cảm xúc sâu sắc",
     5.0: "5.0★ — Kiệt tác điện ảnh đỉnh cao"
   };
+
+  // Sinh poster SVG Fallback nội bộ chống 100% vỡ ảnh (BUG-01 / F21)
+  function getFallbackPosterSvg(title, genres, year) {
+    const safeTitle = escapeHtml(title || 'Phim Điện Ảnh');
+    const safeYear = year ? String(year) : '';
+    const safeGenre = escapeHtml(genres || 'Điện ảnh');
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450">
+        <defs>
+          <linearGradient id="posterBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#070A0F"/>
+            <stop offset="50%" stop-color="#141A24"/>
+            <stop offset="100%" stop-color="#0F141C"/>
+          </linearGradient>
+        </defs>
+        <rect width="300" height="450" fill="url(#posterBg)"/>
+        <rect x="12" y="12" width="276" height="426" fill="none" stroke="rgba(217,119,6,0.35)" stroke-width="1.5" rx="8"/>
+        <circle cx="150" cy="180" r="42" fill="none" stroke="rgba(245,158,11,0.25)" stroke-width="1"/>
+        <polygon points="144,165 162,180 144,195" fill="#D97706"/>
+        <text x="150" y="270" font-family="'Be Vietnam Pro', 'Nunito', sans-serif" font-size="16" font-weight="700" fill="#F8FAFC" text-anchor="middle">${safeTitle.slice(0, 24)}</text>
+        <text x="150" y="295" font-family="'Be Vietnam Pro', 'Nunito', sans-serif" font-size="12" fill="#94A3B8" text-anchor="middle">${safeGenre}</text>
+        <text x="150" y="340" font-family="'Nunito', 'Be Vietnam Pro', sans-serif" font-size="12" fill="#F59E0B" text-anchor="middle" letter-spacing="2">${safeYear}</text>
+        <text x="150" y="415" font-family="'Nunito', 'Be Vietnam Pro', sans-serif" font-size="9" fill="#64748B" text-anchor="middle">MOODGRAPH EDITORIAL ARCHIVE</text>
+      </svg>
+    `.trim().replace(/\s+/g, ' ');
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
 
   // =========================================================================
   // 2. HÀM TIỆN ÍCH TRỢ GIÚP (HELPER UTILITIES)
@@ -217,17 +246,22 @@
   }
 
   // Tạo thẻ poster an toàn: Nếu ảnh ngoài bị lỗi hoặc offline thì nạp ngay poster SVG độc lập
-  function renderPosterImgHtml(movie, extraClass) {
+    function renderPosterImgHtml(movie, extraClass) {
     const titleSafe = escapeHtml(movie.vietnameseTitle || movie.cleanTitle || movie.title);
     const posterClass = extraClass || 'movie-poster-img';
-    const fallbackSvg = movie.posterFallbackSvg || generateFallbackSvg(movie);
+    const genreStr = escapeHtml((movie.genres && movie.genres.join(', ')) || movie.primaryGenre || 'Điện ảnh');
+    const yearStr = movie.year || '';
+    const fallbackSvg = movie.posterFallbackSvg || getFallbackPosterSvg(titleSafe, genreStr, yearStr);
 
     return `
       <img src="${movie.posterUrl}" 
            alt="${titleSafe}" 
+           data-title="${titleSafe}"
+           data-genres="${genreStr}"
+           data-year="${yearStr}"
            loading="lazy"
            class="${posterClass}" 
-           onerror="this.onerror=null; this.src='${fallbackSvg}';">
+           onerror="this.onerror=null; this.src=MoodGraphApp.getFallbackPosterSvg(this.dataset.title, this.dataset.genres, this.dataset.year);">
     `;
   }
 
@@ -698,7 +732,7 @@
           <img src="${backdropImg}" 
                alt="${titleVn}" 
                class="w-full h-full object-cover object-center filter brightness-[0.7] contrast-[1.05] transition-transform duration-1000 ease-out group-hover:scale-105"
-               onerror="this.onerror=null; this.src='${topMovie.posterUrl}';">
+               onerror="this.onerror=null; this.src=MoodGraphApp.getFallbackPosterSvg('${escapeHtml(titleVn)}', '${escapeHtml(topMovie.primaryGenre || 'Điện ảnh')}', '${topMovie.year || ''}');">
         </div>
 
         <!-- Scrim Gradient Phủ Từ Trái Sang -->
@@ -713,7 +747,7 @@
           <!-- Badges Gọn Gàng -->
           <div class="flex items-center gap-2">
             <span class="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 tabular-nums shrink-0 whitespace-nowrap inline-flex items-center justify-center">
-              TOP ĐỀ XUẤT • ${matchPct}% MATCH
+              TOP ĐỀ XUẤT • ${matchPct}% HỢP GU BẠN
             </span>
             <span class="text-xs text-[#94A3B8] font-mono shrink-0 whitespace-nowrap">${topMovie.primaryGenre || 'Drama'}</span>
           </div>
@@ -742,8 +776,14 @@
           <!-- 2 Nút Bấm Gọn Gàng -->
           <div class="flex items-center gap-3 pt-2">
             <button onclick="MoodGraphApp.openMovieDetailModal(${topMovie.movieId})" 
-                    class="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs sm:text-sm tracking-wide shadow-lg shadow-amber-500/20 active:scale-95 transition-all inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap">
-              <svg class="w-4 h-4 fill-black shrink-0" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    class="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-xs sm:text-sm tracking-wide shadow-lg shadow-amber-500/20 active:scale-95 transition-all inline-flex items-center justify-center gap-2 shrink-0 whitespace-nowrap"
+                    aria-label="Xem chi tiết bộ phim ${escapeHtml(titleVn)}"
+                    title="Xem chi tiết tác phẩm">
+              <svg class="w-4 h-4 text-black shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
               <span class="whitespace-nowrap">Xem Chi Tiết</span>
             </button>
 
@@ -1125,6 +1165,10 @@
 
   function clearWatchlist() {
     if (MoodGraphState.watchlist.length === 0) return;
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const confirmed = window.confirm("Bạn có chắc chắn muốn xóa toàn bộ danh sách phim muốn xem không?");
+      if (!confirmed) return;
+    }
     MoodGraphState.watchlist = [];
     saveStorageJson("moodgraph_watchlist", MoodGraphState.watchlist);
     updateWatchlistUI();
@@ -1314,7 +1358,7 @@
   // 13. HỘP THOẠI CHI TIẾT BỘ PHIM (MOVIE DETAIL MODAL) & PROVENANCE EXPLORER
   // =========================================================================
 
-  let isProvenanceAccordionOpen = false;
+  let isProvenanceAccordionOpen = true;
   let activeProvenanceData = null;
 
   function toggleProvenanceAccordion(forceState) {
@@ -1530,17 +1574,21 @@
           <div class="p-3.5 space-y-3 border-t border-white/10">
             <!-- 4 Tab Switcher Gọn Gàng -->
             <div class="grid grid-cols-4 gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-lg text-xs font-mono">
-              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p1')" id="prov-tab-btn-p1" class="prov-tab-btn active shrink-0 whitespace-nowrap inline-flex items-center justify-center">
-                P1 Thể Loại
+              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p1')" id="prov-tab-btn-p1" class="prov-tab-btn active shrink-0 whitespace-nowrap inline-flex flex-col items-center justify-center py-1">
+                <span>P1 Thể Loại</span>
+                <span class="text-[9px] opacity-70 font-sans">Tương đồng</span>
               </button>
-              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p2')" id="prov-tab-btn-p2" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex items-center justify-center">
-                P2 Tâm Trạng
+              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p2')" id="prov-tab-btn-p2" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex flex-col items-center justify-center py-1">
+                <span>P2 Tâm Trạng</span>
+                <span class="text-[9px] opacity-70 font-sans">Đồng điệu</span>
               </button>
-              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p3')" id="prov-tab-btn-p3" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex items-center justify-center">
-                P3 Cộng Tác
+              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p3')" id="prov-tab-btn-p3" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex flex-col items-center justify-center py-1">
+                <span>P3 Khán Giả</span>
+                <span class="text-[9px] opacity-70 font-sans">Cùng gu</span>
               </button>
-              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p4')" id="prov-tab-btn-p4" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex items-center justify-center">
-                P4 Vector ALS
+              <button type="button" onclick="MoodGraphApp.switchProvenanceTab('p4')" id="prov-tab-btn-p4" class="prov-tab-btn shrink-0 whitespace-nowrap inline-flex flex-col items-center justify-center py-1">
+                <span>ALS Vector</span>
+                <span class="text-[9px] opacity-70 font-sans">Tiềm ẩn</span>
               </button>
             </div>
 
@@ -1563,7 +1611,7 @@
     if (!movie) return;
 
     // Khởi tạo trạng thái Accordion Why this movie luôn thu gọn mặc định khi mở modal
-    isProvenanceAccordionOpen = false;
+    isProvenanceAccordionOpen = true;
 
     const inWatchlist = MoodGraphState.watchlist.includes(movie.movieId);
     const userRating = MoodGraphState.userRatings[movie.movieId] || 0;
@@ -1654,25 +1702,51 @@
               <span class="whitespace-nowrap font-semibold text-xs">${inWatchlist ? 'Đã Lưu Watchlist ✓' : '+ Thêm Vào Watchlist'}</span>
             </button>
 
-            <!-- Bộ Chấm Sao Cá Nhân -->
+            <!-- Bộ Chấm Sao Cá Nhân 10 Nấc Nửa Sao (0.5★ - 5.0★) (ISS-04 / F10) -->
             <div class="p-3 rounded-lg bg-[#141A24] border border-white/10 space-y-1.5 text-center">
-              <div class="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">Đánh giá của bạn:</div>
-              <div class="flex items-center justify-center gap-1">
-                ${[1, 2, 3, 4, 5].map(starVal => {
-                  const isFilled = userRating >= starVal;
+              <div class="flex items-center justify-between text-[11px] text-slate-400 shrink-0 whitespace-nowrap px-1">
+                <span>Đánh giá của bạn:</span>
+                <span class="text-amber-400 font-mono font-bold">${userRating > 0 ? userRating.toFixed(1) + '★' : '0.0★'}</span>
+              </div>
+              <div class="flex items-center justify-center gap-1.5 py-1">
+                ${[1, 2, 3, 4, 5].map(starIndex => {
+                  const valLeft = starIndex - 0.5;
+                  const valRight = starIndex;
+                  const isFull = userRating >= valRight;
+                  const isHalf = !isFull && userRating >= valLeft;
+                  
                   return `
-                    <button onclick="MoodGraphApp.submitRating(${movie.movieId}, ${starVal})" 
-                            class="p-1 hover:scale-125 transition-transform" 
-                            title="${starVal} sao — ${RATING_LABELS[starVal]}">
-                      <svg class="w-5 h-5 ${isFilled ? 'text-amber-400 fill-amber-400' : 'text-slate-600 fill-none'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    <div class="relative inline-block w-6 h-6 select-none group/star" title="${valLeft}★ hoặc ${valRight}★">
+                      <svg class="w-6 h-6 pointer-events-none transition-transform group-hover/star:scale-110" viewBox="0 0 24 24">
+                        <defs>
+                          <linearGradient id="half-star-grad-${movie.movieId}-${starIndex}">
+                            <stop offset="50%" stop-color="#F59E0B"/>
+                            <stop offset="50%" stop-color="#334155"/>
+                          </linearGradient>
+                        </defs>
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                                 fill="${isFull ? '#F59E0B' : (isHalf ? `url(#half-star-grad-${movie.movieId}-${starIndex})` : 'none')}"
+                                 stroke="${isFull || isHalf ? '#F59E0B' : '#475569'}"
+                                 stroke-width="1.8"/>
                       </svg>
-                    </button>
+                      <button type="button" 
+                              onclick="MoodGraphApp.submitRating(${movie.movieId}, ${valLeft})" 
+                              class="absolute left-0 top-0 w-1/2 h-full z-10 cursor-pointer focus:outline-none"
+                              aria-label="${valLeft} sao — ${RATING_LABELS[valLeft] || ''}"
+                              title="${valLeft} sao — ${RATING_LABELS[valLeft] || ''}">
+                      </button>
+                      <button type="button" 
+                              onclick="MoodGraphApp.submitRating(${movie.movieId}, ${valRight})" 
+                              class="absolute right-0 top-0 w-1/2 h-full z-10 cursor-pointer focus:outline-none"
+                              aria-label="${valRight} sao — ${RATING_LABELS[valRight] || ''}"
+                              title="${valRight} sao — ${RATING_LABELS[valRight] || ''}">
+                      </button>
+                    </div>
                   `;
                 }).join('')}
               </div>
-              <div class="text-[10px] text-amber-300 font-mono mt-1 shrink-0 whitespace-nowrap">
-                ${userRating > 0 ? RATING_LABELS[userRating] : 'Chưa chấm điểm'}
+              <div class="text-[10px] text-amber-300 font-mono mt-1 shrink-0 whitespace-nowrap min-h-[16px]">
+                ${userRating > 0 ? (RATING_LABELS[userRating] || (userRating + '★')) : 'Nhấp nửa trái/phải để chấm 0.5★ — 5.0★'}
               </div>
             </div>
 
@@ -1716,11 +1790,19 @@
           <!-- Cột Phải (Chi tiết): md:col-span-8 space-y-4 min-w-0 overflow-hidden -->
           <div class="md:col-span-8 space-y-4 min-w-0 overflow-hidden">
             
-            <!-- Metadata Grid -->
+            <!-- Metadata Grid & Đội Ngũ Sáng Tạo (ISS-12) -->
             <div class="grid grid-cols-2 gap-3 text-xs">
               <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
                 <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Đạo diễn:</span>
-                <span class="text-white font-semibold truncate block">${movie.director || 'Chưa cập nhật'}</span>
+                <span class="text-white font-semibold truncate block" title="${movie.director || 'Chưa cập nhật'}">${movie.director || 'Chưa cập nhật'}</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
+                <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Biên kịch:</span>
+                <span class="text-amber-200 font-semibold truncate block" title="${movie.writer || 'Chưa cập nhật'}">${movie.writer || 'Chưa cập nhật'}</span>
+              </div>
+              <div class="col-span-2 p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
+                <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Diễn viên chính:</span>
+                <span class="text-slate-200 font-semibold truncate block" title="${(movie.cast && movie.cast.join(', ')) || 'Chưa cập nhật'}">${(movie.cast && movie.cast.join(', ')) || 'Chưa cập nhật'}</span>
               </div>
               <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
                 <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Thời lượng:</span>
@@ -1728,11 +1810,7 @@
               </div>
               <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
                 <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Điểm chuẩn MovieLens:</span>
-                <span class="text-amber-400 font-bold font-mono shrink-0 whitespace-nowrap">★ ${movie.ratingAvg || 4.2} / 5.0 (${(movie.ratingCount || 1000).toLocaleString('vi-VN')} votes)</span>
-              </div>
-              <div class="p-2.5 rounded-lg bg-[#141A24] border border-white/10 min-w-0">
-                <span class="text-slate-400 block text-[10px] shrink-0 whitespace-nowrap">Miền tâm trạng:</span>
-                <span class="text-emerald-300 font-semibold truncate block">${movie.moodLabel || 'Đặc sắc'}</span>
+                <span class="text-amber-400 font-bold font-mono shrink-0 whitespace-nowrap">★ ${movie.ratingAvg || 4.2} / 5.0</span>
               </div>
             </div>
 
@@ -2685,6 +2763,7 @@
     },
 
     // Movie Detail Modal & Provenance Explorer
+    getFallbackPosterSvg: getFallbackPosterSvg,
     openMovieDetailModal,
     closeMovieDetailModal,
     switchProvenanceTab,
@@ -2732,3 +2811,35 @@
   };
 
 })(window, document);
+
+
+    // Cơ chế Fallback chủ động chống 100% ảnh vỡ (BUG-01 / F21)
+  function initZeroBrokenImagesGuard() {
+    function patchAllImgs() {
+      document.querySelectorAll('img').forEach(img => {
+        if (!img.getAttribute('onerror')) {
+          img.setAttribute('onerror', "this.onerror=null; this.src=MoodGraphApp.getFallbackPosterSvg(this.dataset.title || this.alt, this.dataset.genres, this.dataset.year);");
+        }
+        if (img.naturalWidth === 0 && img.src && !img.src.startsWith('data:')) {
+          const fallback = (typeof getFallbackPosterSvg === 'function')
+            ? getFallbackPosterSvg(img.dataset.title || img.alt, img.dataset.genres, img.dataset.year)
+            : (window.MoodGraphApp && window.MoodGraphApp.getFallbackPosterSvg(img.dataset.title || img.alt, img.dataset.genres, img.dataset.year));
+          if (fallback) {
+            img.src = fallback;
+          }
+        }
+      });
+    }
+    patchAllImgs();
+    setTimeout(patchAllImgs, 200);
+    setTimeout(patchAllImgs, 500);
+    setTimeout(patchAllImgs, 1000);
+    setInterval(patchAllImgs, 800);
+  }
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initZeroBrokenImagesGuard);
+    } else {
+      initZeroBrokenImagesGuard();
+    }
+  }

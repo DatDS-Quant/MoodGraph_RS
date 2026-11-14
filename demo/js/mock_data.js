@@ -132,6 +132,8 @@
       ratingCount: 80448,
       duration: "142 phút",
       director: "Frank Darabont",
+      cast: ["Tim Robbins", "Morgan Freeman", "Bob Gunton"],
+      writer: "Stephen King, Frank Darabont",
       posterUrl: "https://image.tmdb.org/t/p/w500/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/pNjh59JSxChQktamG3LMp9ZoQzp.jpg",
       links: {
@@ -154,6 +156,8 @@
       ratingCount: 45200,
       duration: "114 phút",
       director: "Martin Scorsese",
+      cast: ["Robert De Niro", "Jodie Foster", "Cybill Shepherd"],
+      writer: "Paul Schrader",
       posterUrl: "https://image.tmdb.org/t/p/w500/ekstpH614fwDX8DUln1a2Opz0N8.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/9uddYYTNcLWpzUkl5iw1RUYhLhY.jpg",
       links: {
@@ -176,6 +180,8 @@
       ratingCount: 52490,
       duration: "175 phút",
       director: "Francis Ford Coppola",
+      cast: ["Marlon Brando", "Al Pacino", "James Caan"],
+      writer: "Mario Puzo, Francis Ford Coppola",
       posterUrl: "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/tSPT36ZKlP2WVHJLM4cQPLSzv3b.jpg",
       links: {
@@ -198,6 +204,8 @@
       ratingCount: 38875,
       duration: "202 phút",
       director: "Francis Ford Coppola",
+      cast: ["Al Pacino", "Robert De Niro", "Robert Duvall"],
+      writer: "Francis Ford Coppola, Mario Puzo",
       posterUrl: "https://image.tmdb.org/t/p/w500/8a1lJs7mFyGhGhZZDT1azJUoQiZ.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/pGzqRKrYeK4LogoysNro0vG8d8N.jpg",
       links: {
@@ -220,6 +228,8 @@
       ratingCount: 78735,
       duration: "154 phút",
       director: "Quentin Tarantino",
+      cast: ["John Travolta", "Uma Thurman", "Samuel L. Jackson"],
+      writer: "Quentin Tarantino, Roger Avary",
       posterUrl: "https://image.tmdb.org/t/p/w500/vQWk5YBFWF4bZaofAbv0tShwBvQ.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/suaEOtk1N1sgg2MTM7oZd2cfVp3.jpg",
       links: {
@@ -242,6 +252,8 @@
       ratingCount: 80375,
       duration: "142 phút",
       director: "Robert Zemeckis",
+      cast: ["Tom Hanks", "Robin Wright", "Gary Sinise"],
+      writer: "Winston Groom, Eric Roth",
       posterUrl: "https://image.tmdb.org/t/p/w500/saHP97rTPS5eLmrLQEcANmKrsFl.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/66Kn4XWhkuPkJxOJyPEx4U2CUfN.jpg",
       links: {
@@ -264,6 +276,8 @@
       ratingCount: 73109,
       duration: "118 phút",
       director: "Jonathan Demme",
+      cast: ["Jodie Foster", "Anthony Hopkins", "Scott Glenn"],
+      writer: "Thomas Harris, Ted Tally",
       posterUrl: "https://image.tmdb.org/t/p/w500/uS9m8OBk1A8eM9I042bx8XXpqAq.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/mbOx1wxMLikzwWUO9TKAcFIy6op.jpg",
       links: {
@@ -286,6 +300,8 @@
       ratingCount: 71787,
       duration: "136 phút",
       director: "The Wachowskis",
+      cast: ["Keanu Reeves", "Laurence Fishburne", "Carrie-Anne Moss"],
+      writer: "Lana Wachowski, Lilly Wachowski",
       posterUrl: "https://image.tmdb.org/t/p/w500/dXNAPwY7VrqMAo51EKhhCJfaGb5.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/tlm8UkiQsitc8rSuIAscQDCnP8d.jpg",
       links: {
@@ -308,6 +324,8 @@
       ratingCount: 68083,
       duration: "121 phút",
       director: "George Lucas",
+      cast: ["Mark Hamill", "Harrison Ford", "Carrie Fisher"],
+      writer: "George Lucas",
       posterUrl: "https://image.tmdb.org/t/p/w500/fai0rspsNeJCS69wHNjOdWxcI7P.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/zqkmTXzjkAgXmEWLRsY4UpTWCeo.jpg",
       links: {
@@ -330,6 +348,8 @@
       ratingCount: 63268,
       duration: "127 phút",
       director: "Steven Spielberg",
+      cast: ["Sam Neill", "Laura Dern", "Jeff Goldblum"],
+      writer: "Michael Crichton, David Koepp",
       posterUrl: "https://image.tmdb.org/t/p/w500/d9mtMGQDLANKieb9PbD3yK7xxzo.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/f082quUW2kAtZXFZVGEfhwacZoG.jpg",
       links: {
@@ -352,6 +372,8 @@
       ratingCount: 59349,
       duration: "195 phút",
       director: "Steven Spielberg",
+      cast: ["Liam Neeson", "Ben Kingsley", "Ralph Fiennes"],
+      writer: "Thomas Keneally, Steven Zaillian",
       posterUrl: "https://image.tmdb.org/t/p/w500/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/zb6fM1CX41D9rF9hdgclu0peUmy.jpg",
       links: {
@@ -374,6 +396,8 @@
       ratingCount: 58266,
       duration: "178 phút",
       director: "Mel Gibson",
+      cast: ["Mel Gibson", "Sophie Marceau", "Patrick McGoohan"],
+      writer: "Randall Wallace",
       posterUrl: "https://image.tmdb.org/t/p/w500/or1gBugydmjToAEq7OZY0owwFk.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/1m1c5gIWWkb1FEC9lzsoXHhhs7b.jpg",
       links: {
@@ -396,6 +420,8 @@
       ratingCount: 57379,
       duration: "137 phút",
       director: "James Cameron",
+      cast: ["Arnold Schwarzenegger", "Linda Hamilton", "Edward Furlong"],
+      writer: "James Cameron, William Wisher",
       posterUrl: "https://image.tmdb.org/t/p/w500/jFTVD4XoWQTcg7wdyJKa8PEds5q.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/izkMjmhauFx9DjoBQqM5sM5WAwE.jpg",
       links: {
@@ -418,6 +444,8 @@
       ratingCount: 55102,
       duration: "106 phút",
       director: "Bryan Singer",
+      cast: ["Kevin Spacey", "Gabriel Byrne", "Chazz Palminteri"],
+      writer: "Christopher McQuarrie",
       posterUrl: "https://image.tmdb.org/t/p/w500/99X2SgyFunJFXGAYnDv3sb9pnUD.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/hy0Hx9fMPk2fmw26Li60z1S2giU.jpg",
       links: {
@@ -440,6 +468,8 @@
       ratingCount: 42105,
       duration: "133 phút",
       director: "Milos Forman",
+      cast: ["Jack Nicholson", "Louise Fletcher", "Will Sampson"],
+      writer: "Lawrence Hauben, Bo Goldman",
       posterUrl: "https://image.tmdb.org/t/p/w500/kjWsMh72V6d8KRLV4EOoSJLT1H7.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/uA8eSNAUUUyfHNIrG4h0zHxzt9W.jpg",
       links: {
@@ -462,6 +492,8 @@
       ratingCount: 31250,
       duration: "102 phút",
       director: "Michael Curtiz",
+      cast: ["Humphrey Bogart", "Ingrid Bergman", "Paul Henreid"],
+      writer: "Julius J. Epstein, Philip G. Epstein",
       posterUrl: "https://image.tmdb.org/t/p/w500/lGCEKlJo2CnWydQj7aamY7s1S7Q.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/87wqeMeUeMRLjsE1IWNKJcPlpuC.jpg",
       links: {
@@ -484,6 +516,8 @@
       ratingCount: 22108,
       duration: "112 phút",
       director: "Alfred Hitchcock",
+      cast: ["James Stewart", "Grace Kelly", "Wendell Corey"],
+      writer: "John Michael Hayes, Cornell Woolrich",
       posterUrl: "https://image.tmdb.org/t/p/w500/ILVF0eJxHMddjxeQhswFtpMtqx.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/5bN06p5OwRUEqcfrtNs5egV16yb.jpg",
       links: {
@@ -506,6 +540,8 @@
       ratingCount: 28410,
       duration: "147 phút",
       director: "Francis Ford Coppola",
+      cast: ["Marlon Brando", "Martin Sheen", "Robert Duvall"],
+      writer: "John Milius, Francis Ford Coppola",
       posterUrl: "https://image.tmdb.org/t/p/w500/gQB8Y5RCMkv2zwzFHbUJX3kAhvA.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/49fzLedFVKgGgFChLMuulDJBY1c.jpg",
       links: {
@@ -528,6 +564,8 @@
       ratingCount: 45620,
       duration: "145 phút",
       director: "Martin Scorsese",
+      cast: ["Robert De Niro", "Ray Liotta", "Joe Pesci"],
+      writer: "Nicholas Pileggi, Martin Scorsese",
       posterUrl: "https://image.tmdb.org/t/p/w500/9OkCLM73MIU2CrKZbqiT8Ln1wY2.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/gILte6Zd7m1YneIr6MVhh30S9pr.jpg",
       links: {
@@ -550,6 +588,8 @@
       ratingCount: 65120,
       duration: "148 phút",
       director: "Christopher Nolan",
+      cast: ["Leonardo DiCaprio", "Joseph Gordon-Levitt", "Elliot Page"],
+      writer: "Christopher Nolan",
       posterUrl: "https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/8ZTVqvKDQ8emSGUEMjsS4yHAwrp.jpg",
       links: {
@@ -572,6 +612,8 @@
       ratingCount: 54100,
       duration: "169 phút",
       director: "Christopher Nolan",
+      cast: ["Matthew McConaughey", "Anne Hathaway", "Jessica Chastain"],
+      writer: "Jonathan Nolan, Christopher Nolan",
       posterUrl: "https://image.tmdb.org/t/p/w500/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/8sNiAPPYU14PUepFNeSNGUTiHW.jpg",
       links: {
@@ -594,6 +636,8 @@
       ratingCount: 68150,
       duration: "139 phút",
       director: "David Fincher",
+      cast: ["Brad Pitt", "Edward Norton", "Helena Bonham Carter"],
+      writer: "Chuck Palahniuk, Jim Uhls",
       posterUrl: "https://image.tmdb.org/t/p/w500/jSziioSwPVrOy9Yow3XhWIBDjq1.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/c6OLXfKAk5BKeR6broC8pYiCquX.jpg",
       links: {
@@ -616,6 +660,8 @@
       ratingCount: 52180,
       duration: "127 phút",
       director: "David Fincher",
+      cast: ["Brad Pitt", "Morgan Freeman", "Gwyneth Paltrow"],
+      writer: "Andrew Kevin Walker",
       posterUrl: "https://image.tmdb.org/t/p/w500/191nKfP0ehp3uIvWqgPbFmI4lv9.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/i5H7zusQGsysGQ8i6P361Vnr0n2.jpg",
       links: {
@@ -638,6 +684,8 @@
       ratingCount: 31400,
       duration: "109 phút",
       director: "Alfred Hitchcock",
+      cast: ["Anthony Perkins", "Janet Leigh", "Vera Miles"],
+      writer: "Robert Bloch, Joseph Stefano",
       posterUrl: "https://image.tmdb.org/t/p/w500/yz4QVqPx3h1hD1DfqqQkCq3rmxW.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/mufF1aYvwdpKerhq5R1YrVcbJLY.jpg",
       links: {
@@ -660,6 +708,8 @@
       ratingCount: 38450,
       duration: "146 phút",
       director: "Stanley Kubrick",
+      cast: ["Jack Nicholson", "Shelley Duvall", "Danny Lloyd"],
+      writer: "Stephen King, Stanley Kubrick, Diane Johnson",
       posterUrl: "https://image.tmdb.org/t/p/w500/uAR0AWqhQL1hQa69UDEbb2rE5Wx.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/AdKA2F1SzYPhSZdEbjH1Zh75UVQ.jpg",
       links: {
@@ -682,6 +732,8 @@
       ratingCount: 9240,
       duration: "94 phút",
       director: "F.W. Murnau",
+      cast: ["Max Schreck", "Gustav von Wangenheim", "Greta Schröder"],
+      writer: "Henrik Galeen, Bram Stoker",
       posterUrl: "https://image.tmdb.org/t/p/w500/zv7J85D8CC9qYagAEhPM63CIG6j.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/cA9iGtvjRGJHzDBfrq48l0eyCvA.jpg",
       links: {
@@ -704,6 +756,8 @@
       ratingCount: 57342,
       duration: "81 phút",
       director: "John Lasseter",
+      cast: ["Tom Hanks", "Tim Allen", "Don Rickles"],
+      writer: "John Lasseter, Pete Docter, Andrew Stanton",
       posterUrl: "https://image.tmdb.org/t/p/w500/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/8AqWECiUHnz1Crj69uB9vhiK9Le.jpg",
       links: {
@@ -726,6 +780,8 @@
       ratingCount: 38240,
       duration: "92 phút",
       director: "John Lasseter",
+      cast: ["Tom Hanks", "Tim Allen", "Joan Cusack"],
+      writer: "John Lasseter, Pete Docter, Ash Brannon",
       posterUrl: "https://image.tmdb.org/t/p/w500/4rbcp3ng8n1MKHjpeqW0L7Fnpzz.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/nsfVr4QbbunUrHINN9N7JdVAMTf.jpg",
       links: {
@@ -748,6 +804,8 @@
       ratingCount: 32410,
       duration: "125 phút",
       director: "Hayao Miyazaki",
+      cast: ["Rumi Hiiragi", "Miyu Irino", "Mari Natsuki"],
+      writer: "Hayao Miyazaki",
       posterUrl: "https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/m4TUa2ciEWSlk37rOsjiSIvZDXE.jpg",
       links: {
@@ -770,6 +828,8 @@
       ratingCount: 42100,
       duration: "100 phút",
       director: "Andrew Stanton",
+      cast: ["Albert Brooks", "Ellen DeGeneres", "Alexander Gould"],
+      writer: "Andrew Stanton, Bob Peterson, David Reynolds",
       posterUrl: "https://image.tmdb.org/t/p/w500/eHuGQ10FUzK1mdOY69wF5pGgEf5.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/eCynaAOgYYiw5yN5lBwz3IxqvaW.jpg",
       links: {
@@ -792,6 +852,8 @@
       ratingCount: 52180,
       duration: "88 phút",
       director: "Roger Allers, Rob Minkoff",
+      cast: ["Matthew Broderick", "Jeremy Irons", "James Earl Jones"],
+      writer: "Irene Mecchi, Jonathan Roberts, Linda Woolverton",
       posterUrl: "https://image.tmdb.org/t/p/w500/sKCr78MXSLixwmZ8DyJLrpMsd15.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/wXsQvli6tWqja51pYxXNG1LFIGV.jpg",
       links: {
@@ -814,6 +876,8 @@
       ratingCount: 18240,
       duration: "103 phút",
       director: "Stanley Donen, Gene Kelly",
+      cast: ["Gene Kelly", "Donald O'Connor", "Debbie Reynolds"],
+      writer: "Adolph Green, Betty Comden",
       posterUrl: "https://image.tmdb.org/t/p/w500/zjrpWniKbzu0zFR5sUI1Ptdfl9y.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/6qOyw4yfzbzTp5YsCX26C28Do0S.jpg",
       links: {
@@ -836,6 +900,8 @@
       ratingCount: 12410,
       duration: "68 phút",
       director: "Leo McCarey",
+      cast: ["Groucho Marx", "Harpo Marx", "Chico Marx"],
+      writer: "Bert Kalmar, Harry Ruby",
       posterUrl: "https://image.tmdb.org/t/p/w500/31t63plEGKHhYuuCpC9bFWO9SBS.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/nVpp3ZcIFtJJ3fJp65eJczehIN8.jpg",
       links: {
@@ -858,6 +924,8 @@
       ratingCount: 35120,
       duration: "102 phút",
       director: "Sofia Coppola",
+      cast: ["Bill Murray", "Scarlett Johansson", "Giovanni Ribisi"],
+      writer: "Sofia Coppola",
       posterUrl: "https://image.tmdb.org/t/p/w500/3jCLmYDIIiSMPujbwygNpqdpM8N.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/6ITVHoipvxAS8luzKtHTbPaHLtT.jpg",
       links: {
@@ -880,6 +948,8 @@
       ratingCount: 42105,
       duration: "108 phút",
       director: "Michel Gondry",
+      cast: ["Jim Carrey", "Kate Winslet", "Kirsten Dunst"],
+      writer: "Charlie Kaufman, Michel Gondry",
       posterUrl: "https://image.tmdb.org/t/p/w500/5MwkWH9tYHv3mV9OdYTMR5qreIz.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/95qi5TJMIBI5VzWHia88Pbrye7Z.jpg",
       links: {
@@ -902,6 +972,8 @@
       ratingCount: 31200,
       duration: "102 phút",
       director: "Darren Aronofsky",
+      cast: ["Ellen Burstyn", "Jared Leto", "Jennifer Connelly"],
+      writer: "Hubert Selby Jr., Darren Aronofsky",
       posterUrl: "https://image.tmdb.org/t/p/w500/9BTwsLaMVHOGFlmsSlx5QYCaXb.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/fAGYRJCujRBMw7TCuTp893eSG8e.jpg",
       links: {
@@ -924,6 +996,8 @@
       ratingCount: 14200,
       duration: "98 phút",
       director: "Krzysztof Kieslowski",
+      cast: ["Juliette Binoche", "Zbigniew Zamachowski", "Julie Delpy"],
+      writer: "Krzysztof Kieslowski, Krzysztof Piesiewicz",
       posterUrl: "https://image.tmdb.org/t/p/w500/33wsWxzsNstI8N7dvuwzFmj1qBd.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/pXvYw0QOPbHJVvwGbZfrSNY2vnB.jpg",
       links: {
@@ -946,6 +1020,8 @@
       ratingCount: 18450,
       duration: "96 phút",
       director: "Ingmar Bergman",
+      cast: ["Max von Sydow", "Gunnar Björnstrand", "Bengt Ekerot"],
+      writer: "Ingmar Bergman",
       posterUrl: "https://image.tmdb.org/t/p/w500/dGgiXMWDcS5aJTBEFu7bmaQPNox.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/vxEfLEdPbUJW8ZD9ymGQ6ZJzuyf.jpg",
       links: {
@@ -968,6 +1044,8 @@
       ratingCount: 19800,
       duration: "98 phút",
       director: "Vương Gia Vệ (Wong Kar-wai)",
+      cast: ["Lương Triều Vỹ", "Trương Mạn Ngọc", "Phan Địch Hoa"],
+      writer: "Vương Gia Vệ (Wong Kar-wai)",
       posterUrl: "https://image.tmdb.org/t/p/w500/8BgGbbWiLNhPtkMkN0gGTnbtvBv.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/ffQFnAUm2Uu4RU0nijpjPRf9TBT.jpg",
       links: {
@@ -990,6 +1068,8 @@
       ratingCount: 29800,
       duration: "130 phút",
       director: "Fernando Meirelles",
+      cast: ["Alexandre Rodrigues", "Leandro Firmino", "Phellipe Haagensen"],
+      writer: "Paulo Lins, Bráulio Mantovani",
       posterUrl: "https://image.tmdb.org/t/p/w500/k7eYdWvhYQyRQoU2TB2A2Xu2TfD.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/uvitbjFU4JqvMwIkMWHp69bmUzG.jpg",
       links: {
@@ -1012,6 +1092,8 @@
       ratingCount: 15410,
       duration: "162 phút",
       director: "Akira Kurosawa",
+      cast: ["Tatsuya Nakadai", "Akira Terao", "Jinpachi Nezu"],
+      writer: "Akira Kurosawa, Hideo Oguni, Masato Ide",
       posterUrl: "https://image.tmdb.org/t/p/w500/dGgiXMWDcS5aJTBEFu7bmaQPNox.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/vxEfLEdPbUJW8ZD9ymGQ6ZJzuyf.jpg",
       links: {
@@ -1034,6 +1116,8 @@
       ratingCount: 18200,
       duration: "149 phút",
       director: "Wolfgang Petersen",
+      cast: ["Jürgen Prochnow", "Herbert Grönemeyer", "Klaus Wennemann"],
+      writer: "Lothar G. Buchheim, Wolfgang Petersen",
       posterUrl: "https://image.tmdb.org/t/p/w500/hNfAYNCMRthp9iruF5Q6S1z4bVA.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/zzzhbZnSPMOON9uGt0LsdUJWYoC.jpg",
       links: {
@@ -1056,6 +1140,8 @@
       ratingCount: 14100,
       duration: "110 phút",
       director: "Akira Kurosawa",
+      cast: ["Toshirô Mifune", "Tatsuya Nakadai", "Yôko Tsukasa"],
+      writer: "Ryûzô Kikushima, Akira Kurosawa",
       posterUrl: "https://image.tmdb.org/t/p/w500/tN7kYPjRhDolpui9sc9Eq9n5b2O.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/5BBwSVytssbFuSPZE4DtJVhROjN.jpg",
       links: {
@@ -1078,6 +1164,8 @@
       ratingCount: 16200,
       duration: "88 phút",
       director: "Stanley Kubrick",
+      cast: ["Kirk Douglas", "Ralph Meeker", "Adolphe Menjou"],
+      writer: "Stanley Kubrick, Calder Willingham, Jim Thompson",
       posterUrl: "https://image.tmdb.org/t/p/w500/hOrV2fCw2kmSiS4ZMGFPfXqr3lt.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/1pRNzOM7OQA29cVayaCheBI4vn7.jpg",
       links: {
@@ -1100,6 +1188,8 @@
       ratingCount: 17200,
       duration: "104 phút",
       director: "Carol Reed",
+      cast: ["Joseph Cotten", "Alida Valli", "Orson Welles"],
+      writer: "Graham Greene",
       posterUrl: "https://image.tmdb.org/t/p/w500/7oaie3ZBc9UuWZLF24crro1pone.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/nJ0jz1J3zNja31UEMeklhgFeMw5.jpg",
       links: {
@@ -1122,6 +1212,8 @@
       ratingCount: 21400,
       duration: "100 phút",
       director: "John Huston",
+      cast: ["Humphrey Bogart", "Mary Astor", "Gladys George"],
+      writer: "Dashiell Hammett, John Huston",
       posterUrl: "https://image.tmdb.org/t/p/w500/bf4o6Uzw5wqLjdKwRuiDrN1xyvl.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/5lMm0MmAviP6DF45nxBVOT9LCwK.jpg",
       links: {
@@ -1144,6 +1236,8 @@
       ratingCount: 35120,
       duration: "178 phút",
       director: "Sergio Leone",
+      cast: ["Clint Eastwood", "Eli Wallach", "Lee Van Cleef"],
+      writer: "Luciano Vincenzoni, Sergio Leone",
       posterUrl: "https://image.tmdb.org/t/p/w500/bX2xnavhMYjWDoZp1VM6VnU1xwe.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/x4biAVdPVCghBlsVIzB6NmbghIz.jpg",
       links: {
@@ -1166,6 +1260,8 @@
       ratingCount: 28400,
       duration: "131 phút",
       director: "Clint Eastwood",
+      cast: ["Clint Eastwood", "Gene Hackman", "Morgan Freeman"],
+      writer: "David Webb Peoples",
       posterUrl: "https://image.tmdb.org/t/p/w500/54roTwbX9fltg85zjsmrooXAs12.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/rvRGFevvZK48onX0PYI1eQLbuJd.jpg",
       links: {
@@ -1188,6 +1284,8 @@
       ratingCount: 8450,
       duration: "102 phút",
       director: "Ron Fricke",
+      cast: ["Balinese dancers", "Tibetan monks", "Indigenous peoples"],
+      writer: "Ron Fricke, Mark Magidson",
       posterUrl: "https://image.tmdb.org/t/p/w500/qodkea4k0pNUmNTl5TJO2PdTqgW.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/tbSjemOf1nXPOjWELdaeZ7qj1iX.jpg",
       links: {
@@ -1210,6 +1308,8 @@
       ratingCount: 16400,
       duration: "122 phút",
       director: "Michael Moore",
+      cast: ["Michael Moore", "George W. Bush", "Ben Affleck"],
+      writer: "Michael Moore",
       posterUrl: "https://image.tmdb.org/t/p/w500/9Fha6OFqFBL9bPRLJPhJFmAwib6.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/mW7HEM3e6Uf9IcBuvEHS8yaQ48M.jpg",
       links: {
@@ -1232,6 +1332,8 @@
       ratingCount: 61400,
       duration: "201 phút",
       director: "Peter Jackson",
+      cast: ["Elijah Wood", "Viggo Mortensen", "Ian McKellen"],
+      writer: "J.R.R. Tolkien, Fran Walsh, Peter Jackson",
       posterUrl: "https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/ctiw6FZK4N36LmkjSklWEbuvlq9.jpg",
       links: {
@@ -1254,6 +1356,8 @@
       ratingCount: 65400,
       duration: "178 phút",
       director: "Peter Jackson",
+      cast: ["Elijah Wood", "Ian McKellen", "Orlando Bloom"],
+      writer: "J.R.R. Tolkien, Fran Walsh, Peter Jackson",
       posterUrl: "https://image.tmdb.org/t/p/w500/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/oiwc338EoBgS4sEI2ixAny4KQKg.jpg",
       links: {
@@ -1276,6 +1380,8 @@
       ratingCount: 420,
       duration: "82 phút",
       director: "Margot Benacerraf",
+      cast: ["José Ignacio Cabrujas", "Laurent Terzieff"],
+      writer: "Margot Benacerraf, Pierre Seghers",
       posterUrl: "https://image.tmdb.org/t/p/w500/dt3kIO57I0y58YPKh2JAXxZfXGw.jpg",
       backdropUrl: "https://image.tmdb.org/t/p/w1280/qbA4t0x8Cdvkd0L3VT3868SvqNv.jpg",
       links: {

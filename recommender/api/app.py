@@ -75,6 +75,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.warning(f"HybridRecommenderService initialization note: {e}")
 
+    # 4b. Pre-warm Embedded Knowledge Graph snapshot cache (<0.5s)
+    embedded_kg = None
+    try:
+        from recommender.kg.cache_manager import CacheManager
+        embedded_kg = CacheManager.get_or_create_graph()
+        logger.info(
+            f"EmbeddedKnowledgeGraph pre-warmed: {len(embedded_kg.movies)} movies, "
+            f"{len(embedded_kg.genres)} genres indexed."
+        )
+    except Exception as e:
+        logger.warning(f"EmbeddedKnowledgeGraph pre-warm note: {e}")
+
     # 5. Wire Application Services
     catalog_svc = CatalogService(catalog_repo=catalog_repo)
     user_svc = UserProfileService(history_repo=history_repo, catalog_repo=catalog_repo)
@@ -101,6 +113,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.metrics_repo = metrics_repo
     app.state.sqlite_repo = sqlite_repo
     app.state.hybrid_engine = hybrid_engine
+    app.state.embedded_kg = embedded_kg
     app.state.catalog_service = catalog_svc
     app.state.user_profile_service = user_svc
     app.state.explainability_service = explain_svc
@@ -131,8 +144,10 @@ def create_app() -> FastAPI:
         allow_origins=[
             "http://localhost:3000",
             "http://localhost:8000",
+            "http://localhost:8080",
             "http://127.0.0.1:3000",
             "http://127.0.0.1:8000",
+            "http://127.0.0.1:8080",
         ],
         allow_credentials=True,
         allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
@@ -144,6 +159,15 @@ def create_app() -> FastAPI:
     application.include_router(discovery_router)
     application.include_router(lab_router)
     application.include_router(interaction_router)
+
+    # Mount Static Web Client (demo/ directory)
+    from pathlib import Path
+    from fastapi.staticfiles import StaticFiles
+
+    demo_dir = Path(__file__).resolve().parent.parent.parent / "demo"
+    if demo_dir.is_dir():
+        application.mount("/demo", StaticFiles(directory=str(demo_dir), html=True), name="demo_static")
+        application.mount("/", StaticFiles(directory=str(demo_dir), html=True), name="static")
 
     return application
 

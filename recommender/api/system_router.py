@@ -35,13 +35,15 @@ def health_check(
     if hybrid_engine and hasattr(hybrid_engine, "als_service"):
         als_available = getattr(hybrid_engine.als_service, "_is_warmed_up", False) or True
 
+    kg_backend = "EmbeddedKnowledgeGraph" if getattr(request.app.state, "embedded_kg", None) is not None else "InMemoryGraph"
+
     return HealthResponse(
         status="healthy",
         version="0.5.0-phase5",
         models_warmed=bool(hybrid_engine is not None),
         catalog_movies_count=catalog_count,
         als_available=als_available,
-        kg_backend="InMemoryGraph",
+        kg_backend=kg_backend,
         sqlite_wal_enabled=True,
     )
 

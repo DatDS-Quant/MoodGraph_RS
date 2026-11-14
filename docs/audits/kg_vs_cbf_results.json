@@ -1,0 +1,57 @@
+[
+  {
+    "model_name": "Content-Based (Genre-only)",
+    "positive_denominator": 3,
+    "HR@5": 0.0,
+    "HR@10": 0.0,
+    "HR@20": 0.0,
+    "NDCG@10": 0.0,
+    "MRR@10": 0.0,
+    "Catalog_Coverage@10": 3,
+    "latency_ms_per_user": 0.0
+  },
+  {
+    "model_name": "Content-Based (Full: Genre+Genome TF-IDF)",
+    "positive_denominator": 3,
+    "HR@5": 0.0,
+    "HR@10": 0.0,
+    "HR@20": 0.0,
+    "NDCG@10": 0.0,
+    "MRR@10": 0.0,
+    "Catalog_Coverage@10": 3,
+    "latency_ms_per_user": 0.0
+  },
+  {
+    "model_name": "Knowledge Graph (P1 Genre Metapath)",
+    "positive_denominator": 3,
+    "HR@5": 0.0,
+    "HR@10": 0.0,
+    "HR@20": 0.0,
+    "NDCG@10": 0.0,
+    "MRR@10": 0.0,
+    "Catalog_Coverage@10": 3,
+    "latency_ms_per_user": 1.36
+  },
+  {
+    "model_name": "Knowledge Graph (P1+P2 Genre+Genome Metapaths)",
+    "positive_denominator": 3,
+    "HR@5": 0.0,
+    "HR@10": 0.0,
+    "HR@20": 0.0,
+    "NDCG@10": 0.0,
+    "MRR@10": 0.0,
+    "Catalog_Coverage@10": 3,
+    "latency_ms_per_user": 0.53
+  },
+  {
+    "model_name": "Knowledge Graph (P1+P2+P3 Full Metapaths)",
+    "positive_denominator": 3,
+    "HR@5": 0.0,
+    "HR@10": 0.0,
+    "HR@20": 0.0,
+    "NDCG@10": 0.0,
+    "MRR@10": 0.0,
+    "Catalog_Coverage@10": 3,
+    "latency_ms_per_user": 1.0
+  }
+]
