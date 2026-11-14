@@ -63,6 +63,7 @@ class PopularityRecommendation:
     model_name: str
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi bản ghi gợi ý phổ biến sang dictionary."""
         return {
             "userId": self.user_id,
             "movieId": self.movie_id,

@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: User Interaction Application Service.
-Coordinates client-side watchlist additions, user feedback ratings,
-custom taste preferences, and cache invalidation.
+MoodGraph Giai đoạn 5: Dịch vụ Tương tác Người dùng (User Interaction Application Service).
+Điều phối các hành vi từ phía người dùng như thêm phim vào danh sách xem sau (watchlist),
+ghi nhận đánh giá số sao, lưu tùy chọn sở thích cá nhân và đồng bộ xóa bộ nhớ đệm (cache invalidation).
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ logger = logging.getLogger("recommender.services.user_interaction_service")
 
 
 class UserInteractionService:
-    """Application service managing mutable demo interactions and cache synchronization."""
+    """Dịch vụ ứng dụng quản lý các tương tác có thể thay đổi (mutable demo interactions) và đồng bộ bộ đệm cache."""
 
     def __init__(
         self,
@@ -33,14 +33,14 @@ class UserInteractionService:
         self.hybrid_engine = hybrid_engine
 
     def save_movie_to_list(self, user_id: str, movie_id: int, list_type: str = "watchlist") -> Dict[str, Any]:
-        """Saves a movie to user's watchlist or favorites."""
+        """Lưu một bộ phim vào danh sách xem sau (watchlist) hoặc yêu thích (favorites) của người dùng."""
         movie = self.catalog_repo.get_movie_by_id(movie_id)
         if not movie:
             return {"success": False, "error": f"Movie {movie_id} not found in catalog."}
 
         success = self.sqlite_repo.save_movie(user_id=user_id, movie_id=movie_id, list_type=list_type)
 
-        # Invalidate recommendation cache for this user if hybrid_engine is available
+        # Hủy bộ nhớ đệm gợi ý của người dùng này nếu hybrid_engine đã được tích hợp
         self._invalidate_user_cache(user_id)
 
         return {
@@ -52,13 +52,13 @@ class UserInteractionService:
         }
 
     def remove_movie_from_list(self, user_id: str, movie_id: int, list_type: str = "watchlist") -> Dict[str, Any]:
-        """Removes a movie from user's watchlist."""
+        """Xóa một bộ phim khỏi danh sách xem sau của người dùng."""
         removed = self.sqlite_repo.remove_saved_movie(user_id=user_id, movie_id=movie_id, list_type=list_type)
         self._invalidate_user_cache(user_id)
         return {"success": removed, "user_id": user_id, "movie_id": movie_id, "list_type": list_type}
 
     def get_saved_movies(self, user_id: str, list_type: Optional[str] = "watchlist") -> List[Dict[str, Any]]:
-        """Lists saved movies with rich movie details."""
+        """Liệt kê danh sách các bộ phim đã lưu kèm theo thông tin chi tiết từ danh mục."""
         raw_saved = self.sqlite_repo.list_saved_movies(user_id=user_id, list_type=list_type)
         enriched = []
         for item in raw_saved:
@@ -80,7 +80,7 @@ class UserInteractionService:
         rating: float,
         feedback_text: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Submits a user rating for a movie and invalidates recommendations cache."""
+        """Ghi nhận đánh giá của người dùng cho một bộ phim và hủy bỏ cache gợi ý cũ."""
         movie = self.catalog_repo.get_movie_by_id(movie_id)
         if not movie:
             return {"success": False, "error": f"Movie {movie_id} not found in catalog."}
@@ -103,7 +103,7 @@ class UserInteractionService:
         }
 
     def get_user_demo_ratings(self, user_id: str) -> List[Dict[str, Any]]:
-        """Retrieves demo ratings provided by the user."""
+        """Truy xuất các đánh giá do người dùng demo thực hiện kèm thông tin chi tiết của phim."""
         ratings = self.sqlite_repo.get_user_demo_ratings(user_id)
         enriched = []
         for r in ratings:
@@ -126,7 +126,7 @@ class UserInteractionService:
         min_year: Optional[int] = None,
         max_year: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Saves user preferences."""
+        """Lưu trữ tùy chọn sở thích về thể loại, tâm trạng và năm phát hành của người dùng."""
         success = self.sqlite_repo.save_preferences(
             user_id=user_id,
             genres=genres,
@@ -138,14 +138,14 @@ class UserInteractionService:
         return {"success": success, "user_id": user_id, "genres": genres}
 
     def get_preferences(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Gets user preferences."""
+        """Lấy thông tin cấu hình sở thích đã lưu của người dùng."""
         return self.sqlite_repo.get_preferences(user_id)
 
     def _invalidate_user_cache(self, user_id: str) -> None:
-        """Invalidates user cache if hybrid engine is wired."""
+        """Hủy các bản ghi bộ nhớ đệm liên quan đến người dùng trong Hybrid Engine nếu có."""
         try:
             if self.hybrid_engine and hasattr(self.hybrid_engine, "cache") and self.hybrid_engine.cache:
-                # If user_id is integer string, invalidate entries
+                # Nếu user_id là chuỗi số nguyên hợp lệ, tiến hành xóa các mục bộ nhớ đệm tương ứng
                 if user_id.isdigit():
                     uid_int = int(user_id)
                     cache = self.hybrid_engine.cache
@@ -157,6 +157,7 @@ class UserInteractionService:
             logger.debug(f"Cache invalidation note: {e}")
 
 
+# Thể hiện Singleton của UserInteractionService
 _global_interaction_service: Optional[UserInteractionService] = None
 
 
@@ -165,7 +166,7 @@ def get_user_interaction_service(
     catalog_repo: Optional[MovieCatalogRepository] = None,
     hybrid_engine: Optional[Any] = None,
 ) -> UserInteractionService:
-    """Singleton getter for UserInteractionService."""
+    """Hàm lấy hoặc khởi tạo thể hiện Singleton của UserInteractionService."""
     global _global_interaction_service
     if _global_interaction_service is None or hybrid_engine is not None:
         _global_interaction_service = UserInteractionService(sqlite_repo, catalog_repo, hybrid_engine)

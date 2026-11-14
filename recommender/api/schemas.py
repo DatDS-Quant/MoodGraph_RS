@@ -1,6 +1,7 @@
 """
-MoodGraph Phase 5: Pydantic API Schemas.
-Defines strict type contracts for Mode A (Discovery), Mode B (Lab), and Interaction endpoints.
+MoodGraph Giai đoạn 5: Các Mô hình Dữ liệu Pydantic API (API Schemas).
+Định nghĩa hợp đồng dữ liệu chuẩn kiểu cho Chế độ Khám phá (Mode A),
+Phòng thí nghiệm Gợi ý (Mode B), và các điểm cuối tương tác người dùng.
 """
 
 from __future__ import annotations
@@ -9,11 +10,12 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
-# ---------------------------------------------------------------------------
-# Mode A: Movie Discovery & Catalog Schemas
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Chế độ A: Các Schema Khám phá & Danh mục Phim (Movie Discovery & Catalog Schemas)
+# ===========================================================================
 
 class MovieLinkSchema(BaseModel):
+    """Liên kết định danh ngoài tới IMDb và TMDb."""
     imdb_id: Optional[str] = None
     tmdb_id: Optional[str] = None
     imdb_url: Optional[str] = None
@@ -21,6 +23,7 @@ class MovieLinkSchema(BaseModel):
 
 
 class MovieItemSchema(BaseModel):
+    """Thông tin tóm tắt của một bộ phim trong danh sách tìm kiếm."""
     movieId: int
     title: str
     clean_title: str
@@ -30,6 +33,7 @@ class MovieItemSchema(BaseModel):
 
 
 class MovieSearchResponse(BaseModel):
+    """Kết quả tìm kiếm phim có phân trang."""
     total: int
     page: int
     page_size: int
@@ -38,6 +42,7 @@ class MovieSearchResponse(BaseModel):
 
 
 class MovieDetailResponse(BaseModel):
+    """Chi tiết đầy đủ của một bộ phim kèm liên kết và danh sách phim tương đồng."""
     movieId: int
     title: str
     clean_title: str
@@ -49,14 +54,16 @@ class MovieDetailResponse(BaseModel):
 
 
 class GenreListResponse(BaseModel):
+    """Danh sách các thể loại phim phân biệt."""
     genres: List[str]
 
 
-# ---------------------------------------------------------------------------
-# User Exploration & History Schemas
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Các Schema Thăm dò Hồ sơ & Lịch sử Người dùng (User Exploration & History Schemas)
+# ===========================================================================
 
 class UserSummaryItem(BaseModel):
+    """Thông tin tóm tắt người dùng trong danh sách mẫu."""
     userId: int
     train_ratings_count: int
     favorite_genres: List[str]
@@ -65,6 +72,7 @@ class UserSummaryItem(BaseModel):
 
 
 class UserListResponse(BaseModel):
+    """Danh sách người dùng mẫu có phân trang."""
     total: int
     page: int
     page_size: int
@@ -73,6 +81,7 @@ class UserListResponse(BaseModel):
 
 
 class UserProfileResponse(BaseModel):
+    """Hồ sơ hoạt động và phân bố thể loại của người dùng từ tập Train."""
     userId: int
     ratings_count: int
     mean_rating: float
@@ -83,6 +92,7 @@ class UserProfileResponse(BaseModel):
 
 
 class UserRatingItem(BaseModel):
+    """Một bản ghi đánh giá phim của người dùng trong tập Train."""
     movieId: int
     title: str
     genres: List[str]
@@ -91,6 +101,7 @@ class UserRatingItem(BaseModel):
 
 
 class UserHistoryResponse(BaseModel):
+    """Lịch sử đánh giá phim của người dùng có phân trang từ tập Train."""
     userId: int
     total_rated: int
     page: int
@@ -99,11 +110,12 @@ class UserHistoryResponse(BaseModel):
     items: List[UserRatingItem]
 
 
-# ---------------------------------------------------------------------------
-# Explainability Schemas
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Các Schema Minh bạch & Giải thích Khuyến nghị (Explainability Schemas)
+# ===========================================================================
 
 class MetapathExplanation(BaseModel):
+    """Bằng chứng giải thích dựa trên siêu đường dẫn Đồ thị Tri thức (KG Metapath)."""
     metapath: str
     evidence_type: str = Field(
         ...,
@@ -111,43 +123,44 @@ class MetapathExplanation(BaseModel):
     )
     verification_status: str = Field(
         ...,
-        description="Audit verification status: VERIFIED_GROUND_TRUTH or HEURISTIC_ESTIMATE",
+        description="Trạng thái kiểm định: VERIFIED_GROUND_TRUTH hoặc HEURISTIC_ESTIMATE",
     )
     source_model: str = Field(
         ...,
-        description="Originating model or component generating this explanation",
+        description="Mô hình hoặc thành phần nguồn tạo ra lời giải thích này",
     )
     score_contribution: Optional[float] = Field(
         None,
-        description="Verified score contribution, or null if explanation is heuristic",
+        description="Đóng góp điểm số đã xác thực, hoặc null nếu là ước lượng heuristic",
     )
     connecting_entities: List[Dict[str, Any]] = Field(
         default_factory=list,
-        description="Verified connecting graph nodes, or empty if heuristic",
+        description="Danh sách các nút đồ thị kết nối đã xác thực, hoặc rỗng nếu là heuristic",
     )
     verbal_explanation: str
     is_heuristic: bool = Field(
         default=False,
-        description="Flag indicating whether this explanation is a heuristic approximation",
+        description="Cờ đánh dấu liệu lời giải thích này có phải là xấp xỉ heuristic hay không",
     )
     provenance: str = Field(
         default="verified_graph_traversal",
-        description="Detailed provenance of the evidence",
+        description="Nguồn gốc xuất xứ chi tiết của bằng chứng",
     )
 
 
 class LatentFactorExplanation(BaseModel):
+    """Bằng chứng giải thích dựa trên không gian nhân tố tiềm ẩn ALS."""
     evidence_type: str = Field(
         default="LATENT_FACTOR_AFFINITY",
-        description="Type of evidence: LATENT_FACTOR_AFFINITY",
+        description="Loại bằng chứng: LATENT_FACTOR_AFFINITY",
     )
     verification_status: str = Field(
         default="VERIFIED_NUMERICAL_PROJECTION",
-        description="Audit status: VERIFIED_NUMERICAL_PROJECTION",
+        description="Trạng thái kiểm định: VERIFIED_NUMERICAL_PROJECTION",
     )
     source_model: str = Field(
         default="SPARK_ALS_FACTOR_PROJECTION",
-        description="Originating factor model: SPARK_ALS_FACTOR_PROJECTION",
+        description="Mô hình nhân tố nguồn: SPARK_ALS_FACTOR_PROJECTION",
     )
     dot_product_score: float
     model_version: str
@@ -155,15 +168,16 @@ class LatentFactorExplanation(BaseModel):
     verbal_explanation: str
     is_heuristic: bool = Field(
         default=False,
-        description="Flag indicating whether this explanation is heuristic",
+        description="Cờ đánh dấu liệu lời giải thích có phải là heuristic",
     )
     provenance: str = Field(
         default="verified_spark_als_latent_factor",
-        description="Detailed provenance of the factor alignment",
+        description="Nguồn gốc xuất xứ chi tiết của phép gióng hàng nhân tố",
     )
 
 
 class ExplanationDetailResponse(BaseModel):
+    """Phản hồi giải thích đa tầng hoàn chỉnh cho một cặp người dùng - bộ phim."""
     userId: int
     movieId: int
     movie_title: str
@@ -173,11 +187,12 @@ class ExplanationDetailResponse(BaseModel):
     summary_text: str
 
 
-# ---------------------------------------------------------------------------
-# Mode B: Recommendation Lab Schemas
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Chế độ B: Các Schema Phòng Thí nghiệm Gợi ý (Recommendation Lab Schemas)
+# ===========================================================================
 
 class ModelRegistryEntry(BaseModel):
+    """Thông tin đăng ký của một mô hình gợi ý trong Lab."""
     model_id: str
     model_family: str
     version: str
@@ -189,25 +204,28 @@ class ModelRegistryEntry(BaseModel):
 
 
 class RegisteredModelsResponse(BaseModel):
+    """Danh mục các mô hình và chiến lược kết hợp đã đăng ký."""
     models: List[ModelRegistryEntry]
     fusion_strategies: List[str]
 
 
 class LabCompareRequest(BaseModel):
-    user_id: int = Field(..., ge=1, le=10_000_000, description="Target user ID")
+    """Yêu cầu so sánh đối đầu đa mô hình song song cho một người dùng."""
+    user_id: int = Field(..., ge=1, le=10_000_000, description="ID người dùng mục tiêu")
     models: List[str] = Field(
         default=["als", "kg", "hybrid_rrf", "hybrid_weighted"],
-        description="Models to evaluate side-by-side",
+        description="Danh sách mô hình cần đánh giá so sánh đối đầu",
         max_length=10,
     )
     top_n: int = Field(10, ge=1, le=50)
     filter_seen: bool = True
-    rrf_k: int = Field(60, ge=1, le=1000, description="RRF smoothing constant k")
-    weight_als: float = Field(0.5, ge=0.0, le=1.0, description="Weight for ALS candidate scoring")
-    weight_kg: float = Field(0.5, ge=0.0, le=1.0, description="Weight for KG candidate scoring")
+    rrf_k: int = Field(60, ge=1, le=1000, description="Hằng số làm mịn k của thuật toán RRF")
+    weight_als: float = Field(0.5, ge=0.0, le=1.0, description="Trọng số chấm điểm ứng viên của ALS")
+    weight_kg: float = Field(0.5, ge=0.0, le=1.0, description="Trọng số chấm điểm ứng viên của KG")
 
 
 class ModelRunResult(BaseModel):
+    """Kết quả thực thi và danh sách đề xuất của một mô hình cụ thể."""
     model_id: str
     execution_time_ms: float
     recommendations_count: int
@@ -215,6 +233,7 @@ class ModelRunResult(BaseModel):
 
 
 class OverlapMetric(BaseModel):
+    """Chỉ số đo lường độ trùng lặp và tương quan thứ hạng giữa hai mô hình."""
     model_a: str
     model_b: str
     jaccard_similarity: float
@@ -223,6 +242,7 @@ class OverlapMetric(BaseModel):
 
 
 class LabCompareResponse(BaseModel):
+    """Kết quả hoàn chỉnh của phiên thực nghiệm so sánh đa mô hình trong Lab."""
     session_id: str
     user_id: int
     top_n: int
@@ -232,6 +252,7 @@ class LabCompareResponse(BaseModel):
 
 
 class MetricDetail(BaseModel):
+    """Chi tiết một chỉ số đo kiểm offline (HR, NDCG, MRR, Coverage)."""
     metric_name: str
     display_name: str
     group: str
@@ -243,6 +264,7 @@ class MetricDetail(BaseModel):
 
 
 class LatencyBenchmark(BaseModel):
+    """Số liệu đo kiểm chuẩn độ trễ truy vấn (P50, P95, P99)."""
     strategy: str
     p50_ms: float
     p95_ms: float
@@ -251,6 +273,7 @@ class LatencyBenchmark(BaseModel):
 
 
 class LabMetricsResponse(BaseModel):
+    """Bảng so sánh chỉ số đo kiểm thực nghiệm offline từ Giai đoạn 4."""
     provenance: str
     evaluation_users_count: int
     total_cohort_users: int
@@ -260,6 +283,7 @@ class LabMetricsResponse(BaseModel):
 
 
 class SystemMetadataResponse(BaseModel):
+    """Siêu dữ liệu về kích thước tập dữ liệu, mô hình và môi trường thực thi."""
     dataset_name: str
     total_ratings: int
     split_provenance: Dict[str, Any]
@@ -269,11 +293,12 @@ class SystemMetadataResponse(BaseModel):
     system_environment: Dict[str, Any]
 
 
-# ---------------------------------------------------------------------------
-# Mode B: Subgraph Visualization Schemas
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Chế độ B: Các Schema Trực quan hóa Đồ thị Con (Subgraph Visualization)
+# ===========================================================================
 
 class SubgraphNode(BaseModel):
+    """Nút mạng trên đồ thị con giải thích trực quan."""
     id: str
     label: str
     type: str
@@ -285,6 +310,7 @@ class SubgraphNode(BaseModel):
 
 
 class SubgraphEdge(BaseModel):
+    """Cạnh nối có hướng mang trọng số trên đồ thị con giải thích."""
     model_config = {"populate_by_name": True}
     from_: str = Field(..., alias="from")
     to: str
@@ -294,22 +320,25 @@ class SubgraphEdge(BaseModel):
 
 
 class SubgraphResponse(BaseModel):
+    """Phản hồi mạng đồ thị con hoàn chỉnh phục vụ thư viện trực quan vis-network."""
     nodes: List[SubgraphNode]
     edges: List[SubgraphEdge]
     academic_explanation: str
 
 
-# ---------------------------------------------------------------------------
-# Interaction & Mutable Application State Schemas
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Các Schema Tương tác & Trạng thái Ứng dụng (Interaction & Application State)
+# ===========================================================================
 
 class WatchlistRequest(BaseModel):
+    """Yêu cầu thêm phim vào danh sách xem sau/yêu thích."""
     user_id: str = Field(..., min_length=1, max_length=64)
     movie_id: int = Field(..., ge=1)
     list_type: str = Field("watchlist", pattern="^(watchlist|favorites|hidden)$")
 
 
 class WatchlistResponse(BaseModel):
+    """Phản hồi trạng thái lưu phim."""
     success: bool
     user_id: str
     movie_id: int
@@ -318,6 +347,7 @@ class WatchlistResponse(BaseModel):
 
 
 class RatingSubmitRequest(BaseModel):
+    """Yêu cầu gửi đánh giá và nhận xét của người dùng."""
     user_id: str = Field(..., min_length=1, max_length=64)
     movie_id: int = Field(..., ge=1)
     rating: float = Field(..., ge=0.5, le=5.0)
@@ -325,6 +355,7 @@ class RatingSubmitRequest(BaseModel):
 
 
 class RatingSubmitResponse(BaseModel):
+    """Phản hồi kết quả ghi nhận đánh giá."""
     success: bool
     user_id: str
     movie_id: int
@@ -333,6 +364,7 @@ class RatingSubmitResponse(BaseModel):
 
 
 class PreferencesRequest(BaseModel):
+    """Yêu cầu cập nhật sở thích người dùng."""
     user_id: str = Field(..., min_length=1, max_length=64)
     genres: List[str] = Field(..., max_length=30)
     moods: Optional[List[str]] = Field(default_factory=list, max_length=30)
@@ -341,16 +373,18 @@ class PreferencesRequest(BaseModel):
 
 
 class PreferencesResponse(BaseModel):
+    """Phản hồi lưu cấu hình sở thích người dùng."""
     success: bool
     user_id: str
     genres: List[str]
 
 
-# ---------------------------------------------------------------------------
-# System & Health Schemas
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# Các Schema Hệ thống & Chẩn đoán Sức khỏe (System & Health Schemas)
+# ===========================================================================
 
 class HealthResponse(BaseModel):
+    """Phản hồi trạng thái hoạt động và sẵn sàng của hệ thống."""
     status: str
     version: str
     models_warmed: bool
@@ -361,5 +395,6 @@ class HealthResponse(BaseModel):
 
 
 class CacheClearResponse(BaseModel):
+    """Phản hồi sau khi xóa sạch bộ nhớ đệm cache."""
     success: bool
     cleared_entries_count: int

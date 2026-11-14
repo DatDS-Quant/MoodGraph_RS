@@ -1,8 +1,10 @@
 """
-MoodGraph Phase 5: Application Services Layer.
-Coordinates business logic across storage repositories and recommendation engines.
+MoodGraph Giai đoạn 5: Tầng Dịch vụ Nghiệp vụ Ứng dụng (Application Services Layer).
+Điều phối logic nghiệp vụ cốt lõi giữa các kho lưu trữ dữ liệu (Repositories)
+và các động cơ gợi ý (Recommendation Engines).
 """
 
+# Xuất bản các dịch vụ nghiệp vụ chính của ứng dụng
 from recommender.services.catalog_service import CatalogService, get_catalog_service
 from recommender.services.user_profile_service import UserProfileService, get_user_profile_service
 from recommender.services.explainability_service import ExplainabilityService, get_explainability_service

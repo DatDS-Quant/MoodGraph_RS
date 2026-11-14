@@ -17,6 +17,7 @@ _CACHED_GRAPH: Optional[Any] = None
 
 
 def get_default_graph(config: Optional[KGConfig] = None) -> Any:
+    """Lấy hoặc khởi tạo thể hiện đồ thị tri thức singleton mặc định."""
     global _CACHED_GRAPH
     if _CACHED_GRAPH is not None:
         return _CACHED_GRAPH

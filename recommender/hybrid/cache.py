@@ -19,6 +19,7 @@ from typing import Any, Dict, Optional, Tuple
 
 @dataclass(frozen=True)
 class CacheEntry:
+    """Mục lưu trữ trong bộ nhớ đệm kèm nhãn thời gian tạo (timestamp)."""
     value: Any
     created_at: float
 

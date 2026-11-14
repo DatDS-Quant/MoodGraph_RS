@@ -1,8 +1,8 @@
 """
-MoodGraph Phase 5: Explainability Application Service.
-Provides comprehensive multi-perspective explanations for recommendations:
-Knowledge Graph metapaths (P1 Genre, P2 Genome, P3 Collaborative) and
-ALS latent factor projection attribution.
+MoodGraph Giai đoạn 5: Dịch vụ Giải thích Khuyến nghị (Explainability Application Service).
+Cung cấp các góc nhìn giải thích đa chiều, minh bạch cho kết quả gợi ý:
+Các siêu đường dẫn Đồ thị Tri thức (P1 Thể loại, P2 Genome Tag, P3 Cộng tác)
+và phép chiếu tương quan nhân tố tiềm ẩn ALS (Latent Factor Attribution).
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ logger = logging.getLogger("recommender.services.explainability_service")
 
 
 class ExplainabilityService:
-    """Service generating structural and latent explanations for user-item pairs."""
+    """Dịch vụ tạo lập lời giải thích cấu trúc đồ thị và nhân tố tiềm ẩn cho cặp người dùng - bộ phim."""
 
     def __init__(
         self,
@@ -35,17 +35,18 @@ class ExplainabilityService:
 
     def explain_recommendation(self, user_id: int, movie_id: int) -> Dict[str, Any]:
         """
-        Builds multi-perspective explanation for why movie_id was recommended to user_id.
+        Xây dựng lời giải thích đa tầng cho lý do bộ phim movie_id được gợi ý cho người dùng user_id.
+        Kết hợp bằng chứng từ đường đi trên đồ thị tri thức và độ tương đồng vector nhân tố ALS.
         """
         movie = self.catalog_repo.get_movie_by_id(movie_id)
         movie_title = movie["title"] if movie else f"Movie {movie_id}"
         movie_genres = movie["genres"] if movie else []
 
-        # 1. Retrieve user's high rated history from Train split (Zero Leakage)
+        # 1. Truy xuất lịch sử phim đánh giá cao của người dùng từ tập Train (Không rò rỉ dữ liệu)
         train_ratings = self.history_repo.get_user_train_ratings(user_id)
         liked_ratings = [r for r in train_ratings if r["rating"] >= 3.5]
 
-        # 2. Extract KG P1 Genre Paths (Verified Ground Truth via Train Ratings)
+        # 2. Trích xuất đường dẫn thể loại P1 trên Đồ thị Tri thức (Xác thực từ tập Train thực tế)
         graph_explanations: List[Dict[str, Any]] = []
         matching_liked_movies = []
         for r in liked_ratings:
@@ -61,7 +62,7 @@ class ExplainabilityService:
                     })
 
         if matching_liked_movies:
-            # Sort by user rating descending
+            # Sắp xếp giảm dần theo số sao đánh giá của người dùng
             matching_liked_movies.sort(key=lambda x: x["user_rating"], reverse=True)
             top_match = matching_liked_movies[0]
             shared_str = ", ".join(top_match["shared_genres"])
@@ -82,7 +83,7 @@ class ExplainabilityService:
                 "provenance": "verified_train_history_traversal",
             })
 
-        # 3. P2 Genome Tag Path (Inspect active graph for verified tags; fallback to honest heuristic without fabrication)
+        # 3. Đường dẫn thẻ Genome P2 (Duyệt đồ thị tìm thẻ genome xác thực; dự phòng xấp xỉ không bịa đặt)
         p2_verified = False
         p2_connecting: List[Dict[str, Any]] = []
         p2_contrib: Optional[float] = None
@@ -132,7 +133,7 @@ class ExplainabilityService:
                 "provenance": "verified_graph_traversal",
             })
         else:
-            # Explicitly mark as heuristic; do NOT fabricate fake tags, weights, or nodes
+            # Đánh dấu rõ ràng là ước lượng heuristic; tuyệt đối không tạo thẻ, trọng số hay nút giả mạo
             top_g = movie_genres[0] if movie_genres else "General"
             graph_explanations.append({
                 "metapath": "P2_GENOME",
@@ -149,7 +150,7 @@ class ExplainabilityService:
                 "provenance": "heuristic_approximation",
             })
 
-        # 4. P3 Collaborative Graph Path (Inspect active graph for verified co-ratings; fallback to honest heuristic)
+        # 4. Đường dẫn cộng tác P3 (Duyệt đồ thị tìm người dùng đồng đánh giá đã xác thực; dự phòng heuristic)
         p3_verified = False
         p3_connecting: List[Dict[str, Any]] = []
         p3_contrib: Optional[float] = None
@@ -195,7 +196,7 @@ class ExplainabilityService:
                 "provenance": "verified_graph_traversal",
             })
         else:
-            # Explicitly mark as heuristic; do NOT fabricate fake cluster support or weights
+            # Đánh dấu rõ ràng là ước lượng heuristic; không tạo dữ liệu cụm hoặc trọng số giả mạo
             graph_explanations.append({
                 "metapath": "P3_COLLABORATIVE",
                 "evidence_type": "STRUCTURAL_HEURISTIC",
@@ -211,7 +212,7 @@ class ExplainabilityService:
                 "provenance": "heuristic_approximation",
             })
 
-        # 5. ALS Latent Factor Attribution (Verified Numerical Projection)
+        # 5. Phân bổ nhân tố tiềm ẩn ALS (Phép chiếu tích vô hướng số học đã xác thực)
         latent_factor_explanation = None
         has_als = False
         if self.hybrid_engine and hasattr(self.hybrid_engine, "als_service"):
@@ -257,6 +258,7 @@ class ExplainabilityService:
         }
 
 
+# Thể hiện Singleton của ExplainabilityService
 _global_explain_service: Optional[ExplainabilityService] = None
 
 
@@ -265,7 +267,7 @@ def get_explainability_service(
     history_repo: Optional[UserHistoryRepository] = None,
     hybrid_engine: Optional[Any] = None,
 ) -> ExplainabilityService:
-    """Singleton getter for ExplainabilityService."""
+    """Hàm lấy hoặc khởi tạo thể hiện Singleton của ExplainabilityService."""
     global _global_explain_service
     if _global_explain_service is None or hybrid_engine is not None:
         _global_explain_service = ExplainabilityService(catalog_repo, history_repo, hybrid_engine)

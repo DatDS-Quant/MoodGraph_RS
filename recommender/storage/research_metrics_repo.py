@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: Research Metrics & Provenance Repository.
-Provides access to verified offline evaluation results, latency profiles,
-and system metadata from Phase 4 artifacts.
+MoodGraph Giai đoạn 5: Kho lưu trữ Báo cáo Thực nghiệm và Nguồn gốc Dữ liệu (Research Metrics & Provenance Repository).
+Cung cấp quyền truy xuất các kết quả kiểm định offline đã được xác thực, hồ sơ độ trễ (latency profiles),
+và siêu dữ liệu hệ thống (metadata) từ các tệp artifact của Giai đoạn 4.
 """
 
 from __future__ import annotations
@@ -18,7 +18,10 @@ logger = logging.getLogger("recommender.storage.research_metrics_repo")
 
 
 class ResearchMetricsRepository:
-    """Repository loading and serving verified experimental results and metadata."""
+    """
+    Kho lưu trữ tải và cung cấp kết quả thực nghiệm và siêu dữ liệu đã được xác thực.
+    Đọc trực tiếp các tệp kết quả JSON từ thư mục docs/phase4 và artifacts/als.
+    """
 
     def __init__(self, workspace_root: Optional[Path] = None):
         self.workspace_root = workspace_root or Path(__file__).resolve().parents[2]
@@ -28,7 +31,8 @@ class ResearchMetricsRepository:
         self._load_data()
 
     def _load_data(self) -> None:
-        """Loads Phase 4 JSON artifacts."""
+        """Tải các tệp cấu trúc JSON artifact kết quả thực nghiệm từ Giai đoạn 4."""
+        # 1. Tải kết quả kiểm định mở rộng trên tập Validation
         val_path = self.workspace_root / "docs" / "phase4" / "expanded_validation_results.json"
         if val_path.exists():
             try:
@@ -40,6 +44,7 @@ class ResearchMetricsRepository:
         else:
             logger.warning(f"Validation results not found at {val_path}")
 
+        # 2. Tải hồ sơ đo kiểm độ trễ truy vấn (Latency Benchmarks)
         lat_path = self.workspace_root / "docs" / "phase4" / "hardening_latency_profile.json"
         if lat_path.exists():
             try:
@@ -49,6 +54,7 @@ class ResearchMetricsRepository:
             except Exception as e:
                 logger.warning(f"Failed to read latency profile: {e}")
 
+        # 3. Tải nguồn gốc mô hình Spark ALS (Provenance Metadata)
         prov_path = self.workspace_root / "artifacts" / "als" / "m08" / "m08_model_provenance.json"
         if prov_path.exists():
             try:
@@ -59,7 +65,7 @@ class ResearchMetricsRepository:
                 logger.warning(f"Failed to read ALS provenance: {e}")
 
     def get_registered_models(self) -> List[Dict[str, Any]]:
-        """Returns the catalogue of all models available in Mode B."""
+        """Trả về danh mục toàn bộ các mô hình gợi ý có sẵn trong Chế độ Nghiên cứu (Mode B Lab)."""
         return [
             {
                 "model_id": "als",
@@ -135,7 +141,10 @@ class ResearchMetricsRepository:
         ]
 
     def get_metrics_comparison(self, split: str = "validation", metric_group: str = "all") -> Dict[str, Any]:
-        """Returns structured metric comparison table extracted from verified validation results."""
+        """
+        Trả về bảng so sánh chi tiết các chỉ số đánh giá (HR, NDCG, MRR, Coverage) được trích xuất
+        từ kết quả kiểm định chính thức của Giai đoạn 4.
+        """
         if not self._validation_results:
             return {
                 "provenance": "Phase 4 Validation - Standalone Evaluation",
@@ -221,7 +230,10 @@ class ResearchMetricsRepository:
         }
 
     def get_system_metadata(self) -> Dict[str, Any]:
-        """Returns end-to-end dataset size, split provenance, model dims and environment."""
+        """
+        Trả về siêu dữ liệu toàn diện về kích thước tập dữ liệu, nguồn gốc phân chia tập split,
+        kích thước mô hình và môi trường thực thi.
+        """
         return {
             "dataset_name": "MovieLens 25M (ml-25m)",
             "total_ratings": 25000095,
@@ -257,11 +269,12 @@ class ResearchMetricsRepository:
         }
 
 
+# Thể hiện Singleton của ResearchMetricsRepository
 _global_metrics_repo: Optional[ResearchMetricsRepository] = None
 
 
 def get_research_metrics_repository(workspace_root: Optional[Path] = None) -> ResearchMetricsRepository:
-    """Singleton getter for ResearchMetricsRepository."""
+    """Hàm lấy hoặc khởi tạo thể hiện Singleton của ResearchMetricsRepository."""
     global _global_metrics_repo
     if _global_metrics_repo is None:
         _global_metrics_repo = ResearchMetricsRepository(workspace_root)

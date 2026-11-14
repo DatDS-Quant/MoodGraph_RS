@@ -1,8 +1,8 @@
 """
-MoodGraph Phase 5: Recommendation Lab Router (Mode B).
-Provides endpoints for quantitative researchers and reviewers:
-Model registry, multi-model side-by-side comparison, overlap metrics,
-and verified offline benchmark results.
+MoodGraph Giai đoạn 5: Bộ định tuyến Phòng thí nghiệm Gợi ý (Recommendation Lab Router - Chế độ Nghiên cứu Mode B).
+Cung cấp các điểm cuối phục vụ nghiên cứu định lượng và đánh giá khoa học:
+Sổ đăng ký mô hình, so sánh đối đầu đa mô hình song song, chỉ số trùng lặp (Jaccard, Spearman),
+và kết quả đo kiểm thực nghiệm benchmark offline đã được xác thực từ Giai đoạn 4.
 """
 
 from __future__ import annotations
@@ -27,14 +27,22 @@ logger = logging.getLogger("recommender.api.lab_router")
 router = APIRouter(prefix="/api/lab", tags=["Mode B - Recommendation Lab"])
 
 
+# =============================================================================
+# 1. Sổ đăng ký mô hình gợi ý (Model Registry)
+# =============================================================================
+
 @router.get("/models", response_model=RegisteredModelsResponse)
 def get_registered_models(
     lab_svc: LabService = Depends(get_lab_service),
 ) -> RegisteredModelsResponse:
-    """Returns the catalog of registered recommendation models and fusion algorithms."""
+    """Trả về danh mục các mô hình gợi ý và các thuật toán kết hợp (fusion strategies) đã đăng ký trong Lab."""
     res = lab_svc.get_registered_models()
     return RegisteredModelsResponse(**res)
 
+
+# =============================================================================
+# 2. So sánh đối đầu đa mô hình (Side-by-Side Model Comparison)
+# =============================================================================
 
 @router.post("/compare", response_model=LabCompareResponse)
 def compare_models_side_by_side(
@@ -42,8 +50,8 @@ def compare_models_side_by_side(
     lab_svc: LabService = Depends(get_lab_service),
 ) -> LabCompareResponse:
     """
-    Executes multiple recommendation models side-by-side for a given user,
-    measures per-model execution latency, and computes pairwise Jaccard and rank correlation.
+    Thực thi đồng thời nhiều mô hình gợi ý cho cùng một người dùng,
+    đo lường độ trễ thực thi của từng mô hình, và tính toán độ tương đồng cặp (Jaccard và tương quan Spearman).
     """
     res = lab_svc.compare_models(
         user_id=req.user_id,
@@ -57,6 +65,10 @@ def compare_models_side_by_side(
     return LabCompareResponse(**res)
 
 
+# =============================================================================
+# 3. Báo cáo đo kiểm thực nghiệm Benchmark Offline từ Giai đoạn 4
+# =============================================================================
+
 @router.get("/metrics", response_model=LabMetricsResponse)
 def get_offline_benchmark_metrics(
     split: str = Query("validation", pattern="^(validation|test)$"),
@@ -64,24 +76,32 @@ def get_offline_benchmark_metrics(
     lab_svc: LabService = Depends(get_lab_service),
 ) -> LabMetricsResponse:
     """
-    Serves verified experimental benchmark results from Phase 4 artifacts.
-    Preserves scientific honesty regarding KG vs Hybrid performance.
+    Cung cấp kết quả đo kiểm benchmark thực nghiệm đã được kiểm chứng từ các tệp artifact của Giai đoạn 4.
+    Bảo đảm tính trung thực khoa học về hiệu năng tương đối giữa KG, ALS và Hybrid.
     """
     res = lab_svc.get_benchmark_metrics(split=split, metric_group=metric_group)
     return LabMetricsResponse(**res)
 
+
+# =============================================================================
+# 4. Siêu dữ liệu toàn diện về hệ thống và dữ liệu (System & Data Metadata)
+# =============================================================================
 
 @router.get("/metadata", response_model=SystemMetadataResponse)
 def get_system_and_dataset_metadata(
     lab_svc: LabService = Depends(get_lab_service),
 ) -> SystemMetadataResponse:
     """
-    Returns verified system dimensions, MovieLens 25M partition provenance,
-    and runtime environment metadata.
+    Trả về các chiều không gian đã xác thực của hệ thống, nguồn gốc phân vùng dữ liệu MovieLens 25M,
+    và siêu dữ liệu môi trường runtime.
     """
     res = lab_svc.get_system_metadata()
     return SystemMetadataResponse(**res)
 
+
+# =============================================================================
+# 5. Trích xuất đồ thị con tương tác (Interactive Explainability Subgraph)
+# =============================================================================
 
 @router.get("/graph/subgraph", response_model=SubgraphResponse)
 def get_graph_subgraph(

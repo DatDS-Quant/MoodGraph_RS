@@ -1,6 +1,6 @@
 """
-MoodGraph Phase 5: FastAPI Dependency Injection Providers.
-Extracts pre-warmed singleton services and repositories from application state.
+MoodGraph Giai đoạn 5: Các hàm Cung cấp Tiêm Phụ thuộc FastAPI (Dependency Injection Providers).
+Trích xuất các thể hiện Singleton của Service và Repository đã được nạp sẵn từ trạng thái ứng dụng (app.state).
 """
 
 from __future__ import annotations
@@ -17,47 +17,55 @@ from recommender.services.lab_service import LabService, get_lab_service as _def
 from recommender.services.user_interaction_service import UserInteractionService, get_user_interaction_service as _default_interaction_service
 
 
+# =============================================================================
+# Các hàm phụ thuộc (Dependencies) trích xuất dịch vụ từ app.state
+# =============================================================================
+
 def get_catalog_service(request: Request) -> CatalogService:
-    """Retrieves CatalogService from app state or singleton."""
+    """Truy xuất CatalogService từ trạng thái ứng dụng (app.state) hoặc singleton mặc định."""
     return getattr(request.app.state, "catalog_service", None) or _default_catalog_service()
 
 
 def get_user_profile_service(request: Request) -> UserProfileService:
-    """Retrieves UserProfileService from app state or singleton."""
+    """Truy xuất UserProfileService từ trạng thái ứng dụng (app.state) hoặc singleton mặc định."""
     return getattr(request.app.state, "user_profile_service", None) or _default_user_profile_service()
 
 
 def get_explainability_service(request: Request) -> ExplainabilityService:
-    """Retrieves ExplainabilityService from app state or singleton."""
+    """Truy xuất ExplainabilityService từ trạng thái ứng dụng (app.state) hoặc singleton mặc định."""
     return getattr(request.app.state, "explainability_service", None) or _default_explain_service()
 
 
 def get_lab_service(request: Request) -> LabService:
-    """Retrieves LabService from app state or singleton."""
+    """Truy xuất LabService từ trạng thái ứng dụng (app.state) hoặc singleton mặc định."""
     return getattr(request.app.state, "lab_service", None) or _default_lab_service()
 
 
 def get_interaction_service(request: Request) -> UserInteractionService:
-    """Retrieves UserInteractionService from app state or singleton."""
+    """Truy xuất UserInteractionService từ trạng thái ứng dụng (app.state) hoặc singleton mặc định."""
     return getattr(request.app.state, "interaction_service", None) or _default_interaction_service()
 
 
 def get_hybrid_engine(request: Request) -> Any:
-    """Retrieves HybridRecommenderService from app state."""
+    """Truy xuất thể hiện HybridRecommenderService từ trạng thái ứng dụng (app.state)."""
     return getattr(request.app.state, "hybrid_engine", None)
 
+
+# =============================================================================
+# Xác thực quyền quản trị viên (Admin Token Security Verification)
+# =============================================================================
 
 def verify_admin_header_token(
     x_admin_token: Optional[str] = Header(None, alias="X-Admin-Token"),
 ) -> str:
     """
-    Enforces strict server-side admin token authorization:
-    - Missing server-side admin token configuration: Deny administrative access (fail-closed).
-    - Missing request token header: 403 Forbidden.
-    - Invalid request token header: 403 Forbidden.
-    - Query-string token: Not accepted.
-    - Constant-time comparison to prevent timing attacks.
-    - Zero secret leakage in errors or logs.
+    Thực thi xác thực bảo mật mã thông báo quản trị viên (Admin Token) nghiêm ngặt phía máy chủ:
+    - Nếu máy chủ chưa cấu hình ADMIN_API_KEY: Từ chối truy cập quản trị ngay lập tức (chính sách fail-closed).
+    - Thiếu tiêu đề X-Admin-Token trong request: Trả về mã lỗi 403 Forbidden.
+    - Mã token không khớp: Trả về mã lỗi 403 Forbidden.
+    - Không chấp nhận token truyền qua query string để tránh rò rỉ vào access log.
+    - So sánh chuỗi với thời gian hằng số (hmac.compare_digest) để triệt tiêu tấn công định thời (timing attacks).
+    - Bảo đảm 100% không rò rỉ khóa bí mật trong log hoặc thông báo lỗi.
     """
     admin_key = os.getenv("ADMIN_API_KEY")
     if not admin_key or not admin_key.strip():

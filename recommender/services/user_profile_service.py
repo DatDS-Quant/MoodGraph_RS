@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: User Profile Application Service.
-Provides user activity profiles, history inspections strictly from the Train split,
-and curated test users lists for interactive demo exploration.
+MoodGraph Giai đoạn 5: Dịch vụ Hồ sơ Người dùng (User Profile Application Service).
+Cung cấp hồ sơ hoạt động, lịch sử đánh giá được truy xuất nghiêm ngặt từ tập Train,
+và danh sách người dùng mẫu đại diện phục vụ khám phá trực quan trên ứng dụng demo.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ logger = logging.getLogger("recommender.services.user_profile_service")
 
 
 class UserProfileService:
-    """Application service for user preferences, activity profile, and history exploration."""
+    """Dịch vụ ứng dụng quản lý sở thích, hồ sơ hoạt động và khám phá lịch sử tương tác của người dùng."""
 
     def __init__(
         self,
@@ -28,8 +28,8 @@ class UserProfileService:
 
     def get_user_profile(self, user_id: int) -> Dict[str, Any]:
         """
-        Retrieves user activity summary and genre distribution computed
-        strictly from the Train partition.
+        Truy xuất tóm tắt hoạt động và phân bố thể loại yêu thích của người dùng,
+        được tính toán nghiêm ngặt chỉ từ phân vùng dữ liệu Train.
         """
         summary = self.history_repo.get_user_profile_summary(
             user_id=user_id,
@@ -43,7 +43,7 @@ class UserProfileService:
         if not genre_dist and top_genres:
             genre_dist = {g: 1 for g in top_genres}
 
-        # Classify activity level
+        # Phân loại mức độ tương tác của người dùng
         if total_ratings >= 200:
             activity = "highly_active"
         elif total_ratings >= 50:
@@ -71,12 +71,12 @@ class UserProfileService:
         min_rating: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
-        Retrieves paginated rating history strictly from the Train dataset.
-        Zero data leakage: Validation/Test held-out interactions are never returned.
+        Truy xuất lịch sử đánh giá phân trang nghiêm ngặt từ tập dữ liệu Train.
+        Bảo đảm 100% không rò rỉ dữ liệu: Tuyệt đối không trả về các tương tác thuộc tập Validation/Test.
         """
         all_ratings = self.history_repo.get_user_train_ratings(user_id)
 
-        # Optional filter by rating
+        # Lọc tùy chọn theo ngưỡng số sao tối thiểu
         if min_rating is not None:
             filtered = [r for r in all_ratings if r["rating"] >= min_rating]
         else:
@@ -90,7 +90,7 @@ class UserProfileService:
         end = start + page_size
         page_items = filtered[start:end]
 
-        # Enrich with movie catalog details
+        # Làm giàu thông tin với chi tiết từ danh mục phim
         enriched_items = []
         for r in page_items:
             mid = r["movieId"]
@@ -121,12 +121,12 @@ class UserProfileService:
         page_size: int = 20,
     ) -> Dict[str, Any]:
         """
-        Lists curated representative users from the evaluation cohorts
-        and active users for demo navigation.
+        Liệt kê danh sách người dùng tiêu biểu được tuyển chọn từ các nhóm thử nghiệm (cohorts)
+        và người dùng tích cực nhằm phục vụ điều hướng trải nghiệm demo.
         """
-        # Curated representative users:
-        # Users 1 to 20 are active in validation cohort
-        # Users 100, 200, 500, 1000, 2000 are verified in ALS factors
+        # Danh sách người dùng tiêu biểu được tuyển chọn:
+        # Người dùng 1 đến 20 hoạt động tích cực trong nhóm kiểm chuẩn validation
+        # Người dùng 100, 200, 500, 1000, 2000 đã được xác thực trong ma trận nhân tố tiềm ẩn ALS
         sample_pool = [
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
             11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
@@ -135,7 +135,7 @@ class UserProfileService:
         ]
 
         if user_type == "pilot_kg":
-            # Cohort users tested in Phase 4 pilot
+            # Nhóm người dùng thử nghiệm trong Giai đoạn 4
             pool = [u for u in sample_pool if u <= 200]
         elif user_type == "active":
             pool = [1, 2, 3, 4, 10, 50, 100, 200, 500, 1000]
@@ -172,6 +172,7 @@ class UserProfileService:
         }
 
 
+# Thể hiện Singleton của UserProfileService
 _global_user_profile_service: Optional[UserProfileService] = None
 
 
@@ -179,7 +180,7 @@ def get_user_profile_service(
     history_repo: Optional[UserHistoryRepository] = None,
     catalog_repo: Optional[MovieCatalogRepository] = None,
 ) -> UserProfileService:
-    """Singleton getter for UserProfileService."""
+    """Hàm lấy hoặc khởi tạo thể hiện Singleton của UserProfileService."""
     global _global_user_profile_service
     if _global_user_profile_service is None:
         _global_user_profile_service = UserProfileService(history_repo, catalog_repo)

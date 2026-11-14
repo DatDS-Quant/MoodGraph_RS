@@ -37,7 +37,7 @@ from pyspark.sql.types import DoubleType, FloatType, IntegerType, LongType, Stru
 
 
 # ==============================================================================
-# I. CONFIGURATION WITH GUARDS
+# I. CẤU HÌNH KÈM CÁC CHỐT CHẶN BẢO VỆ (CONFIGURATION WITH GUARDS)
 # ==============================================================================
 
 @dataclass
@@ -105,7 +105,7 @@ class ALSConfig:
 
 
 # ==============================================================================
-# II. FACTOR MATRIX AUDIT RESULT
+# II. KẾT QUẢ KIỂM TOÁN MA TRẬN NHÂN TỐ (FACTOR MATRIX AUDIT RESULT)
 # ==============================================================================
 
 @dataclass
@@ -123,11 +123,12 @@ class FactorMatrixAuditResult:
     is_valid: bool
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi kết quả kiểm toán sang dictionary."""
         return asdict(self)
 
 
 # ==============================================================================
-# III. SPARK ALS TRAINER ENGINE
+# III. ĐỘNG CƠ HUẤN LUYỆN SPARK ALS (SPARK ALS TRAINER ENGINE)
 # ==============================================================================
 
 class ALSTrainer:
@@ -203,11 +204,11 @@ class ALSTrainer:
 
     def audit_factors(self, model: ALSModel) -> Tuple[FactorMatrixAuditResult, FactorMatrixAuditResult]:
         """
-        Audit both userFactors and itemFactors DataFrames:
-        - Count distinct factor IDs.
-        - Validate vector dimension == rank.
-        - Check for NaN or Infinite entries.
-        - Compute distribution statistics of vector L2 norms.
+        Kiểm toán cả hai DataFrame userFactors và itemFactors:
+        - Đếm số lượng ID nhân tố phân biệt.
+        - Xác minh số chiều vector bằng đúng rank cấu hình.
+        - Kiểm tra các giá trị NaN hoặc Vô cực (Inf).
+        - Tính toán thống kê phân phối chuẩn L2 của các vector.
         """
         def _audit_single_matrix(df: DataFrame, factor_name: str) -> FactorMatrixAuditResult:
             rows = df.select("id", "features").collect()
@@ -274,13 +275,13 @@ class ALSTrainer:
         tolerance: float = 1e-4,
     ) -> Dict[str, Any]:
         """
-        Verify that Spark transform predictions match independent manual dot products.
+        Xác minh dự đoán của phép biến đổi Spark transform khớp với tích vô hướng thủ công độc lập:
         r_hat = p_u^T q_i
         """
         u_col = self.config.user_col
         i_col = self.config.item_col
 
-        # Transform with Spark
+        # Dự đoán bằng hàm transform của Spark
         predictions_df = model.transform(sample_df).select(
             u_col, i_col, self.config.rating_col, "prediction"
         )
@@ -289,7 +290,7 @@ class ALSTrainer:
         sample_user_ids = {int(r[u_col]) for r in sample_rows}
         sample_movie_ids = {int(r[i_col]) for r in sample_rows}
 
-        # Collect user vectors for sample users
+        # Thu thập vector người dùng cho các mẫu kiểm thử
         user_factors_sample = (
             model.userFactors.filter(F.col("id").isin(list(sample_user_ids)))
             .select("id", "features")
@@ -297,7 +298,7 @@ class ALSTrainer:
         )
         u_dict = {int(r["id"]): np.array(r["features"], dtype=np.float64) for r in user_factors_sample}
 
-        # Collect item vectors for sample movies
+        # Thu thập vector phim cho các mẫu kiểm thử
         item_factors_sample = (
             model.itemFactors.filter(F.col("id").isin(list(sample_movie_ids)))
             .select("id", "features")
@@ -363,10 +364,10 @@ class ALSTrainer:
         sample_df: DataFrame,
     ) -> Dict[str, float]:
         """
-        Compute diagnostic RMSE and MAE on a sample of training ratings.
+        Tính toán các chỉ số chẩn đoán RMSE và MAE trên một mẫu đánh giá của tập huấn luyện.
         
-        CAUTION: This is an internal technical diagnostic only and MUST NOT be
-        interpreted as generalization performance or Top-N recommendation quality.
+        LƯU Ý: Đây chỉ là chỉ số chẩn đoán kỹ thuật nội bộ, TUYỆT ĐỐI KHÔNG ĐƯỢC coi là
+        hiệu năng tổng quát hóa hay chất lượng gợi ý Top-N.
         """
         predictions_df = model.transform(sample_df).filter(
             F.col("prediction").isNotNull() & ~F.isnan(F.col("prediction"))
@@ -409,12 +410,12 @@ class ALSTrainer:
         overwrite: bool = True,
     ) -> Path:
         """
-        Save the fitted Spark ALSModel and write an audit-compliant manifest.
+        Lưu mô hình Spark ALSModel đã khớp và ghi tập tin manifest kiểm toán chuẩn mực.
         
-        Output layout:
+        Cấu trúc thư mục đầu ra:
             output_dir/
-                spark_model/         <- PySpark native model persistence
-                manifest.json        <- Metadata manifest
+                spark_model/         <- Lưu trữ mô hình nguyên bản của PySpark
+                manifest.json        <- Tập tin manifest siêu dữ liệu
         """
         out_path = Path(output_dir).resolve()
         out_path.mkdir(parents=True, exist_ok=True)
@@ -442,10 +443,10 @@ class ALSTrainer:
     @staticmethod
     def load_model(model_dir: Union[str, Path]) -> Tuple[ALSModel, Dict[str, Any]]:
         """
-        Load a persisted ALSModel and its metadata manifest.
+        Nạp mô hình ALSModel đã lưu trữ cùng tập tin manifest siêu dữ liệu.
         
         Returns:
-            Tuple of (ALSModel, manifest_dict)
+            Tuple gồm (ALSModel, manifest_dict)
         """
         path = Path(model_dir).resolve()
         spark_model_path = path / "spark_model"
@@ -469,11 +470,11 @@ class ALSTrainer:
         test_df: DataFrame,
     ) -> Dict[str, Any]:
         """
-        Verify that reloaded model produces identical predictions and factor shapes
-        as the original in-memory model.
+        Xác minh mô hình nạp lại tạo ra các dự đoán và kích thước nhân tố giống hệt
+        như mô hình ban đầu trong bộ nhớ.
         
-        Uses key-based indexing (userId, movieId) to remain immune to distributed
-        shuffle partition order differences.
+        Sử dụng cơ chế lập chỉ mục theo khóa (userId, movieId) để loại bỏ sai lệch
+        do khác biệt thứ tự phân vùng khi xáo trộn (shuffle) phân tán.
         """
         orig_preds = original_model.transform(test_df).select(
             self.config.user_col, self.config.item_col, "prediction"

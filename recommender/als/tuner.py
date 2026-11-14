@@ -27,7 +27,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 import numpy as np
 import pyarrow.parquet as pq
 
-# Enforce Spark/Windows configuration
+# Cấu hình môi trường Spark và Windows
 if sys.platform == "win32":
     if "HADOOP_HOME" not in os.environ:
         os.environ["HADOOP_HOME"] = r"C:\hadoop"
@@ -51,7 +51,7 @@ from recommender.als.trainer import ALSConfig, ALSTrainer
 
 
 # ==============================================================================
-# I. TEST ISOLATION GUARD
+# I. CHỐT CHẶN CÁCH LY PHÂN VÙNG TEST (TEST ISOLATION GUARD)
 # ==============================================================================
 
 def guard_test_split_access(path: Union[str, Path]) -> None:
@@ -67,7 +67,7 @@ def guard_test_split_access(path: Union[str, Path]) -> None:
 
 
 # ==============================================================================
-# II. EXPERIMENT CONFIGURATION & DATA STRUCTURES
+# II. CẤU HÌNH THỰC NGHIỆM VÀ CẤU TRÚC DỮ LIỆU (EXPERIMENT CONFIGURATION & DATA STRUCTURES)
 # ==============================================================================
 
 class TrialStatus(str, Enum):
@@ -120,6 +120,7 @@ class TrialConfig:
                 raise ValueError("support_filter_min_ratings must be > 0 for ALS_PLUS_TRAIN_SUPPORT_FILTER")
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi cấu hình thử nghiệm sang dictionary."""
         return asdict(self)
 
     @classmethod
@@ -145,6 +146,7 @@ class LongTailDiagnostics:
     score_max: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi thống kê đuôi dài sang dictionary."""
         return asdict(self)
 
 
@@ -168,6 +170,7 @@ class TrialResult:
     timestamp: str = field(default_factory=lambda: time.strftime("%Y-%m-%d %H:%M:%S"))
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi kết quả thử nghiệm sang dictionary."""
         d = asdict(self)
         d["config"] = self.config.to_dict()
         d["status"] = self.status.value if isinstance(self.status, TrialStatus) else self.status
@@ -202,7 +205,7 @@ class TrialResult:
 
 
 # ==============================================================================
-# III. EXPERIMENT REGISTRY WITH RESUME AND ATOMIC PERSISTENCE
+# III. SỔ ĐĂNG KÝ THỬ NGHIỆM HỖ TRỢ PHỤC HỒI VÀ LƯU TRỮ NGUYÊN TỬ
 # ==============================================================================
 
 class ExperimentRegistry:
@@ -313,7 +316,7 @@ class ExperimentRegistry:
 
 
 # ==============================================================================
-# IV. SCREENING COHORT MANAGER
+# IV. QUẢN LÝ TẬP NGƯỜI DÙNG SÀNG LỌC (SCREENING COHORT MANAGER)
 # ==============================================================================
 
 class ScreeningCohortManager:
@@ -355,7 +358,7 @@ class ScreeningCohortManager:
             uid for uid, target in val_targets.items()
             if target.rating >= relevance_threshold
         ]
-        positive_uids.sort()  # deterministic ordering before shuffle
+        positive_uids.sort()  # sắp xếp tất định trước khi xáo trộn
 
         if len(positive_uids) <= self.target_size:
             sampled = positive_uids
@@ -380,7 +383,7 @@ class ScreeningCohortManager:
 
 
 # ==============================================================================
-# V. LONG-TAIL / FLUKE BIAS AUDITOR
+# V. KIỂM TOÁN THIÊN LỆCH ĐUÔI DÀI / PHÙ PHIẾM (LONG-TAIL / FLUKE BIAS AUDITOR)
 # ==============================================================================
 
 def compute_long_tail_diagnostics(
@@ -451,7 +454,7 @@ def compute_long_tail_diagnostics(
 
 
 # ==============================================================================
-# VI. ALS TUNER ORCHESTRATOR
+# VI. ĐIỀU PHỐI TINH CHỈNH ALS (ALS TUNER ORCHESTRATOR)
 # ==============================================================================
 
 class ALSTuner:
@@ -536,7 +539,7 @@ class ALSTuner:
         )
         scoring_time = time.time() - t0
 
-        # Evaluate on screening cohort
+        # Đánh giá trên nhóm thuần tập sàng lọc (Screening Cohort)
         eval_recs = {uid: [mid for mid, _ in rlist] for uid, rlist in screening_recs.items()}
         screening_targets = {
             uid: val_targets_dict[uid]
@@ -601,9 +604,9 @@ class ALSTuner:
         base_model_artifact_dir: Optional[Union[str, Path]] = None,
     ) -> TrialResult:
         """
-        Fit a single ALS trial, audit factors, save model, and score screening cohort.
-        If base_model_artifact_dir is provided (e.g. for diagnostic branches), reuses
-        existing factor weights without fitting.
+        Huấn luyện một thử nghiệm ALS, kiểm toán nhân tố, lưu mô hình và chấm điểm nhóm sàng lọc.
+        Nếu base_model_artifact_dir được cung cấp (ví dụ cho các nhánh chẩn đoán), tái sử dụng
+        trọng số nhân tố hiện có mà không cần huấn luyện lại.
         """
         config.validate()
         trial = self.registry.register_trial(config)
@@ -628,7 +631,7 @@ class ALSTuner:
 
             spark_model_dir = model_dir / "spark_model"
 
-            # 1. Fit Model if not already persisted
+            # 1. Huấn luyện mô hình nếu chưa được lưu trên đĩa
             t_train = 0.0
             if not spark_model_dir.exists():
                 print(f"[{config.trial_id}] Fitting Spark ALS (rank={config.rank}, regParam={config.reg_param}, maxIter={config.max_iter})...")
@@ -661,18 +664,18 @@ class ALSTuner:
         self.registry.update_trial(trial)
 
         try:
-            # 2. Score Screening Cohort
+            # 2. Chấm điểm nhóm thuần tập sàng lọc (Screening Cohort)
             print(f"[{config.trial_id}] Loading factors and generating Top-20 for {len(screening_uids):,} screening users...")
             gen = ALSCandidateGenerator()
             gen.load_catalog_and_factors(model_dir, movies_parquet_path)
 
-            # Support filter diagnostic branch: mask items with < support_filter_min_ratings
+            # Nhánh chẩn đoán bộ lọc support: che các phim có số lượt đánh giá < support_filter_min_ratings
             if config.model_family == ModelFamily.ALS_PLUS_TRAIN_SUPPORT_FILTER.value:
                 assert config.support_filter_min_ratings is not None
                 min_sup = config.support_filter_min_ratings
                 low_support_mids = {mid for mid, count in item_train_counts.items() if count < min_sup}
                 print(f"[{config.trial_id}] Applying support filter: masking {len(low_support_mids):,} movies with < {min_sup} ratings.")
-                # We can add low_support_mids to user seen histories during candidate generation
+                # Thêm low_support_mids vào lịch sử đã xem của người dùng trong quá trình sinh ứng viên
                 augmented_histories = {
                     uid: train_seen_dict.get(uid, set()) | low_support_mids
                     for uid in screening_uids
@@ -690,7 +693,7 @@ class ALSTuner:
             )
             scoring_time = time.time() - t_score0
 
-            # 3. Evaluate Screening Cohort
+            # 3. Đánh giá nhóm thuần tập sàng lọc
             eval_recs = {uid: [mid for mid, _ in rlist] for uid, rlist in recs.items()}
             screening_targets = {
                 uid: val_targets_dict[uid]
@@ -761,7 +764,7 @@ class ALSTuner:
         save_parquet_path: Optional[Union[str, Path]] = None,
     ) -> TrialResult:
         """
-        Execute Level 2: Full Validation (109,779 positive users) for a finalist model.
+        Thực thi Cấp độ 2: Đánh giá Toàn bộ Validation (109.779 người dùng dương) cho mô hình chung kết.
         """
         if trial_id not in self.registry.trials:
             raise KeyError(f"Trial '{trial_id}' not found in registry")
@@ -779,7 +782,7 @@ class ALSTuner:
         gen = ALSCandidateGenerator()
         gen.load_catalog_and_factors(model_dir, movies_parquet_path)
 
-        # Support filter diagnostic branch if applicable
+        # Nhánh chẩn đoán bộ lọc support nếu áp dụng
         if trial.config.model_family == ModelFamily.ALS_PLUS_TRAIN_SUPPORT_FILTER.value:
             assert trial.config.support_filter_min_ratings is not None
             min_sup = trial.config.support_filter_min_ratings
@@ -802,11 +805,11 @@ class ALSTuner:
         scoring_time = time.time() - t0
         print(f"[{trial_id}] Full recommendations generated in {scoring_time:.2f}s ({len(all_validation_uids)/scoring_time:.1f} users/s).")
 
-        # Save Parquet recommendations if requested
+        # Lưu danh sách gợi ý ra tệp Parquet nếu được yêu cầu
         if save_parquet_path is not None:
             gen.save_recommendations_parquet(recs, save_parquet_path)
 
-        # Evaluate on full cohort
+        # Đánh giá trên toàn bộ nhóm thuần tập
         eval_recs = {uid: [mid for mid, _ in rlist] for uid, rlist in recs.items()}
         full_val_targets = {
             uid: val_targets_dict[uid]

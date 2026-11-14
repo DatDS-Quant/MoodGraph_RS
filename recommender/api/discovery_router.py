@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: Movie Discovery Router (Mode A).
-Provides endpoints for browsing movies, inspecting profiles and history,
-real-time personalized recommendations, and explainability breakdowns.
+MoodGraph Giai đoạn 5: Bộ định tuyến Khám phá Phim (Movie Discovery Router - Chế độ Người dùng Mode A).
+Cung cấp các điểm cuối phục vụ duyệt danh mục phim, kiểm tra hồ sơ và lịch sử đánh giá của người dùng,
+gợi ý cá nhân hóa thời gian thực, và phân rã các góc nhìn giải thích khuyến nghị.
 """
 
 from __future__ import annotations
@@ -37,9 +37,9 @@ logger = logging.getLogger("recommender.api.discovery_router")
 router = APIRouter(prefix="/api", tags=["Mode A - Movie Discovery"])
 
 
-# ---------------------------------------------------------------------------
-# Movie Catalog Endpoints
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 1. Các điểm cuối Danh mục Phim (Movie Catalog Endpoints)
+# ===========================================================================
 
 @router.get("/movies", response_model=MovieSearchResponse)
 def list_and_search_movies(
@@ -52,7 +52,7 @@ def list_and_search_movies(
     sort_by: str = Query("title", pattern="^(title|year|movieId)$", description="Sort criterion"),
     catalog_svc: CatalogService = Depends(get_catalog_service),
 ) -> MovieSearchResponse:
-    """Lists and searches movies with filtering and pagination."""
+    """Liệt kê và tìm kiếm danh mục phim có hỗ trợ bộ lọc (từ khóa, thể loại, khoảng năm phát hành) và phân trang."""
     res = catalog_svc.search_movies(
         query=query,
         genre=genre,
@@ -77,7 +77,7 @@ def search_movies_alias(
     sort_by: str = Query("title", pattern="^(title|year|movieId)$"),
     catalog_svc: CatalogService = Depends(get_catalog_service),
 ) -> MovieSearchResponse:
-    """Convenience search endpoint supporting both ?q= and ?query=."""
+    """Điểm cuối tìm kiếm tiện ích hỗ trợ đồng thời cả tham số truy vấn ?q= và ?query=."""
     target_query = q if q is not None else query
     res = catalog_svc.search_movies(
         query=target_query,
@@ -96,7 +96,7 @@ def get_movie_detail(
     movie_id: int,
     catalog_svc: CatalogService = Depends(get_catalog_service),
 ) -> MovieDetailResponse:
-    """Retrieves rich movie metadata, external IMDb/TMDb links, and similar movies."""
+    """Truy xuất siêu dữ liệu chi tiết của phim, liên kết ngoài IMDb/TMDb và danh sách các phim tương đồng."""
     detail = catalog_svc.get_movie_detail(movie_id)
     if not detail:
         raise HTTPException(
@@ -110,13 +110,13 @@ def get_movie_detail(
 def list_genres(
     catalog_svc: CatalogService = Depends(get_catalog_service),
 ) -> GenreListResponse:
-    """Returns the list of all 19 canonical genres in the movie catalog."""
+    """Trả về danh sách toàn bộ 19 thể loại phim chuẩn tắc có trong danh mục."""
     return GenreListResponse(genres=catalog_svc.list_genres())
 
 
-# ---------------------------------------------------------------------------
-# User Exploration & History Endpoints
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 2. Các điểm cuối Hồ sơ & Lịch sử Người dùng (User Exploration & History)
+# ===========================================================================
 
 @router.get("/users", response_model=UserListResponse)
 def list_sample_users(
@@ -125,7 +125,7 @@ def list_sample_users(
     page_size: int = Query(20, ge=1, le=50),
     user_svc: UserProfileService = Depends(get_user_profile_service),
 ) -> UserListResponse:
-    """Lists representative users for demo exploration and inspection."""
+    """Liệt kê danh sách người dùng mẫu tiêu biểu phục vụ việc khám phá và kiểm thử trên giao diện demo."""
     res = user_svc.list_sample_users(user_type=user_type, page=page, page_size=page_size)
     return UserListResponse(**res)
 
@@ -136,8 +136,8 @@ def get_user_profile(
     user_svc: UserProfileService = Depends(get_user_profile_service),
 ) -> UserProfileResponse:
     """
-    Retrieves user profile statistics and genre distribution.
-    Computed strictly from the Train split (Zero Leakage).
+    Truy xuất thống kê hồ sơ người dùng và phân bố thể loại yêu thích.
+    Được tính toán nghiêm ngặt chỉ từ phân vùng dữ liệu Train (bảo đảm 100% không rò rỉ dữ liệu).
     """
     res = user_svc.get_user_profile(user_id)
     return UserProfileResponse(**res)
@@ -152,8 +152,8 @@ def get_user_history(
     user_svc: UserProfileService = Depends(get_user_profile_service),
 ) -> UserHistoryResponse:
     """
-    Retrieves user ratings history strictly from the Train split.
-    Validation and Test held-out data are completely protected.
+    Truy xuất lịch sử đánh giá của người dùng phân trang nghiêm ngặt từ tập Train.
+    Tập dữ liệu kiểm định giữ lại (Validation và Test) được bảo vệ cách ly tuyệt đối.
     """
     res = user_svc.get_user_history(
         user_id=user_id,
@@ -164,9 +164,9 @@ def get_user_history(
     return UserHistoryResponse(**res)
 
 
-# ---------------------------------------------------------------------------
-# Recommendations & Explainability Endpoints
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 3. Các điểm cuối Gợi ý Cá nhân hóa & Giải thích (Recommendations & Explainability)
+# ===========================================================================
 
 @router.get("/recommendations/{user_id}")
 def get_recommendations(
@@ -180,9 +180,9 @@ def get_recommendations(
     hybrid_engine=Depends(get_hybrid_engine),
 ):
     """
-    Generates personalized recommendations using Hybrid Recommender Engine.
-    Fully backwards-compatible with Phase 4 response contracts.
-    Enforces strict admin token header verification when disabling seen filtering.
+    Tạo danh sách gợi ý phim cá nhân hóa bằng Động cơ Gợi ý Lai (Hybrid Recommender Engine).
+    Tương thích ngược 100% với cấu trúc dữ liệu trả về từ Giai đoạn 4.
+    Bắt buộc xác thực khóa quản trị viên (Admin Token) khi yêu cầu tắt bộ lọc phim đã xem.
     """
     if hybrid_engine is None:
         raise HTTPException(
@@ -190,7 +190,7 @@ def get_recommendations(
             detail="Hybrid recommender engine is not initialized or still warming up.",
         )
 
-    # Diagnostic security check if client requests disabling seen filtering (fail-closed policy)
+    # Kiểm tra an ninh chẩn đoán nếu client yêu cầu tắt bộ lọc phim đã xem (chính sách fail-closed)
     if not filter_seen:
         admin_key = os.getenv("ADMIN_API_KEY")
         if not admin_key or not admin_key.strip():
@@ -213,7 +213,7 @@ def get_recommendations(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Disabling seen filtering is restricted. Please pass allow_unfiltered=true along with the valid X-Admin-Token header for diagnostic evaluations.",
             )
-        # Enforce complete cache isolation for diagnostic mode: bypass and do not pollute user cache
+        # Áp dụng cô lập hoàn toàn bộ nhớ đệm cho chế độ chẩn đoán: không đọc và không làm bẩn cache người dùng
         use_cache = False
 
     try:
@@ -244,9 +244,9 @@ def get_recommendation_explanation(
     explain_svc: ExplainabilityService = Depends(get_explainability_service),
 ) -> ExplanationDetailResponse:
     """
-    Provides multi-perspective explanation for a recommended movie:
-    - Knowledge Graph metapaths (P1 Genre, P2 Genome, P3 Collaborative)
-    - ALS collaborative filtering latent factor affinity
+    Cung cấp giải thích đa tầng cho một bộ phim được gợi ý:
+    - Các siêu đường dẫn Đồ thị Tri thức (P1 Thể loại, P2 Genome Tag, P3 Cộng tác).
+    - Tương quan nhân tố tiềm ẩn từ mô hình lọc cộng tác Spark ALS.
     """
     res = explain_svc.explain_recommendation(user_id=user_id, movie_id=movie_id)
     return ExplanationDetailResponse(**res)

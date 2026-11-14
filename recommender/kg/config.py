@@ -10,6 +10,7 @@ from typing import Optional
 
 @dataclass
 class KGConfig:
+    """Cấu hình tham số cho hệ thống gợi ý đồ thị tri thức (Knowledge Graph)."""
     data_root: Path
     neo4j_uri: str
     neo4j_user: str
@@ -59,7 +60,7 @@ def load_kg_config() -> KGConfig:
                 data_root = cp
                 break
 
-    # Neo4j settings
+    # Cấu hình kết nối cơ sở dữ liệu đồ thị Neo4j
     neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
     neo4j_user = os.getenv("NEO4J_USER", "neo4j")
     

@@ -29,12 +29,18 @@ class MovieCatalogRepository:
         self.movies_path = self.data_root / "core" / "movies"
         self.links_path = self.data_root / "core" / "links"
 
+        # Khóa đồng bộ đa luồng bảo vệ tiến trình nạp chỉ mục
         self._lock = threading.RLock()
         self._is_loaded: bool = False
+        # Bảng băm tra cứu thông tin phim theo movieId: O(1)
         self._movies_by_id: Dict[int, Dict[str, Any]] = {}
+        # Danh sách toàn bộ movieId đã được nạp
         self._all_movie_ids: List[int] = []
+        # Chỉ mục tiêu đề phim dạng (tiêu đề viết thường chuẩn hóa, movieId) phục vụ tìm kiếm
         self._title_index: List[Tuple[str, int]] = []
+        # Chỉ mục đảo thể loại: genre -> danh sách các movieId
         self._genre_index: Dict[str, List[int]] = {}
+        # Danh sách các thể loại phim phân biệt đã sắp xếp
         self._distinct_genres: List[str] = []
 
     def load_and_index(self) -> None:
@@ -223,7 +229,7 @@ class MovieCatalogRepository:
         return page_items, total_count
 
 
-# Singleton Repository instance
+# Thể hiện Singleton của MovieCatalogRepository
 _CATALOG_REPO_INSTANCE: Optional[MovieCatalogRepository] = None
 
 

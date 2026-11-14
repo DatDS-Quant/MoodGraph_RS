@@ -31,7 +31,7 @@ from pyspark.sql.types import DoubleType, IntegerType, StructField, StructType
 
 
 # ==============================================================================
-# I. DETERMINISTIC TOY DATASET
+# I. TẬP DỮ LIỆU MẪU TẤT ĐỊNH (DETERMINISTIC TOY DATASET)
 # ==============================================================================
 
 TOY_USERS: Dict[int, Dict[str, Any]] = {
@@ -40,7 +40,7 @@ TOY_USERS: Dict[int, Dict[str, Any]] = {
     3: {"name": "Chi", "type": "warm"},
     4: {"name": "Dung", "type": "warm"},
     5: {"name": "Em", "type": "warm"},
-    6: {"name": "Cold_User", "type": "cold"},  # 0 train ratings
+    6: {"name": "Cold_User", "type": "cold"},  # 0 lượt đánh giá trong Train
 }
 
 TOY_MOVIES: Dict[int, Dict[str, Any]] = {
@@ -50,12 +50,12 @@ TOY_MOVIES: Dict[int, Dict[str, Any]] = {
     104: {"title": "Movie_D", "type": "warm"},
     105: {"title": "Movie_E", "type": "warm"},
     106: {"title": "Movie_F", "type": "warm"},
-    107: {"title": "Cold_Movie", "type": "cold"},  # 0 train ratings
+    107: {"title": "Cold_Movie", "type": "cold"},  # 0 lượt đánh giá trong Train
 }
 
 # (userId, movieId, rating)
 TOY_TRAIN_RATINGS: List[Tuple[int, int, float]] = [
-    # Golden example block (Users 1 & 2 on Movies 101, 102, 103)
+    # Khối dữ liệu ví dụ mẫu chuẩn (Người dùng 1 & 2 đánh giá Phim 101, 102, 103)
     (1, 101, 2.0),
     (1, 102, 4.0),
     (1, 104, 3.5),
@@ -65,7 +65,7 @@ TOY_TRAIN_RATINGS: List[Tuple[int, int, float]] = [
     (2, 103, 1.5),
     (2, 104, 2.0),
     (2, 106, 3.0),
-    # Additional warm users and movies
+    # Bổ sung thêm người dùng và phim warm
     (3, 102, 3.0),
     (3, 103, 4.0),
     (3, 105, 4.5),
@@ -82,7 +82,7 @@ TOY_TRAIN_RATINGS: List[Tuple[int, int, float]] = [
 
 
 # ==============================================================================
-# II. PURE PYTHON / NUMPY MATHEMATICAL ALS REFERENCE
+# II. THAM CHIẾU TOÁN HỌC ALS THUẦN PYTHON / NUMPY
 # ==============================================================================
 
 def compute_dot_product(user_vector: np.ndarray, item_vector: np.ndarray) -> float:
@@ -220,7 +220,7 @@ def run_toy_als_reference(
     """
     rng = np.random.default_rng(seed)
 
-    # Index ratings
+    # Lập chỉ mục các lượt đánh giá
     ratings_by_user: Dict[int, List[Tuple[int, float]]] = {}
     ratings_by_item: Dict[int, List[Tuple[int, float]]] = {}
     all_users = set()
@@ -232,7 +232,7 @@ def run_toy_als_reference(
         ratings_by_user.setdefault(u, []).append((i, r))
         ratings_by_item.setdefault(i, []).append((u, r))
 
-    # Initialize item factors randomly
+    # Khởi tạo ngẫu nhiên ma trận nhân tố vật phẩm
     item_factors: Dict[int, np.ndarray] = {
         i: rng.normal(loc=0.5, scale=0.1, size=rank).astype(np.float64)
         for i in all_items
@@ -246,11 +246,11 @@ def run_toy_als_reference(
     loss_history.append(initial_loss)
 
     for _ in range(max_iter):
-        # Update user factors holding items fixed
+        # Cập nhật nhân tố người dùng khi cố định vật phẩm
         user_factors = als_update_user_factors(
             ratings_by_user, item_factors, rank, reg_param
         )
-        # Update item factors holding users fixed
+        # Cập nhật nhân tố vật phẩm khi cố định người dùng
         item_factors = als_update_item_factors(
             ratings_by_item, user_factors, rank, reg_param
         )
@@ -276,23 +276,23 @@ def verify_golden_example_step() -> Dict[str, float]:
     q_B = 2.0
     q_C = 1.5
 
-    # 1. Update p_An:
-    # Denominator: q_A^2 + q_B^2 = 1 + 4 = 5.0
-    # Numerator: r_{An,A} * q_A + r_{An,B} * q_B = 2(1) + 4(2) = 10.0
+    # 1. Cập nhật nhân tố p_An:
+    # Mẫu số: q_A^2 + q_B^2 = 1 + 4 = 5.0
+    # Tử số: r_{An,A} * q_A + r_{An,B} * q_B = 2(1) + 4(2) = 10.0
     p_An = 10.0 / 5.0  # = 2.0
 
-    # 2. Update p_Binh:
-    # Denominator: q_A^2 + q_B^2 + q_C^2 = 1 + 4 + 2.25 = 7.25
-    # Numerator: r_{Binh,A} * q_A + r_{Binh,B} * q_B + r_{Binh,C} * q_C = 1(1) + 2(2) + 1.5(1.5) = 7.25
+    # 2. Cập nhật nhân tố p_Binh:
+    # Mẫu số: q_A^2 + q_B^2 + q_C^2 = 1 + 4 + 2.25 = 7.25
+    # Tử số: r_{Binh,A} * q_A + r_{Binh,B} * q_B + r_{Binh,C} * q_C = 1(1) + 2(2) + 1.5(1.5) = 7.25
     p_Binh = 7.25 / 7.25  # = 1.0
 
-    # 3. Update q_C holding user factors fixed:
-    # Movie C only rated by Binh (r = 1.5)
-    # Denominator: p_Binh^2 = 1.0^2 = 1.0
-    # Numerator: r_{Binh,C} * p_Binh = 1.5 * 1.0 = 1.5
+    # 3. Cập nhật nhân tố q_C khi cố định nhân tố người dùng:
+    # Phim C chỉ được đánh giá bởi Binh (r = 1.5)
+    # Mẫu số: p_Binh^2 = 1.0^2 = 1.0
+    # Tử số: r_{Binh,C} * p_Binh = 1.5 * 1.0 = 1.5
     q_C_updated = 1.5 / 1.0  # = 1.5
 
-    # 4. Predict rating for An on unseen Movie C:
+    # 4. Dự đoán điểm đánh giá của An cho phim C chưa xem:
     # r_hat_{An, C} = p_An * q_C = 2.0 * 1.5 = 3.0
     pred_An_on_C = p_An * q_C_updated
 
@@ -305,7 +305,7 @@ def verify_golden_example_step() -> Dict[str, float]:
 
 
 # ==============================================================================
-# III. PYSPARK ALS INTEGRATION & FACTOR EXTRACTION
+# III. TÍCH HỢP PYSPARK ALS & TRÍCH XUẤT NHÂN TỐ ẨN
 # ==============================================================================
 
 def create_toy_spark_dataframe(
@@ -473,7 +473,7 @@ def demonstrate_cold_start_difference(
 
 
 # ==============================================================================
-# IV. LATENT FACTOR GEOMETRY: EUCLIDEAN VS DOT PRODUCT COUNTEREXAMPLE
+# IV. HÌNH HỌC NHÂN TỐ ẨN: PHẢN VÍ DỤ SO SÁNH KHOẢNG CÁCH EUCLIDEAN VÀ TÍCH VÔ HƯỚNG
 # ==============================================================================
 
 def verify_euclidean_vs_dot_product_counterexample() -> Dict[str, Any]:
@@ -491,7 +491,7 @@ def verify_euclidean_vs_dot_product_counterexample() -> Dict[str, Any]:
     dot_1 = float(np.dot(p_u, q_1))
     dot_2 = float(np.dot(p_u, q_2))
 
-    # Item 1 is closer in Euclidean space (dist_1 < dist_2), but Item 2 has higher dot product (dot_2 > dot_1)
+    # Vật phẩm 1 gần hơn trong không gian Euclidean (dist_1 < dist_2), nhưng Vật phẩm 2 có tích vô hướng cao hơn (dot_2 > dot_1)
     is_counterexample_valid = (dist_1 < dist_2) and (dot_2 > dot_1)
 
     return {

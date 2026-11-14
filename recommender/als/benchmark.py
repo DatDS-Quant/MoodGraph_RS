@@ -45,7 +45,7 @@ from recommender.als.popularity import (
 
 
 class PreflightBlockedError(Exception):
-    """Raised when frozen release invariants are violated before opening Test split."""
+    """Ném ra khi các bất biến phát hành đóng băng bị vi phạm trước khi mở phân vùng Test."""
     pass
 
 
@@ -113,7 +113,7 @@ def run_preflight_audit(repo_root: Path) -> Dict[str, Any]:
     print("[PreFlight] Starting M08 Pre-Flight Release Audit...")
     audit_results: Dict[str, Any] = {"status": "PASS", "checks": {}}
 
-    # 1. Git branch check
+    # 1. Kiểm tra nhánh Git
     git_info = get_git_info(repo_root)
     allowed_branches = {
         "feature/als-3a",
@@ -132,7 +132,7 @@ def run_preflight_audit(repo_root: Path) -> Dict[str, Any]:
     audit_results["checks"]["git_branch"] = git_info["branch"]
     audit_results["checks"]["git_commit"] = git_info["commit"]
 
-    # 2. Checksum verification for freeze artifacts
+    # 2. Xác minh mã băm toàn vẹn cho các tệp đóng băng
     for key, (rel_path, exp_hash) in EXPECTED_HASHES.items():
         full_path = repo_root / rel_path
         if not full_path.exists():
@@ -144,14 +144,14 @@ def run_preflight_audit(repo_root: Path) -> Dict[str, Any]:
             )
         audit_results["checks"][f"hash_{key}"] = actual_hash
 
-    # 3. Canonical ALS model artifact audit
+    # 3. Kiểm toán tệp mô hình ALS chính thức
     canonical_model_dir = repo_root / "artifacts" / "models" / "als" / "m07_tuning" / "ALS_R8_REG0.3_ITER10"
     if not canonical_model_dir.exists():
         raise PreflightBlockedError(
             f"M08_PREFLIGHT_BLOCKED: Canonical model artifact directory not found at {canonical_model_dir}"
         )
 
-    # 4. Model manifest inspection
+    # 4. Thanh tra tập tin manifest mô hình
     model_mf_path = canonical_model_dir / "manifest.json"
     with open(model_mf_path, "r", encoding="utf-8") as f:
         model_mf = json.load(f)
@@ -166,7 +166,7 @@ def run_preflight_audit(repo_root: Path) -> Dict[str, Any]:
     if cfg.get("seed") != 42:
         raise PreflightBlockedError(f"M08_PREFLIGHT_BLOCKED: Expected seed=42, found {cfg.get('seed')}")
 
-    # 5. Parquet factor matrices shape inspection
+    # 5. Thanh tra kích thước ma trận nhân tố Parquet
     u_path = canonical_model_dir / "spark_model" / "userFactors"
     i_path = canonical_model_dir / "spark_model" / "itemFactors"
     if not u_path.exists() or not i_path.exists():
@@ -263,13 +263,13 @@ def load_train_and_val_seen(
     t_val = time.time() - t1
     print(f"[DataLoader] Loaded {total_val_rows:,} Validation seen items in {t_val:.2f}s.")
 
-    # Combine seen: test_seen = Train ∪ Validation
+    # Hợp nhất tập đã xem: test_seen = Train ∪ Validation
     test_seen: Dict[int, Set[int]] = {}
     all_uids = set(train_seen.keys()) | set(val_seen.keys())
     for uid in all_uids:
         test_seen[uid] = train_seen.get(uid, set()) | val_seen.get(uid, set())
 
-    # Invariant assertion: Train and Validation are disjoint for each user
+    # Khẳng định bất biến: Tập Train và Validation rời nhau đối với từng người dùng
     overlap_count = 0
     for uid in all_uids:
         if train_seen.get(uid, set()) & val_seen.get(uid, set()):
@@ -323,11 +323,11 @@ def load_test_targets(
         f"{len(non_positive_uids):,} non-positive users (rating < 3.5)."
     )
 
-    # Invariant check: exactly 162,541 Test users
+    # Kiểm tra bất biến: chính xác 162,541 người dùng trong tập Test
     assert len(targets) == 162541, f"Expected 162,541 Test users, got {len(targets)}"
     assert len(positive_uids) + len(non_positive_uids) == 162541
 
-    # Invariant check: No test target is accidentally present in test_seen
+    # Kiểm tra bất biến: Không có mục tiêu test nào vô tình xuất hiện trong test_seen
     target_in_seen_count = 0
     for uid, target in targets.items():
         if target.movie_id in test_seen.get(uid, set()):
@@ -347,12 +347,12 @@ def run_popularity_count_benchmark(
     k_list: Sequence[int] = (5, 10, 20),
 ) -> Tuple[Dict[int, List[int]], float]:
     """
-    Generate Top-K recommendations using Train-only Rating Count.
-    Tie-breaking: count DESC, avg_rating DESC, movieId ASC.
+    Sinh Top-K khuyến nghị sử dụng mô hình xếp hạng theo số lượt đánh giá thuần trên Train.
+    Quy tắc phá vỡ hòa điểm: count GIẢM DẦN, avg_rating GIẢM DẦN, movieId TĂNG DẦN.
     """
     print("[Benchmark] Generating Popularity Count recommendations on Test...")
     t0 = time.time()
-    # Build movie stats: (movieId, count, avg_rating)
+    # Xây dựng thống kê phim: (movieId, count, avg_rating)
     stats: List[Tuple[int, int, float]] = []
     for mid, count in item_counts.items():
         avg_r = item_sum[mid] / count if count > 0 else 0.0
@@ -391,8 +391,8 @@ def run_popularity_weighted_benchmark(
     k_list: Sequence[int] = (5, 10, 20),
 ) -> Tuple[Dict[int, List[int]], float]:
     """
-    Generate Top-K recommendations using Train-only Bayesian Weighted Average.
-    Tie-breaking: weighted_score DESC, count DESC, movieId ASC.
+    Sinh Top-K khuyến nghị sử dụng mô hình Bayes Dirichlet prior tính trung bình có trọng số trên Train.
+    Quy tắc phá vỡ hòa điểm: weighted_score GIẢM DẦN, count GIẢM DẦN, movieId TĂNG DẦN.
     """
     print(f"[Benchmark] Generating Popularity Weighted (m={m}) recommendations on Test...")
     t0 = time.time()
@@ -433,8 +433,8 @@ def run_frozen_als_benchmark(
     k: int = 20,
 ) -> Tuple[Dict[int, List[int]], float, ALSCandidateGenerator]:
     """
-    Generate Top-K recommendations using frozen Spark ALS champion (ALS_R8_REG0.3_ITER10).
-    Exact Filter-Before-Top-K using (Train ∪ Validation) seen history.
+    Sinh Top-K khuyến nghị sử dụng mô hình Spark ALS vô địch đã đóng băng (ALS_R8_REG0.3_ITER10).
+    Áp dụng cơ chế lọc trước khi chọn Top-K chính xác dựa trên lịch sử đã xem (Train ∪ Validation).
     """
     print(f"[Benchmark] Loading Frozen ALS candidate generator from {canonical_model_dir}...")
     t0 = time.time()
@@ -464,7 +464,7 @@ def run_frozen_als_benchmark(
 
 @dataclass
 class ModelBenchmarkResult:
-    """Stores full evaluation metrics and metadata for a single model."""
+    """Lưu trữ toàn bộ chỉ số đánh giá và siêu dữ liệu cho một mô hình đơn lẻ."""
     model_name: str
     model_family: str
     generation_time_sec: float
@@ -477,7 +477,7 @@ class ModelBenchmarkResult:
 
 class TestBenchmarkRunner:
     """
-    Autonomous coordinator for M08 Final Offline Benchmark.
+    Bộ điều phối tự hành cho quy trình Đánh giá Ngoại tuyến Cuối cùng M08.
     """
 
     def __init__(self, repo_root: Union[str, Path]):
@@ -497,14 +497,14 @@ class TestBenchmarkRunner:
         self.preflight_report: Dict[str, Any] = {}
 
     def execute_preflight(self) -> Dict[str, Any]:
-        """Execute strict preflight checks."""
+        """Thực thi các kiểm tra tiền kiểm nghiêm ngặt."""
         self.preflight_report = run_preflight_audit(self.repo_root)
         self.preflight_passed = True
         return self.preflight_report
 
     def run_benchmark(self) -> Dict[str, ModelBenchmarkResult]:
         """
-        Execute end-to-end single-shot benchmark across all three models.
+        Thực thi đánh giá benchmark toàn diện một lần duy nhất (single-shot) trên cả ba mô hình.
         """
         if not self.preflight_passed:
             self.execute_preflight()
@@ -514,27 +514,27 @@ class TestBenchmarkRunner:
         print("MOODGRAPH TASK 3A: M08 FINAL TEST SPLIT BENCHMARK")
         print("=" * 70)
 
-        # 1. Load Train & Validation seen histories
+        # 1. Nạp lịch sử các phim đã xem từ tập Train & Validation
         test_seen, item_counts, item_sum, global_mean, n_train, n_val = load_train_and_val_seen(
             train_dir=self.train_dir,
             val_dir=self.val_dir,
         )
 
-        # 2. Load Test targets (only after preflight pass)
+        # 2. Nạp mục tiêu Test (chỉ thực hiện sau khi vượt qua tiền kiểm)
         test_targets, positive_uids, non_positive_uids = load_test_targets(
             test_dir=self.test_dir,
             test_seen=test_seen,
             preflight_passed=self.preflight_passed,
         )
 
-        # Build positive test targets dictionary for evaluation
+        # Xây dựng từ điển mục tiêu test dương phục vụ đánh giá
         positive_targets_dict: Dict[int, HeldOutTarget] = {
             uid: test_targets[uid] for uid in positive_uids
         }
         pos_cohort_size = len(positive_targets_dict)
         assert pos_cohort_size == len(positive_uids)
 
-        # Count how many positive targets are unscoreable by ALS (< 58,932 items)
+        # Đếm số lượng mục tiêu dương không thể cho điểm bởi ALS (< 58,932 phim)
         scoreable_item_set = set(item_counts.keys())
         unscoreable_pos_targets = sum(
             1 for t in positive_targets_dict.values() if t.movie_id not in scoreable_item_set
@@ -555,7 +555,7 @@ class TestBenchmarkRunner:
         results: Dict[str, ModelBenchmarkResult] = {}
 
         # ======================================================================
-        # MODEL A: POPULARITY COUNT
+        # MÔ HÌNH A: POPULARITY COUNT (XẾP HẠNG THEO SỐ LƯỢT ĐÁNH GIÁ)
         # ======================================================================
         print("\n" + "-" * 60)
         print("EVALUATING MODEL A: M03_POPULARITY_COUNT")
@@ -589,7 +589,7 @@ class TestBenchmarkRunner:
         )
 
         # ======================================================================
-        # MODEL B: POPULARITY WEIGHTED
+        # MÔ HÌNH B: POPULARITY WEIGHTED (TRUNG BÌNH CÓ TRỌNG SỐ BAYES)
         # ======================================================================
         print("\n" + "-" * 60)
         print("EVALUATING MODEL B: M03_POPULARITY_WEIGHTED_M10")
@@ -625,7 +625,7 @@ class TestBenchmarkRunner:
         )
 
         # ======================================================================
-        # MODEL C: FROZEN SPARK ALS CHAMPION
+        # MÔ HÌNH C: SPARK ALS VÔ ĐỊCH ĐÃ ĐÓNG BĂNG
         # ======================================================================
         print("\n" + "-" * 60)
         print("EVALUATING MODEL C: ALS_R8_REG0.3_ITER10 (ALS_ONLY)")
@@ -662,7 +662,7 @@ class TestBenchmarkRunner:
         total_runtime_sec = time.time() - t_start_total
 
         # ======================================================================
-        # PERSIST M08 BENCHMARK ARTIFACTS
+        # LƯU TRỮ CÁC HIỆN VẬT KIỂM TOÁN BENCHMARK M08
         # ======================================================================
         self._persist_artifacts(
             results=results,
@@ -688,7 +688,7 @@ class TestBenchmarkRunner:
         total_val_rows: int,
         total_runtime_sec: float,
     ) -> None:
-        """Serialize all audit artifacts to artifacts/als/m08/."""
+        """Tuần tự hóa toàn bộ hiện vật kiểm toán vào thư mục artifacts/als/m08/."""
         git_info = get_git_info(self.repo_root)
         ts = time.strftime("%Y-%m-%d %H:%M:%S")
 

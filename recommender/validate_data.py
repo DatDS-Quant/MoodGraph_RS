@@ -19,7 +19,7 @@ import time
 import json
 from pathlib import Path
 
-# Configure Hadoop and Python environments for Windows 11
+# Cấu hình môi trường Hadoop và Python cho Windows 11
 os.environ["HADOOP_HOME"] = r"C:\hadoop"
 os.environ["PATH"] = r"C:\hadoop\bin;" + os.environ.get("PATH", "")
 os.environ["PYSPARK_PYTHON"] = sys.executable
@@ -40,7 +40,7 @@ from pyspark.sql.types import (
 
 
 def get_spark_session(app_name: str = "MoodGraph_DataValidation") -> SparkSession:
-    """Initialize SparkSession for test execution."""
+    """Khởi tạo SparkSession phục vụ thực thi bài kiểm định chất lượng dữ liệu."""
     return (
         SparkSession.builder.appName(app_name)
         .master("local[*]")
@@ -55,6 +55,7 @@ def get_spark_session(app_name: str = "MoodGraph_DataValidation") -> SparkSessio
 
 
 def run_all_tests():
+    """Chạy toàn bộ 8 bài kiểm định tính toàn vẹn, rò rỉ dữ liệu và tính nhất quán của tập dữ liệu."""
     start_time = time.time()
     base_dir = Path(__file__).resolve().parent.parent
     processed_dir = base_dir / "data" / "processed"
@@ -72,7 +73,7 @@ def run_all_tests():
 
     test_results = {}
 
-    # Load datasets from processed Parquet
+    # Nạp các tập dữ liệu Parquet đã tiền xử lý vào Spark DataFrame
     print("Loading processed Parquet datasets into Spark DataFrames...")
     movies_df = spark.read.parquet(str(processed_dir / "core" / "movies"))
     links_df = spark.read.parquet(str(processed_dir / "core" / "links"))
@@ -93,7 +94,7 @@ def run_all_tests():
     movies_df.cache()
 
     # =========================================================================
-    # TEST 1: RECORD PRESERVATION
+    # BÀI KIỂM ĐỊNH 1: BẢO TOÀN SỐ LƯỢNG BẢN GHI (RECORD PRESERVATION)
     # =========================================================================
     print("\n[TEST 1] Record Preservation Test...")
     n_train = train_df.count()
@@ -102,7 +103,7 @@ def run_all_tests():
     total_split_ratings = n_train + n_val + n_test
     raw_ratings_count = 25000095
 
-    # Scalable two-way set comparison across all 4 attributes (userId, movieId, rating, timestamp)
+    # So sánh tập hợp hai chiều có khả năng mở rộng trên cả 4 thuộc tính (userId, movieId, rating, timestamp)
     raw_ratings_schema = StructType([
         StructField("userId", IntegerType(), nullable=False),
         StructField("movieId", IntegerType(), nullable=False),
@@ -146,10 +147,10 @@ def run_all_tests():
     assert t1_pass, "Test 1 FAILED: Record count or data mismatch!"
 
     # =========================================================================
-    # TEST 2: SPLIT INTEGRITY
+    # BÀI KIỂM ĐỊNH 2: TÍNH TOÀN VẸN PHÂN CHIA TẬP DỮ LIỆU (SPLIT INTEGRITY)
     # =========================================================================
     print("\n[TEST 2] Split Integrity Test...")
-    # Check no overlap of (userId, movieId)
+    # Kiểm tra không có sự trùng lặp cặp khóa (userId, movieId) giữa các tập
     train_keys = train_df.select("userId", "movieId")
     val_keys = val_df.select("userId", "movieId")
     test_keys = test_df.select("userId", "movieId")
@@ -159,23 +160,23 @@ def run_all_tests():
     overlap_val_test = val_keys.intersect(test_keys).count()
     total_overlap = overlap_train_val + overlap_train_test + overlap_val_test
 
-    # User count checks
+    # Kiểm tra số lượng người dùng duy nhất trên từng tập
     val_users_count = val_df.select("userId").distinct().count()
     test_users_count = test_df.select("userId").distinct().count()
     train_users_count = train_df.select("userId").distinct().count()
 
-    # Minimum ratings in train per user
+    # Số lượng lượt đánh giá tối thiểu của mỗi người dùng trong tập huấn luyện
     min_train_per_user = train_df.groupBy("userId").count().select(F.min("count")).first()[0]
 
-    # Full boundary ordering check across all 25M rows:
-    # 1. val vs test: val must precede test: (val.ts < test.ts) OR (val.ts == test.ts AND val.movieId < test.movieId)
+    # Kiểm tra toàn diện thứ tự biên thời gian trên toàn bộ 25 triệu dòng:
+    # 1. val so với test: val phải đứng trước test: (val.ts < test.ts) HOẶC (val.ts == test.ts VÀ val.movieId < test.movieId)
     val_test_viol = val_df.alias("v").join(test_df.alias("t"), on="userId").filter(
         (F.col("v.timestamp") > F.col("t.timestamp")) |
         ((F.col("v.timestamp") == F.col("t.timestamp")) & (F.col("v.movieId") >= F.col("t.movieId")))
     ).count()
 
-    # 2. train vs val: all train records must precede val:
-    # (train.ts < val.ts) OR (train.ts == val.ts AND train.movieId < val.movieId)
+    # 2. train so với val: toàn bộ bản ghi train phải đứng trước val:
+    # (train.ts < val.ts) HOẶC (train.ts == val.ts VÀ train.movieId < val.movieId)
     train_val_viol = train_df.alias("tr").join(val_df.alias("v"), on="userId").filter(
         (F.col("tr.timestamp") > F.col("v.timestamp")) |
         ((F.col("tr.timestamp") == F.col("v.timestamp")) & (F.col("tr.movieId") >= F.col("v.movieId")))
@@ -209,10 +210,10 @@ def run_all_tests():
     assert t2_pass, "Test 2 FAILED: Split integrity violated!"
 
     # =========================================================================
-    # TEST 3: REFERENTIAL INTEGRITY
+    # BÀI KIỂM ĐỊNH 3: TÍNH TOÀN VẸN THAM CHIẾU KHÓA NGOẠI (REFERENTIAL INTEGRITY)
     # =========================================================================
     print("\n[TEST 3] Referential Integrity Test...")
-    # Check all movieIds in ratings, tags, links, genome_scores exist in movies
+    # Kiểm tra toàn bộ movieId trong ratings, tags, links, genome_scores đều tồn tại hợp lệ trong danh mục movies
     all_ratings_movies = train_df.select("movieId").union(val_df.select("movieId")).union(test_df.select("movieId")).distinct()
     dangling_ratings_mids = all_ratings_movies.join(movies_df, on="movieId", how="left_anti").count()
     dangling_tags_mids = tags_df.select("movieId").distinct().join(movies_df, on="movieId", how="left_anti").count()
@@ -241,7 +242,7 @@ def run_all_tests():
     assert t3_pass, "Test 3 FAILED: Dangling foreign keys detected!"
 
     # =========================================================================
-    # TEST 4: SCHEMA VALIDATION
+    # BÀI KIỂM ĐỊNH 4: XÁC THỰC LƯỢC ĐỒ DỮ LIỆU CHUẨN (SCHEMA VALIDATION)
     # =========================================================================
     print("\n[TEST 4] Schema Validation Test...")
     expected_schemas = {
@@ -286,30 +287,30 @@ def run_all_tests():
     assert t4_pass, f"Test 4 FAILED: Schema mismatches: {schema_mismatches}"
 
     # =========================================================================
-    # TEST 5: INFORMATION PRESERVATION & METADATA INTEGRITY
+    # BÀI KIỂM ĐỊNH 5: BẢO TOÀN THÔNG TIN & TOÀN VẸN SIÊU DỮ LIỆU (METADATA INTEGRITY)
     # =========================================================================
     print("\n[TEST 5] Information Preservation & Metadata Integrity Test...")
-    # Check no movies deleted
+    # Kiểm tra không có bộ phim nào bị xóa
     total_movies = movies_df.count()
     no_genre_movies = movies_df.filter(F.size("genre_list") == 0).count()
     
-    # Check movies without genome
+    # Kiểm tra số lượng phim không có điểm số tâm trạng genome
     movies_with_genome = gscores_df.select("movieId").distinct().count()
     movies_without_genome = total_movies - movies_with_genome
 
-    # Check rating range
+    # Kiểm tra ranh giới miền giá trị đánh giá (rating)
     min_rating = train_df.select(F.min("rating")).first()[0]
     max_rating = train_df.select(F.max("rating")).first()[0]
 
-    # Check "NA" string preserved in tags
+    # Kiểm tra chuỗi "NA" được giữ nguyên vẹn trong bảng tags
     na_tags_count = tags_df.filter(F.col("tag") == "NA").count()
     null_tag_ts = tags_df.filter(F.col("timestamp").isNull()).count()
 
-    # Check IMDb leading zeros preserved
+    # Kiểm tra các số 0 ở đầu của chuỗi định danh IMDb được bảo toàn
     sample_imdb = links_df.filter(F.col("movieId") == 1).select("imdbId").first()[0]
     has_leading_zeros = sample_imdb.startswith("0") and len(sample_imdb) == 7
 
-    # Check Float32 precision drift on genome_scores
+    # Kiểm tra sai lệch độ chính xác dấu phẩy động Float32 trên genome_scores
     raw_gscores_schema = StructType([
         StructField("movieId", IntegerType()),
         StructField("tagId", IntegerType()),
@@ -320,7 +321,7 @@ def run_all_tests():
         F.max(F.abs(F.col("r.raw_relevance_double") - F.col("p.relevance"))).alias("max_drift")
     ).first()["max_drift"])
 
-    # Check derived feature movie_genres matches movies
+    # Kiểm tra đặc trưng dẫn xuất movie_genres khớp chính xác với danh mục movies
     derived_mgenres_count = movie_genres_df.count()
 
     t5_pass = (
@@ -353,14 +354,14 @@ def run_all_tests():
     assert t5_pass, "Test 5 FAILED: Information preservation or metadata fidelity violated!"
 
     # =========================================================================
-    # TEST 6: LEAKAGE GUARD
+    # BÀI KIỂM ĐỊNH 6: CHỐT CHẶN CHỐNG RÒ RỈ DỮ LIỆU (LEAKAGE GUARD)
     # =========================================================================
     print("\n[TEST 6] Leakage Guard Test...")
-    # Verify no test ratings exist in train
+    # Xác minh không có lượt đánh giá nào của tập test tồn tại trong tập train
     leak_test_in_train = test_df.join(train_df, on=["userId", "movieId"], how="inner").count()
     leak_val_in_train = val_df.join(train_df, on=["userId", "movieId"], how="inner").count()
 
-    # Verify tags_train has zero tags occurring at or after user validation timestamp
+    # Xác minh tags_train không chứa bất kỳ thẻ nhãn nào tạo tại hoặc sau mốc thời gian validation của người dùng
     u_val_ts_only = val_df.select("userId", F.col("timestamp").alias("val_ts"))
     tags_leak_check = (
         tags_train_df.join(u_val_ts_only, on="userId", how="inner")
@@ -368,7 +369,7 @@ def run_all_tests():
         .count()
     )
 
-    # Verify tags_train has ZERO overlap on (userId, movieId) with validation and test ratings
+    # Xác minh tags_train hoàn toàn không trùng cặp (userId, movieId) với các đánh giá validation và test
     val_items = val_df.select("userId", "movieId")
     test_items = test_df.select("userId", "movieId")
     overlap_tags_val = tags_train_df.join(val_items, on=["userId", "movieId"], how="inner").count()
@@ -394,10 +395,10 @@ def run_all_tests():
     assert t6_pass, "Test 6 FAILED: Data leakage detected!"
 
     # =========================================================================
-    # TEST 7: REPRODUCIBILITY (DETERMINISTIC SPLIT CHECK)
+    # BÀI KIỂM ĐỊNH 7: TÍNH TÁI LẬP TẤT ĐỊNH CỦA PHÂN CHIA (DETERMINISTIC SPLIT REPRODUCIBILITY)
     # =========================================================================
     print("\n[TEST 7] Reproducibility Test...")
-    # Re-run split on a cohort of 500 users from raw CSV and verify exact row-level equality
+    # Chạy lại phân chia trên nhóm thuần tập 500 người dùng từ CSV thô và xác minh độ trùng khớp từng dòng
     raw_ratings_schema = StructType([
         StructField("userId", IntegerType(), nullable=False),
         StructField("movieId", IntegerType(), nullable=False),
@@ -410,7 +411,7 @@ def run_all_tests():
     re_ranked = raw_ratings_sub.withColumn("rn_desc", F.row_number().over(test_win))
     re_test = re_ranked.filter(F.col("rn_desc") == 1).select("userId", "movieId", "rating", "timestamp")
     
-    # Compare with test_df on the same cohort
+    # So sánh đối chiếu với test_df trên cùng nhóm thuần tập
     actual_test_sub = test_df.filter(F.col("userId") <= 500).select("userId", "movieId", "rating", "timestamp")
     diff_count = re_test.exceptAll(actual_test_sub).count() + actual_test_sub.exceptAll(re_test).count()
 
@@ -425,7 +426,7 @@ def run_all_tests():
     assert t7_pass, "Test 7 FAILED: Split is non-deterministic!"
 
     # =========================================================================
-    # TEST 8: OUTPUT READABILITY & MANIFEST PARITY
+    # BÀI KIỂM ĐỊNH 8: KHẢ NĂNG ĐỌC ĐẦU RA & TÍNH ĐỒNG BỘ VỚI TẬP TIN MANIFEST
     # =========================================================================
     print("\n[TEST 8] Output Readability & Manifest Parity Test...")
     manifest_datasets = manifest["datasets"]
@@ -436,7 +437,7 @@ def run_all_tests():
         exp_count = dinfo["row_count"]
         target_path = processed_dir / rel_path
         
-        # Read back via Spark
+        # Đọc ngược lại dữ liệu thông qua Spark
         try:
             read_df = spark.read.parquet(str(target_path))
             act_count = read_df.count()
@@ -460,7 +461,7 @@ def run_all_tests():
     print(f"ALL 8 MANDATORY DATA QUALITY TESTS PASSED IN {total_test_time:.2f}s!")
     print("=" * 80)
 
-    # Save test results report
+    # Lưu báo cáo kết quả kiểm định ra tệp JSON
     test_summary_file = processed_dir / "test_results.json"
     with open(test_summary_file, "w", encoding="utf-8") as f:
         json.dump(test_results, f, indent=2)

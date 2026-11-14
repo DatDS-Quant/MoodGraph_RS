@@ -9,6 +9,7 @@ import pyarrow.dataset as ds
 
 
 class DataAccess:
+    """Truy xuất và nạp dữ liệu Parquet phân mảnh theo lô (streaming chunks) cho Đồ thị Tri thức."""
     def __init__(self, data_root: Path):
         self.data_root = Path(data_root)
         if not self.data_root.exists():

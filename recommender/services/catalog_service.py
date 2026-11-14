@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: Catalog Application Service.
-Provides business logic for movie discovery, details enrichment with external links,
-genre filtering, and similar movies discovery.
+MoodGraph Giai đoạn 5: Dịch vụ Danh mục Phim (Catalog Application Service).
+Cung cấp logic nghiệp vụ cho việc khám phá phim, làm giàu chi tiết phim với liên kết ngoài (IMDb, TMDb),
+lọc theo thể loại, phân trang và tìm kiếm các phim tương đồng.
 """
 
 from __future__ import annotations
@@ -15,15 +15,15 @@ logger = logging.getLogger("recommender.services.catalog_service")
 
 
 class CatalogService:
-    """Service handling movie catalog discovery and details queries."""
+    """Dịch vụ xử lý khám phá danh mục phim và truy vấn chi tiết metadata của phim."""
 
     def __init__(self, catalog_repo: Optional[MovieCatalogRepository] = None):
         self.catalog_repo = catalog_repo or get_catalog_repository()
 
     def get_movie_detail(self, movie_id: int) -> Optional[Dict[str, Any]]:
         """
-        Retrieves detailed movie metadata with external links, clean title,
-        and simulated/real genome tags.
+        Truy xuất siêu dữ liệu chi tiết của phim kèm liên kết ngoài (IMDb, TMDb),
+        tiêu đề chuẩn hóa đã tách năm, và danh sách các phim tương đồng theo thể loại.
         """
         movie = self.catalog_repo.get_movie_by_id(movie_id)
         if not movie:
@@ -35,7 +35,7 @@ class CatalogService:
         imdb_url = f"https://www.imdb.com/title/tt{imdb_id}" if imdb_id else None
         tmdb_url = f"https://www.themoviedb.org/movie/{tmdb_id}" if tmdb_id else None
 
-        # Build similar movies based on shared genres in catalog
+        # Xây dựng danh sách phim tương đồng dựa trên độ trùng lặp thể loại trong danh mục
         similar = self.get_similar_movies(movie_id, top_n=5)
 
         return {
@@ -66,7 +66,7 @@ class CatalogService:
         page_size: int = 20,
         sort_by: str = "title",
     ) -> Dict[str, Any]:
-        """Performs paginated search with filtering."""
+        """Thực hiện tìm kiếm phim có hỗ trợ bộ lọc (từ khóa, thể loại, khoảng năm) và phân trang an toàn."""
         items, total_count = self.catalog_repo.search_movies(
             query=query,
             genre=genre,
@@ -106,11 +106,11 @@ class CatalogService:
         }
 
     def list_genres(self) -> List[str]:
-        """Lists distinct genres."""
+        """Liệt kê danh sách các thể loại phim phân biệt có trong danh mục."""
         return self.catalog_repo.list_genres()
 
     def get_similar_movies(self, movie_id: int, top_n: int = 5) -> List[Dict[str, Any]]:
-        """Finds movies sharing the most genres with the target movie."""
+        """Tìm các bộ phim có độ tương đồng cao nhất với phim mục tiêu (dựa trên hệ số trùng lặp thể loại Jaccard)."""
         target = self.catalog_repo.get_movie_by_id(movie_id)
         if not target or not target["genres"]:
             return []
@@ -124,7 +124,7 @@ class CatalogService:
                 continue
             m = self.catalog_repo.get_movie_by_id(mid)
             if m:
-                # Calculate simple Jaccard on genres
+                # Tính toán chỉ số tương đồng Jaccard đơn giản trên tập hợp thể loại
                 s1 = set(target["genres"])
                 s2 = set(m["genres"])
                 overlap = len(s1 & s2) / float(len(s1 | s2))
@@ -141,11 +141,12 @@ class CatalogService:
         return similar[:top_n]
 
 
+# Thể hiện Singleton của CatalogService
 _global_catalog_service: Optional[CatalogService] = None
 
 
 def get_catalog_service(catalog_repo: Optional[MovieCatalogRepository] = None) -> CatalogService:
-    """Singleton getter for CatalogService."""
+    """Hàm lấy hoặc khởi tạo thể hiện Singleton của CatalogService."""
     global _global_catalog_service
     if _global_catalog_service is None or catalog_repo is not None:
         _global_catalog_service = CatalogService(catalog_repo)

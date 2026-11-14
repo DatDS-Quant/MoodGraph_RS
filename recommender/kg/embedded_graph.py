@@ -27,21 +27,21 @@ class EmbeddedKnowledgeGraph:
     """
 
     def __init__(self):
-        # Nodes
+        # Các đỉnh (Nodes)
         self.users: Dict[int, Dict[str, Any]] = {}
         self.movies: Dict[int, Dict[str, Any]] = {}
         self.genres: Dict[str, Dict[str, Any]] = {}
         self.genome_tags: Dict[int, Dict[str, Any]] = {}
 
-        # Edges & Inverted Indices
+        # Cạnh & Chỉ mục đảo (Edges & Inverted Indices)
         # user_id -> movie_id -> {"rating": float, "timestamp": int}
         self.user_rated_movie: Dict[int, Dict[int, Dict[str, Any]]] = {}
         # movie_id -> user_id -> {"rating": float, "timestamp": int}
         self.movie_rated_by_users: Dict[int, Dict[int, Dict[str, Any]]] = {}
 
-        # movie_id -> set of genre names
+        # movie_id -> tập hợp tên thể loại
         self.movie_in_genre: Dict[int, Set[str]] = {}
-        # genre name -> set of movie_ids
+        # tên thể loại -> tập hợp movie_id
         self.genre_to_movies: Dict[str, Set[int]] = {}
 
         # movie_id -> tag_id -> relevance
@@ -517,6 +517,7 @@ class EmbeddedKnowledgeGraph:
     # =========================================================================
 
     def get_counts(self) -> Dict[str, int]:
+        """Thống kê tổng số lượng node và quan hệ (edge) trong đồ thị tri thức."""
         total_rated = sum(len(m) for m in self.user_rated_movie.values())
         total_in_genre = sum(len(g) for g in self.movie_in_genre.values())
         total_genome = sum(len(t) for t in self.movie_has_genome_tag.values())

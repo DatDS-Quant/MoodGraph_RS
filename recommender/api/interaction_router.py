@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: User Interaction Router.
-Manages demo user watchlist, feedback ratings, and personalized taste settings
-in SQLite without altering read-only historical 25M ratings.
+MoodGraph Giai đoạn 5: Bộ định tuyến Tương tác Người dùng (User Interaction Router).
+Quản lý danh sách xem sau (watchlist), phản hồi đánh giá và cài đặt sở thích cá nhân của người dùng demo
+trong cơ sở dữ liệu SQLite mà không làm biến đổi tập 25M đánh giá lịch sử chỉ đọc.
 """
 
 from __future__ import annotations
@@ -26,12 +26,16 @@ logger = logging.getLogger("recommender.api.interaction_router")
 router = APIRouter(prefix="/api/interactions", tags=["User Interactions & Application State"])
 
 
+# =============================================================================
+# 1. Quản lý danh sách phim đã lưu (Watchlist / Favorites / Hidden)
+# =============================================================================
+
 @router.post("/watchlist", response_model=WatchlistResponse)
 def save_movie_to_watchlist(
     req: WatchlistRequest,
     interaction_svc: UserInteractionService = Depends(get_interaction_service),
 ) -> WatchlistResponse:
-    """Saves a movie to user's watchlist or favorites."""
+    """Lưu phim vào danh sách xem sau (watchlist) hoặc yêu thích (favorites) của người dùng."""
     res = interaction_svc.save_movie_to_list(
         user_id=req.user_id,
         movie_id=req.movie_id,
@@ -52,7 +56,7 @@ def remove_movie_from_watchlist(
     list_type: str = Query("watchlist", pattern="^(watchlist|favorites|hidden)$"),
     interaction_svc: UserInteractionService = Depends(get_interaction_service),
 ) -> WatchlistResponse:
-    """Removes a movie from user's watchlist or favorites."""
+    """Xóa một bộ phim khỏi danh sách xem sau hoặc yêu thích của người dùng."""
     res = interaction_svc.remove_movie_from_list(
         user_id=user_id,
         movie_id=movie_id,
@@ -72,16 +76,20 @@ def list_user_watchlist(
     list_type: Optional[str] = Query("watchlist", pattern="^(watchlist|favorites|hidden)$"),
     interaction_svc: UserInteractionService = Depends(get_interaction_service),
 ) -> List[Dict[str, Any]]:
-    """Lists saved movies in watchlist or favorites for a demo user."""
+    """Liệt kê danh sách các bộ phim đã lưu trong watchlist hoặc favorites của người dùng demo."""
     return interaction_svc.get_saved_movies(user_id=user_id, list_type=list_type)
 
+
+# =============================================================================
+# 2. Ghi nhận và truy xuất đánh giá phim (User Demo Ratings)
+# =============================================================================
 
 @router.post("/ratings", response_model=RatingSubmitResponse)
 def submit_movie_rating(
     req: RatingSubmitRequest,
     interaction_svc: UserInteractionService = Depends(get_interaction_service),
 ) -> RatingSubmitResponse:
-    """Submits a user rating for a movie (0.5 to 5.0 stars) and invalidates cached recommendations."""
+    """Ghi nhận đánh giá số sao (0.5 đến 5.0) của người dùng cho một phim và xóa bộ nhớ đệm gợi ý tương ứng."""
     res = interaction_svc.submit_rating(
         user_id=req.user_id,
         movie_id=req.movie_id,
@@ -101,16 +109,20 @@ def get_user_demo_ratings(
     user_id: str,
     interaction_svc: UserInteractionService = Depends(get_interaction_service),
 ) -> List[Dict[str, Any]]:
-    """Retrieves all demo ratings submitted by this user."""
+    """Truy xuất toàn bộ các đánh giá mà người dùng demo đã thực hiện trong phiên làm việc."""
     return interaction_svc.get_user_demo_ratings(user_id=user_id)
 
+
+# =============================================================================
+# 3. Quản lý sở thích cá nhân (User Preferences)
+# =============================================================================
 
 @router.post("/preferences", response_model=PreferencesResponse)
 def save_user_preferences(
     req: PreferencesRequest,
     interaction_svc: UserInteractionService = Depends(get_interaction_service),
 ) -> PreferencesResponse:
-    """Saves user genre, mood, and release year preferences."""
+    """Lưu cấu hình sở thích về thể loại, tâm trạng (moods) và khoảng năm phát hành của người dùng."""
     res = interaction_svc.save_preferences(
         user_id=req.user_id,
         genres=req.genres,
@@ -126,6 +138,6 @@ def get_user_preferences(
     user_id: str,
     interaction_svc: UserInteractionService = Depends(get_interaction_service),
 ) -> Optional[Dict[str, Any]]:
-    """Retrieves saved user preferences."""
+    """Truy xuất cấu hình sở thích đã lưu của người dùng."""
     return interaction_svc.get_preferences(user_id=user_id)
 

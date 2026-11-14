@@ -14,16 +14,24 @@
   'use strict';
 
   var KnowledgeGraphVisualizer = {
+    // Đối tượng thực thể mạng lưới vis.Network trực quan hóa đồ thị
     network: null,
+    // Phần tử DOM chứa khung canvas đồ thị
     container: null,
+    // Tập dữ liệu các nút trên đồ thị (vis.DataSet)
     nodesDataSet: null,
+    // Tập dữ liệu các cạnh liên kết (vis.DataSet)
     edgesDataSet: null,
+    // Mã định danh người dùng thí nghiệm hiện tại
     currentUserId: 1,
+    // Mã định danh bộ phim ứng viên mục tiêu hiện tại
     currentMovieId: 1,
+    // Bộ dữ liệu đồ thị thô nhận từ REST API hoặc chế độ dự phòng cục bộ
     rawGraphData: null,
+    // Mã định danh nút đang được khóa sáng tiêu điểm (Hover Interlock)
     activeHighlightedNodeId: null,
 
-    // Mã màu chuẩn
+    // Bảng mã màu chuẩn giao diện Obsidian Dark Glassmorphism
     COLORS: {
       USER: '#F59E0B',
       LIKED_MOVIE: '#06B6D4',
@@ -153,9 +161,9 @@
         self.hideFloatingTooltip();
       });
 
-      // Hover Edge
+      // Bắt sự kiện khi rê chuột qua cạnh liên kết trên đồ thị (có thể mở rộng làm nổi bật cạnh)
       this.network.on('hoverEdge', function (params) {
-        // Có thể highlight cạnh
+        // Có thể highlight cạnh liên kết nếu cần mở rộng trực quan
       });
 
       // Click Node: Ghim tiêu điểm
@@ -469,18 +477,26 @@
       tooltip.classList.remove('hidden');
     },
 
+    /**
+     * Ẩn tooltip kính quang học nổi khi con trỏ chuột rời khỏi phạm vi nút trên đồ thị.
+     */
     hideFloatingTooltip: function () {
       var tooltip = document.getElementById('vis-graph-floating-tooltip');
       if (tooltip) tooltip.classList.add('hidden');
     },
 
     /**
-     * Tiện ích công khai: Tiêu điểm vào một phim đề xuất khi người dùng click trên danh sách Top-10
+     * Tiện ích công khai: Chuyển tiêu điểm đồ thị tri thức sang một bộ phim ứng viên cụ thể khi người dùng click từ danh sách Top-10.
+     * @param {number|string} movieId - Mã định danh bộ phim ứng viên
+     * @param {string} [title] - Tên bộ phim ứng viên (tùy chọn)
      */
     focusCandidate: function (movieId, title) {
       this.loadSubgraph(this.currentUserId, movieId);
     },
 
+    /**
+     * Điều chỉnh lại góc nhìn camera bao quát toàn bộ cấu trúc mạng lưới đồ thị với hiệu ứng hoạt ảnh chuyển động mượt mà.
+     */
     resetCamera: function () {
       if (this.network) {
         this.network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } });

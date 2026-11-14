@@ -40,8 +40,8 @@ class ItemSupportBin:
     Thống kê cho một khoảng phân bố độ hỗ trợ tương tác (support bin) của phim.
     """
     bin_name: str
-    lower_bound: int  # Inclusive
-    upper_bound: Optional[int]  # Inclusive, None for unbounded (>50)
+    lower_bound: int  # Bao gồm cả cận
+    upper_bound: Optional[int]  # Bao gồm cả cận, None nếu không giới hạn (>50)
     item_count: int
     percentage: float
     mean_support: float
@@ -50,6 +50,7 @@ class ItemSupportBin:
     max_support: int
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi thông tin phân bố nhóm bậc hỗ trợ sang dạng dictionary."""
         return {
             "bin_name": self.bin_name,
             "lower_bound": self.lower_bound,
@@ -65,8 +66,8 @@ class ItemSupportBin:
 
 @dataclass(frozen=True)
 class FactorNormSummary:
-    """Summary statistics of latent factor norms."""
-    entity_type: str  # "item" or "user"
+    """Thống kê tóm tắt các chuẩn L2 của vector nhân tố ẩn."""
+    entity_type: str  # "item" hoặc "user"
     count: int
     rank: int
     min_norm: float
@@ -79,6 +80,7 @@ class FactorNormSummary:
     p99_norm: float
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi tóm tắt chuẩn nhân tố sang dạng dictionary."""
         return {
             "entity_type": self.entity_type,
             "count": self.count,
@@ -107,6 +109,7 @@ class SupportNormCorrelation:
     spearman_pval: float
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi chỉ số tương quan sang dạng dictionary."""
         return {
             "num_items": self.num_items,
             "pearson_corr": round(self.pearson_corr, 6),
@@ -143,6 +146,7 @@ class ScoreDistributionSummary:
     frac_gt_5: float
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi tóm tắt phân phối điểm sang dạng dictionary."""
         return {
             "num_users": self.num_users,
             "num_items": self.num_items,
@@ -185,6 +189,7 @@ class TopKSupportConcentration:
     frac_bin_gt_50: float
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi chỉ số tập trung Top-K sang dạng dictionary."""
         return {
             "k": self.k,
             "num_users": self.num_users,
@@ -201,7 +206,7 @@ class TopKSupportConcentration:
 
 
 # ==============================================================================
-# 1. ITEM SUPPORT ANALYZER
+# 1. BỘ PHÂN TÍCH BẬC HỖ TRỢ VẬT PHẨM (ITEM SUPPORT ANALYZER)
 # ==============================================================================
 
 class ItemSupportAnalyzer:
@@ -236,13 +241,13 @@ class ItemSupportAnalyzer:
         if total_catalog == 0:
             raise ValueError("catalog_movie_ids cannot be empty")
 
-        # All catalog items
+        # Toàn bộ danh mục vật phẩm
         bins: List[ItemSupportBin] = []
         counted_items = 0
 
         for bin_name, low, high in ItemSupportAnalyzer.SUPPORT_BIN_DEFS:
             if low == 0 and high == 0:
-                # Items in catalog with 0 ratings in Train
+                # Các vật phẩm trong catalog có 0 đánh giá trong Train
                 bin_items = [mid for mid in catalog_movie_ids if item_supports.get(mid, 0) == 0]
                 bin_supports = [0] * len(bin_items)
             elif high is None:
@@ -286,7 +291,7 @@ class ItemSupportAnalyzer:
 
 
 # ==============================================================================
-# 2. FACTOR RELIABILITY ANALYZER
+# 2. BỘ PHÂN TÍCH ĐỘ TIN CẬY NHÂN TỐ (FACTOR RELIABILITY ANALYZER)
 # ==============================================================================
 
 class FactorReliabilityAnalyzer:
@@ -363,7 +368,7 @@ class FactorReliabilityAnalyzer:
         results = []
         for bin_name, low, high in ItemSupportAnalyzer.SUPPORT_BIN_DEFS:
             if low == 0 and high == 0:
-                continue  # Items with 0 ratings have no ALS factors
+                continue  # Các vật phẩm có 0 đánh giá không có vector nhân tố ALS
             if high is None:
                 mask = supports >= low
             else:
@@ -385,7 +390,7 @@ class FactorReliabilityAnalyzer:
 
 
 # ==============================================================================
-# 3. COLD START CLASSIFIER
+# 3. BỘ PHÂN LOẠI KHỞI ĐỘNG LẠNH (COLD START CLASSIFIER)
 # ==============================================================================
 
 class ColdStartClassifier:
@@ -400,6 +405,7 @@ class ColdStartClassifier:
         train_items: Set[int],
         item_support_dict: Dict[int, int],
     ):
+        """Khởi tạo bộ phân loại Cold-Start với tập người dùng, vật phẩm và từ điển support."""
         self.train_users = train_users
         self.train_items = train_items
         self.item_support_dict = item_support_dict
@@ -425,7 +431,7 @@ class ColdStartClassifier:
 
 
 # ==============================================================================
-# 4. SCORE DIAGNOSTICS ANALYZER
+# 4. BỘ PHÂN TÍCH CHẨN ĐOÁN ĐIỂM SỐ (SCORE DIAGNOSTICS ANALYZER)
 # ==============================================================================
 
 class ScoreDiagnosticsAnalyzer:
@@ -447,7 +453,7 @@ class ScoreDiagnosticsAnalyzer:
         n_items = item_factors.shape[0]
         total_evals = n_users * n_items
 
-        scores = user_factors @ item_factors.T  # Shape (n_users, n_items)
+        scores = user_factors @ item_factors.T  # Kích thước (n_users, n_items)
 
         min_val = float(np.min(scores))
         max_val = float(np.max(scores))
@@ -540,7 +546,7 @@ class ScoreDiagnosticsAnalyzer:
 
 
 # ==============================================================================
-# 5. PERFORMANCE BENCHMARK RUNNER
+# 5. BỘ ĐO LƯỜNG HIỆU NĂNG THỰC THI (PERFORMANCE BENCHMARK RUNNER)
 # ==============================================================================
 
 @dataclass(frozen=True)
@@ -552,15 +558,16 @@ class BenchmarkRecord:
     component: str  # "Spark_DataFrame", "PyArrow", "NumPy_BLAS"
     operation: str
     scale_units: int
-    scale_unit_label: str  # "rows", "users", "items"
+    scale_unit_label: str  # "hàng", "người dùng", "vật phẩm"
     elapsed_seconds: float
     latency_ms: float
     throughput: float
-    throughput_label: str  # "rows/s", "users/s"
+    throughput_label: str  # "hàng/giây", "người dùng/giây"
     memory_rss_mb: float
     notes: str
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi bản ghi benchmark sang dạng dictionary."""
         return {
             "component": self.component,
             "operation": self.operation,
@@ -576,7 +583,7 @@ class BenchmarkRecord:
 
 
 # ==============================================================================
-# 6. SYNTHETIC ORACLES (FOR INDEPENDENT QA & TESTS)
+# 6. CÁC HÀM ĐỐI CHỨNG GIẢ LẬP (SYNTHETIC ORACLES CHO KIỂM THỬ ĐỘC LẬP QA)
 # ==============================================================================
 
 def synthetic_item_support_oracle(

@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Dict, Any, List, Set, Tuple, Optional
 
-# UTF-8 stdout configuration for Windows
+# Cấu hình chuẩn UTF-8 stdout cho môi trường Windows
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -18,7 +18,7 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-# Project path resolution
+# Bổ sung thư mục gốc dự án vào sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -48,28 +48,30 @@ class InMemoryGraph:
         self.genres: Dict[str, Dict[str, Any]] = {}
         self.genome_tags: Dict[int, Dict[str, Any]] = {}
 
-        # Edges
-        # user_id -> dict of movie_id -> {rating, timestamp}
+        # Quan hệ cạnh (Edges)
+        # user_id -> dict của movie_id -> {rating, timestamp}
         self.user_rated_movie: Dict[int, Dict[int, Dict[str, Any]]] = {}
-        # movie_id -> dict of user_id -> {rating, timestamp} (reverse index for collab P3)
+        # movie_id -> dict của user_id -> {rating, timestamp} (chỉ mục ngược phục vụ Metapath P3)
         self.movie_rated_by_users: Dict[int, Dict[int, Dict[str, Any]]] = {}
 
-        # movie_id -> set of genre_name
+        # movie_id -> tập hợp tên thể loại
         self.movie_in_genre: Dict[int, Set[str]] = {}
-        # genre_name -> set of movie_id
+        # genre_name -> tập hợp movieId
         self.genre_to_movies: Dict[str, Set[int]] = {}
 
-        # movie_id -> dict of tag_id -> relevance
+        # movie_id -> dict của tag_id -> relevance
         self.movie_has_genome_tag: Dict[int, Dict[int, float]] = {}
-        # tag_id -> dict of movie_id -> relevance
+        # tag_id -> dict của movieId -> relevance
         self.genome_tag_to_movies: Dict[int, Dict[int, float]] = {}
 
     def merge_user(self, user_id: int):
+        """Hợp nhất node người dùng vào đồ thị bộ nhớ trong (Idempotent)."""
         if user_id not in self.users:
             self.users[user_id] = {"userId": user_id}
             self.user_rated_movie[user_id] = {}
 
     def merge_movie(self, movie_id: int, title: str, genres_raw: str = ""):
+        """Hợp nhất node phim vào đồ thị bộ nhớ trong (Idempotent)."""
         self.movies[movie_id] = {"movieId": movie_id, "title": title, "genresRaw": genres_raw}
         if movie_id not in self.movie_rated_by_users:
             self.movie_rated_by_users[movie_id] = {}
@@ -79,28 +81,33 @@ class InMemoryGraph:
             self.movie_has_genome_tag[movie_id] = {}
 
     def merge_genre(self, name: str):
+        """Hợp nhất node thể loại vào đồ thị bộ nhớ trong (Idempotent)."""
         if name not in self.genres:
             self.genres[name] = {"name": name}
             self.genre_to_movies[name] = set()
 
     def merge_genome_tag(self, tag_id: int, name: str):
+        """Hợp nhất node thẻ đặc trưng genome vào đồ thị bộ nhớ trong (Idempotent)."""
         self.genome_tags[tag_id] = {"tagId": tag_id, "name": name}
         if tag_id not in self.genome_tag_to_movies:
             self.genome_tag_to_movies[tag_id] = {}
 
     def merge_movie_genre(self, movie_id: int, genre_name: str):
+        """Hợp nhất quan hệ Movie <-> Genre vào đồ thị bộ nhớ trong."""
         if movie_id not in self.movies or genre_name not in self.genres:
             return
         self.movie_in_genre[movie_id].add(genre_name)
         self.genre_to_movies[genre_name].add(movie_id)
 
     def merge_genome_score(self, movie_id: int, tag_id: int, relevance: float):
+        """Hợp nhất quan hệ điểm ngữ nghĩa Movie <-> GenomeTag vào đồ thị."""
         if movie_id not in self.movies or tag_id not in self.genome_tags:
             return
         self.movie_has_genome_tag[movie_id][tag_id] = relevance
         self.genome_tag_to_movies[tag_id][movie_id] = relevance
 
     def merge_rating(self, user_id: int, movie_id: int, rating: float, timestamp: int):
+        """Hợp nhất quan hệ đánh giá User <-> Movie vào đồ thị."""
         if user_id not in self.users or movie_id not in self.movies:
             return
         edge_data = {"rating": rating, "timestamp": timestamp}
@@ -108,6 +115,7 @@ class InMemoryGraph:
         self.movie_rated_by_users[movie_id][user_id] = edge_data
 
     def get_counts(self) -> Dict[str, int]:
+        """Thống kê tổng số lượng các nút và quan hệ cạnh trong đồ thị."""
         total_rated = sum(len(m) for m in self.user_rated_movie.values())
         total_in_genre = sum(len(g) for g in self.movie_in_genre.values())
         total_genome = sum(len(t) for t in self.movie_has_genome_tag.values())
@@ -130,50 +138,60 @@ class Neo4jGraph:
         self.database = database
 
     def close(self):
+        """Đóng kết nối driver Neo4j."""
         self.driver.close()
 
     def execute_constraints(self):
+        """Khởi tạo và thực thi các ràng buộc tính duy nhất (Unique Constraints) trên Neo4j."""
         from recommender.kg.queries import ALL_CONSTRAINTS
         with self.driver.session(database=self.database) as session:
             for query in ALL_CONSTRAINTS:
                 session.run(query)
 
     def merge_users_batch(self, batch: List[Dict[str, Any]]):
+        """Hợp nhất hàng loạt node User vào Neo4j."""
         from recommender.kg.queries import IMPORT_USERS_BATCH
         with self.driver.session(database=self.database) as session:
             session.run(IMPORT_USERS_BATCH, batch=batch)
 
     def merge_movies_batch(self, batch: List[Dict[str, Any]]):
+        """Hợp nhất hàng loạt node Movie vào Neo4j."""
         from recommender.kg.queries import IMPORT_MOVIES_BATCH
         with self.driver.session(database=self.database) as session:
             session.run(IMPORT_MOVIES_BATCH, batch=batch)
 
     def merge_genres_batch(self, batch: List[Dict[str, Any]]):
+        """Hợp nhất hàng loạt node Genre vào Neo4j."""
         from recommender.kg.queries import IMPORT_GENRES_BATCH
         with self.driver.session(database=self.database) as session:
             session.run(IMPORT_GENRES_BATCH, batch=batch)
 
     def merge_genome_tags_batch(self, batch: List[Dict[str, Any]]):
+        """Hợp nhất hàng loạt node GenomeTag vào Neo4j."""
         from recommender.kg.queries import IMPORT_GENOME_TAGS_BATCH
         with self.driver.session(database=self.database) as session:
             session.run(IMPORT_GENOME_TAGS_BATCH, batch=batch)
 
     def merge_movie_genres_batch(self, batch: List[Dict[str, Any]]):
+        """Hợp nhất hàng loạt quan hệ cạnh Movie-Genre vào Neo4j."""
         from recommender.kg.queries import IMPORT_MOVIE_GENRES_BATCH
         with self.driver.session(database=self.database) as session:
             session.run(IMPORT_MOVIE_GENRES_BATCH, batch=batch)
 
     def merge_genome_scores_batch(self, batch: List[Dict[str, Any]]):
+        """Hợp nhất hàng loạt quan hệ cạnh Movie-GenomeTag có trọng số vào Neo4j."""
         from recommender.kg.queries import IMPORT_GENOME_SCORES_BATCH
         with self.driver.session(database=self.database) as session:
             session.run(IMPORT_GENOME_SCORES_BATCH, batch=batch)
 
     def merge_ratings_batch(self, batch: List[Dict[str, Any]]):
+        """Hợp nhất hàng loạt quan hệ cạnh đánh giá User-Movie vào Neo4j."""
         from recommender.kg.queries import IMPORT_TRAIN_RATINGS_BATCH
         with self.driver.session(database=self.database) as session:
             session.run(IMPORT_TRAIN_RATINGS_BATCH, batch=batch)
 
     def get_counts(self) -> Dict[str, int]:
+        """Truy vấn thống kê tổng số node và quan hệ cạnh trong Neo4j."""
         from recommender.kg.queries import QUERY_GRAPH_COUNTS
         with self.driver.session(database=self.database) as session:
             res = session.run(QUERY_GRAPH_COUNTS).single()

@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: SQLite Application State Repository.
-Manages demo user interactions, watchlist, feedback ratings, user preferences,
-and experiment logs in WAL mode without touching read-only MovieLens datasets.
+MoodGraph Giai đoạn 5: Kho lưu trữ Trạng thái Ứng dụng SQLite (SQLite Application State Repository).
+Quản lý tương tác người dùng demo, danh sách xem sau (watchlist), phản hồi đánh giá, sở thích cá nhân,
+và nhật ký phiên thực nghiệm trong chế độ WAL mà không làm ảnh hưởng đến tập dữ liệu MovieLens chỉ đọc.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ logger = logging.getLogger("recommender.storage.sqlite_state_repo")
 
 
 class SQLiteStateRepository:
-    """Manages SQLite application state persistence with WAL mode and transaction safety."""
+    """Quản lý lưu trữ trạng thái ứng dụng bằng cơ sở dữ liệu SQLite với chế độ WAL và bảo đảm an toàn giao dịch."""
 
     def __init__(self, db_path: Optional[Path] = None):
         if db_path is None:
@@ -28,7 +28,7 @@ class SQLiteStateRepository:
         self._init_db()
 
     def _get_connection(self) -> sqlite3.Connection:
-        """Returns a configured SQLite connection with foreign keys and WAL mode."""
+        """Khởi tạo và trả về kết nối SQLite đã cấu hình hỗ trợ khóa ngoại (foreign keys) và chế độ WAL (Write-Ahead Logging)."""
         conn = sqlite3.connect(str(self.db_path), timeout=30.0)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode = WAL;")
@@ -37,7 +37,7 @@ class SQLiteStateRepository:
         return conn
 
     def _init_db(self) -> None:
-        """Creates required schemas and indexes."""
+        """Khởi tạo cấu trúc bảng (schema DDL) và các chỉ mục (indexes) cần thiết cho cơ sở dữ liệu ứng dụng."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.executescript("""
@@ -97,7 +97,7 @@ class SQLiteStateRepository:
                 CREATE INDEX IF NOT EXISTS idx_experiment_user ON experiment_sessions(user_id, created_at DESC);
             """)
 
-            # Ensure default demo user exists for seamless demo experience
+            # Bảo đảm người dùng demo mặc định luôn tồn tại để trải nghiệm ứng dụng mượt mà
             cursor.execute("""
                 INSERT OR IGNORE INTO demo_users (user_id, username, display_name, bio, created_at)
                 VALUES ('demo_user_1', 'cinephile_dat', 'Dat Recommender Tester', 'Lead Researcher demo account', ?)
@@ -105,9 +105,11 @@ class SQLiteStateRepository:
             conn.commit()
         logger.info(f"SQLite application state initialized at {self.db_path} (WAL Mode enabled).")
 
-    # User Management
+    # ==========================================
+    # Quản lý người dùng (User Management)
+    # ==========================================
     def ensure_user(self, user_id: str, display_name: Optional[str] = None) -> None:
-        """Ensures a user record exists in demo_users."""
+        """Bảo đảm bản ghi người dùng đã tồn tại trong bảng demo_users."""
         with self._get_connection() as conn:
             conn.execute("""
                 INSERT OR IGNORE INTO demo_users (user_id, username, display_name, created_at)
@@ -115,9 +117,11 @@ class SQLiteStateRepository:
             """, (user_id, user_id, display_name or f"User {user_id}", int(time.time())))
             conn.commit()
 
-    # Saved Movies (Watchlist / Favorites)
+    # ========================================================
+    # Danh sách phim đã lưu (Watchlist / Favorites / Hidden)
+    # ========================================================
     def save_movie(self, user_id: str, movie_id: int, list_type: str = "watchlist") -> bool:
-        """Saves a movie to user's watchlist or favorites."""
+        """Lưu phim vào danh sách xem sau (watchlist) hoặc danh sách yêu thích (favorites) của người dùng."""
         self.ensure_user(user_id)
         with self._get_connection() as conn:
             try:
@@ -133,7 +137,7 @@ class SQLiteStateRepository:
                 return False
 
     def remove_saved_movie(self, user_id: str, movie_id: int, list_type: str = "watchlist") -> bool:
-        """Removes a movie from user's saved list."""
+        """Xóa một bộ phim khỏi danh sách đã lưu của người dùng."""
         with self._get_connection() as conn:
             cursor = conn.execute("""
                 DELETE FROM saved_movies
@@ -143,7 +147,7 @@ class SQLiteStateRepository:
             return cursor.rowcount > 0
 
     def list_saved_movies(self, user_id: str, list_type: Optional[str] = "watchlist") -> List[Dict[str, Any]]:
-        """Lists saved movies for a user."""
+        """Liệt kê danh sách các bộ phim đã lưu của một người dùng theo loại danh sách."""
         with self._get_connection() as conn:
             if list_type:
                 rows = conn.execute("""
@@ -161,9 +165,11 @@ class SQLiteStateRepository:
                 """, (user_id,)).fetchall()
             return [dict(r) for r in rows]
 
-    # User Demo Ratings
+    # =========================================================================
+    # Quản lý đánh giá của người dùng demo (User Demo Ratings)
+    # =========================================================================
     def record_rating(self, user_id: str, movie_id: int, rating: float, feedback_text: Optional[str] = None) -> bool:
-        """Records or updates a user rating for a movie."""
+        """Ghi nhận hoặc cập nhật đánh giá số sao (0.5 - 5.0) và phản hồi của người dùng cho một bộ phim."""
         if not (0.5 <= rating <= 5.0):
             raise ValueError(f"Rating must be between 0.5 and 5.0, got {rating}")
         self.ensure_user(user_id)
@@ -180,7 +186,7 @@ class SQLiteStateRepository:
             return True
 
     def get_user_demo_ratings(self, user_id: str) -> List[Dict[str, Any]]:
-        """Retrieves demo ratings provided by this user."""
+        """Truy xuất danh sách các đánh giá mà người dùng demo đã thực hiện trong phiên làm việc."""
         with self._get_connection() as conn:
             rows = conn.execute("""
                 SELECT movie_id, rating, feedback_text, created_at
@@ -190,7 +196,9 @@ class SQLiteStateRepository:
             """, (user_id,)).fetchall()
             return [dict(r) for r in rows]
 
-    # User Preferences
+    # =========================================================
+    # Quản lý sở thích người dùng (User Preferences)
+    # =========================================================
     def save_preferences(
         self,
         user_id: str,
@@ -199,7 +207,7 @@ class SQLiteStateRepository:
         min_year: Optional[int] = None,
         max_year: Optional[int] = None,
     ) -> bool:
-        """Saves user genre, mood, and release year preferences."""
+        """Lưu trữ cấu hình sở thích về thể loại, tâm trạng (moods) và khoảng năm phát hành của người dùng."""
         self.ensure_user(user_id)
         with self._get_connection() as conn:
             conn.execute("""
@@ -223,7 +231,7 @@ class SQLiteStateRepository:
             return True
 
     def get_preferences(self, user_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieves user preferences."""
+        """Truy xuất cấu hình sở thích của người dùng."""
         with self._get_connection() as conn:
             row = conn.execute("""
                 SELECT genres_json, moods_json, min_year, max_year, updated_at
@@ -241,7 +249,9 @@ class SQLiteStateRepository:
                 "updated_at": row["updated_at"],
             }
 
-    # Experiment Session Logging
+    # =========================================================
+    # Nhật ký phiên thực nghiệm (Experiment Session Logging)
+    # =========================================================
     def log_experiment_session(
         self,
         session_id: str,
@@ -252,7 +262,7 @@ class SQLiteStateRepository:
         metrics: Dict[str, Any],
         mode: str = "compare",
     ) -> bool:
-        """Logs a multi-model comparison experiment."""
+        """Ghi nhật ký phiên thực nghiệm so sánh đa mô hình trong Chế độ Nghiên cứu (Mode B Lab)."""
         self.ensure_user(user_id)
         with self._get_connection() as conn:
             conn.execute("""
@@ -272,11 +282,12 @@ class SQLiteStateRepository:
             return True
 
 
+# Thể hiện Singleton của SQLiteStateRepository
 _global_sqlite_repo: Optional[SQLiteStateRepository] = None
 
 
 def get_sqlite_state_repository(db_path: Optional[Path] = None) -> SQLiteStateRepository:
-    """Singleton getter for SQLiteStateRepository."""
+    """Hàm lấy hoặc khởi tạo thể hiện Singleton của SQLiteStateRepository."""
     global _global_sqlite_repo
     if _global_sqlite_repo is None or db_path is not None:
         _global_sqlite_repo = SQLiteStateRepository(db_path)

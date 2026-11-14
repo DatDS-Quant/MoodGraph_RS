@@ -23,11 +23,14 @@
   // =========================================================================
   const AcademicLabState = {
     selectedUser: 'live_session',
-    consensusFilter: 'all', // 'all' | 'overlap' | 'unique'
-    heatmapMetric: 'spearman', // 'spearman' | 'jaccard'
+    // Bộ lọc mức độ đồng thuận: 'all' (Tất cả), 'overlap' (Giao thoa giữa các mô hình), 'unique' (Độc bản riêng của từng mô hình)
+    consensusFilter: 'all',
+    // Chỉ số ma trận tương quan nhiệt: 'spearman' (Hệ số tương quan hạng Spearman) hoặc 'jaccard' (Chỉ số tương đồng tập hợp Jaccard)
+    heatmapMetric: 'spearman',
     activeInterlockMovieId: null,
     is3DInitialized: false,
-    engineType: 'none', // 'threejs' | 'canvas2d'
+    // Động cơ đồ họa không gian 3D: 'threejs' (Bộ tăng tốc WebGL Three.js) hoặc 'canvas2d' (Chế độ dự phòng đồ họa Canvas 2D)
+    engineType: 'none',
     autoRotate3D: true,
     show3DRays: true,
     selectedNodeMovie: null,
@@ -53,17 +56,33 @@
     'Film-Noir': { hex: '#78716C', num: 0x78716C, name: 'Phim đen' }
   };
 
+  /**
+   * Lấy mã màu hex, giá trị số nguyên và tên tiếng Việt chuẩn hóa của một thể loại điện ảnh.
+   * @param {string} genre - Tên thể loại tiếng Anh (ví dụ 'Drama', 'Sci-Fi')
+   * @returns {{hex: string, num: number, name: string}} Thông tin màu sắc và tên hiển thị
+   */
   function getGenreColorInfo(genre) {
     return GENRE_COLOR_MAP[genre] || { hex: '#D97706', num: 0xD97706, name: genre || 'Điện ảnh' };
   }
 
+  /**
+   * Tra cứu thông tin đầy đủ của một bộ phim từ kho dữ liệu danh mục catalog tĩnh.
+   * @param {number|string} movieId - Mã định danh bộ phim cần tra cứu
+   * @returns {Object|null} Đối tượng phim hoàn chỉnh hoặc null nếu không tìm thấy
+   */
   function getMovieById(movieId) {
     if (!window.MOCK_DATA || !window.MOCK_DATA.catalog) return null;
     const mid = Number(movieId);
     return window.MOCK_DATA.catalog.find(m => m.movieId === mid) || null;
   }
 
-  // Tính khoảng cách Cosine giữa 2 vector 3D
+  /**
+   * Tính toán độ tương đồng Cosine giữa 2 vector tọa độ trong không gian tiềm ẩn 3 chiều.
+   * Công thức: Cosine(v1, v2) = (v1 . v2) / (||v1|| * ||v2||), khoảng giá trị [-1.0, 1.0].
+   * @param {{x: number, y: number, z: number}} v1 - Tọa độ vector thứ nhất
+   * @param {{x: number, y: number, z: number}} v2 - Tọa độ vector thứ hai
+   * @returns {number} Giá trị độ tương đồng Cosine
+   */
   function calcCosineSimilarity(v1, v2) {
     const dot = (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
     const n1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y + v1.z * v1.z) || 1e-6;
@@ -71,7 +90,13 @@
     return dot / (n1 * n2);
   }
 
-  // Tính khoảng cách Euclid giữa 2 vector 3D
+  /**
+   * Tính toán khoảng cách hình học Euclid giữa 2 điểm tọa độ trong không gian 3 chiều.
+   * Công thức: d = sqrt((x1 - x2)^2 + (y1 - y2)^2 + (z1 - z2)^2).
+   * @param {{x: number, y: number, z: number}} v1 - Tọa độ điểm thứ nhất
+   * @param {{x: number, y: number, z: number}} v2 - Tọa độ điểm thứ hai
+   * @returns {number} Khoảng cách Euclid
+   */
   function calcEuclideanDistance(v1, v2) {
     const dx = v1.x - v2.x;
     const dy = v1.y - v2.y;
@@ -80,7 +105,7 @@
   }
 
   // =========================================================================
-  // 3. MODULE 3D LATENT SPACE (THREE.JS WEBGL + FALLBACK CANVAS 2D)
+  // 3. KHỐI KHÔNG GIAN TIỀM ẨN 3D (ĐỒ HỌA THREE.JS WEBGL KẾT HỢP DỰ PHÒNG CANVAS 2D)
   // =========================================================================
   class LatentSpace3DVisualizer {
     constructor() {
@@ -194,7 +219,7 @@
       coolFillLight.position.set(100, 150, 50);
       this.scene.add(coolFillLight);
 
-      // 5. OrbitControls
+      // 5. Khởi tạo bộ điều khiển xoay, dịch chuyển và thu phóng góc nhìn 3D (OrbitControls)
       if (typeof THREE.OrbitControls !== 'undefined') {
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
@@ -205,7 +230,7 @@
         this.controls.autoRotateSpeed = 0.45;
       }
 
-      // 6. Raycaster
+      // 6. Khởi tạo tia chiếu tọa độ chuột (Raycaster) để bắt tương tác chọn điểm trong không gian 3D
       this.raycaster = new THREE.Raycaster();
       this.mouse = new THREE.Vector2(-999, -999);
 
@@ -936,6 +961,15 @@
   // 100% ID phim thuộc 53 phim trong CATALOG, triệt tiêu phim ma và bảo toàn tính toàn vẹn 3D
   // =========================================================================
 
+  /**
+   * Chuẩn hóa đối tượng phim phục vụ kết xuất giao diện thẻ đối đầu kèm nhãn thứ hạng và mức độ đồng thuận.
+   * @param {number} movieId - Mã định danh bộ phim
+   * @param {number} rank - Vị trí xếp hạng trong danh sách Top-10 (1 đến 10)
+   * @param {number} score - Điểm số đề xuất định lượng
+   * @param {string} rawScoreText - Chuỗi văn bản hiển thị điểm gốc
+   * @param {string} fallbackGenre - Thể loại dự phòng khi catalog chưa nạp đủ
+   * @returns {Object} Đối tượng thông tin phim chuẩn hóa
+   */
   function formatMovieItem(movieId, rank, score, rawScoreText, fallbackGenre) {
     const catalog = (window.MOCK_DATA && window.MOCK_DATA.catalog) || [];
     const m = getMovieById(movieId) || catalog.find(c => c.movieId === movieId);
@@ -959,9 +993,14 @@
     };
   }
 
-  // Thuật toán Reciprocal Rank Fusion chuẩn Cormack et al. (SIGIR 2009):
-  // RRF(d) = sum_{m in M} 1 / (60 + r_m(d))
-  // Nếu d không xuất hiện trong top của mô hình m, điểm đóng góp từ m bằng 0 (không dùng rank giả định 45 hay 50)
+  /**
+   * Thuật toán dung hợp xếp hạng nghịch đảo Cormack RRF chuẩn mực (Cormack et al., SIGIR 2009):
+   * Công thức: RRF(d) = tổng theo mô hình m của 1 / (60 + rank_m(d))
+   * Trong đó: hằng số làm mượt k = 60; nếu bộ phim d không xuất hiện trong danh sách đề xuất của mô hình m thì điểm đóng góp bằng 0.
+   * @param {Array<Object>} topALS - Danh sách Top-10 đề xuất của mô hình ALS
+   * @param {Array<Object>} topKG - Danh sách Top-10 đề xuất của mô hình KG
+   * @returns {Array<Object>} Danh sách Top-10 sau khi dung hợp RRF
+   */
   function computeCormackRRF(topALS, topKG) {
     const rankMapALS = {};
     (topALS || []).forEach((it, idx) => { rankMapALS[it.movieId] = idx + 1; });
@@ -995,7 +1034,15 @@
     });
   }
 
-  // Thuật toán Hybrid Weighted tuyến tính dựa trên thứ hạng chuẩn hóa
+  /**
+   * Thuật toán dung hợp tuyến tính có trọng số chuẩn hóa Min-Max giữa hai mô hình gợi ý.
+   * Điểm chuẩn hóa: norm_rank = (11 - rank) / 10 cho rank trong [1..10], ngược lại bằng 0.
+   * @param {Array<Object>} topA - Danh sách đề xuất mô hình A
+   * @param {Array<Object>} topB - Danh sách đề xuất mô hình B
+   * @param {number} [weightA=0.55] - Trọng số mô hình A
+   * @param {number} [weightB=0.45] - Trọng số mô hình B
+   * @returns {Array<Object>} Danh sách Top-10 sau dung hợp tuyến tính
+   */
   function computeWeightedFusion(topA, topB, weightA = 0.55, weightB = 0.45) {
     const rankMapA = {};
     (topA || []).forEach((it, idx) => { rankMapA[it.movieId] = idx + 1; });
@@ -1028,7 +1075,11 @@
     });
   }
 
-  // Tính toán đồng thuận (Consensus count) qua các cột mô hình
+  /**
+   * Phân tích mức độ đồng thuận (Consensus count) của từng bộ phim xuất hiện đồng thời trên 5 mô hình.
+   * Gán số lượng xuất hiện vào thuộc tính it.consensusCount để hiển thị huy hiệu trực quan.
+   * @param {Object<string, Array<Object>>} top10ByModel - Bản đồ chứa danh sách Top-10 của các mô hình
+   */
   function applyConsensusBadges(top10ByModel) {
     const countMap = {};
     Object.values(top10ByModel).forEach(list => {
@@ -1054,6 +1105,11 @@
   // Danh mục Phim Phổ Biến Toàn Cục (Popularity Baseline chuẩn M03)
   const GLOBAL_POPULARITY_IDS = [318, 356, 593, 2571, 260, 480, 110, 589, 1, 4993];
   const GLOBAL_POPULARITY_COUNTS = [80448, 80375, 73109, 71787, 68083, 63268, 58266, 57379, 57342, 56400];
+
+  /**
+   * Trích xuất danh sách 10 phim phổ biến toàn cục chuẩn MovieLens 25M dựa trên số lượt đánh giá thực tế.
+   * @returns {Array<Object>} Danh sách Top-10 phim phổ biến
+   */
   function getGlobalPopularityList() {
     const list = GLOBAL_POPULARITY_IDS.map((mid, idx) => {
       const rawCount = GLOBAL_POPULARITY_COUNTS[idx] || (80000 - idx * 2500);
@@ -1076,6 +1132,13 @@
   // Tính toán thời gian thực Top-10 cho cả 5 mô hình dựa trên tương tác thực tế
   // Phân hóa học thuật trực giao giữa ALS và KG: tỷ lệ trùng lặp đạt đúng 40% - 60%
   // =========================================================================
+
+  /**
+   * Tính toán danh sách đề xuất động Top-10 cho 5 mô hình ứng với từng đối tượng người dùng thí nghiệm hoặc phiên trực tiếp.
+   * Hỗ trợ các kịch bản: Khán giả 1 (Alex Turner), Khán giả 42 (Mô phỏng Cold-Start 0 đánh giá), và Live Session (Phiên thực tế).
+   * @param {string} userKey - Khóa định danh người dùng ('user1', 'user2', 'user3', 'user42', 'live_session')
+   * @returns {{isColdStart: boolean, numRatings?: number, ratedMovies?: Array, userBadge: string, top10ByModel: Object}} Kết quả tính toán gợi ý của 5 mô hình
+   */
   function computeDynamicRecommendationsForLab(userKey) {
     const catalog = (window.MOCK_DATA && window.MOCK_DATA.catalog) || [];
 
@@ -1359,6 +1422,14 @@
   // 3.2 HÀM TRUY XUẤT TOP-10 CHUẨN GIAO DIỆN HỌC THUẬT (PUBLIC TOP-10 GETTER)
   // Đảm bảo 100% ID nằm trong CATALOG, tỷ lệ trùng lặp ALS vs KG từ 40% - 60%
   // =========================================================================
+
+  /**
+   * Truy xuất danh sách Top-10 đề xuất tương ứng cho từng mô hình và người dùng nghiên cứu.
+   * Chuẩn hóa và làm giàu dữ liệu với thông tin đầy đủ từ catalog (tiêu đề tiếng Việt, năm, thể loại, điểm số).
+   * @param {string} modelKey - Khóa mô hình ('als', 'kg', 'hybrid_rrf', 'hybrid_weighted', 'popularity')
+   * @param {string|number} userId - Mã hoặc khóa người dùng
+   * @returns {Array<Object>} Danh sách 10 bộ phim được đề xuất kèm đầy đủ thuộc tính học thuật
+   */
   function getTop10ForModelAndUser(modelKey, userId) {
     let userKey = 'live_session';
     if (userId === 1 || userId === '1' || userId === 'user1') userKey = 'user1';
@@ -1403,6 +1474,12 @@
   // =========================================================================
   // 4. BẢNG ĐỐI ĐẦU 5 MÔ HÌNH VỚI HOVER INTERLOCK (HEAD-TO-HEAD COMPARISON)
   // =========================================================================
+
+  /**
+   * Kết xuất bảng ma trận đối đầu song song 5 cột Top-10 của các mô hình: Spark ALS, Knowledge Graph, Hybrid RRF, Hybrid Weighted và Popularity Baseline.
+   * Hiển thị thời gian thực thi (ms), huy hiệu đồng thuận (Consensus Badge), thông số độ mới lạ (Novelty bits) và tỷ lệ phim ngách (Long-tail %).
+   * @param {string} [targetUser] - Khóa người dùng mục tiêu cần kết xuất đối đầu
+   */
   function renderHeadToHeadComparison(targetUser) {
     if (targetUser) {
       AcademicLabState.selectedUser = targetUser;
@@ -1605,7 +1682,11 @@
     container.innerHTML = html;
   }
 
-  // Cơ chế Hover Interlock
+  /**
+   * Kích hoạt cơ chế khóa tiêu điểm tương hỗ (Hover Interlock) khi rê chuột qua một bộ phim đối đầu.
+   * Làm sáng bừng tất cả các thẻ phim trùng lặp ở toàn bộ các cột mô hình, làm mờ các phim không liên quan, hiển thị banner đồng thuận và đồng bộ sang đồ thị vis-network.
+   * @param {number|string} movieId - Mã định danh bộ phim cần khóa tiêu điểm
+   */
   function setInterlock(movieId) {
     AcademicLabState.activeInterlockMovieId = Number(movieId);
     const mid = AcademicLabState.activeInterlockMovieId;
@@ -1646,6 +1727,10 @@
     }
   }
 
+  /**
+   * Hủy bỏ trạng thái khóa tiêu điểm tương hỗ (Hover Interlock).
+   * Khôi phục độ mờ và đường viền mặc định cho toàn bộ các thẻ phim, ẩn banner đồng thuận và reset đồ thị vis-network.
+   */
   function clearInterlock() {
     AcademicLabState.activeInterlockMovieId = null;
 
@@ -1665,6 +1750,11 @@
   // =========================================================================
   // 5. MA TRẬN NHIỆT TƯƠNG QUAN THỨ HẠNG & TƯƠNG ĐỒNG (5X5 HEATMAP)
   // =========================================================================
+
+  /**
+   * Kết xuất ma trận nhiệt tương quan 5x5 giữa các cặp mô hình đề xuất.
+   * Hỗ trợ 2 chế độ chỉ số: Hệ số tương quan hạng Spearman (Spearman rho trong [-1.0, 1.0], k < 2 trả về null) và Hệ số tương đồng tập hợp Jaccard (Jaccard Index trong [0.0, 1.0]).
+   */
   function renderCorrelationHeatmap() {
     const container = document.getElementById('heatmap-matrix-container');
     const legend = document.getElementById('heatmap-color-legend');
@@ -1778,7 +1868,12 @@
     container.innerHTML = gridHtml;
   }
 
-  // Mở Modal Phân Tích Giao Thoa Giữa 2 Mô Hình
+  /**
+   * Mở hộp thoại modal phân tích chi tiết độ giao thoa danh sách phim giữa hai mô hình được chọn.
+   * Hiển thị số lượng phim trùng lặp, chỉ số Jaccard, Spearman rho, phân tích học thuật và bảng đối chiếu thứ bậc từng phim.
+   * @param {string} modelA - Khóa mô hình thứ nhất
+   * @param {string} modelB - Khóa mô hình thứ hai
+   */
   function openMatrixOverlapModal(modelA, modelB) {
     const modal = document.getElementById('matrix-overlap-modal') || document.getElementById('heatmap-cell-modal');
     const content = document.getElementById('matrix-overlap-content') || document.getElementById('heatmap-cell-modal-body');
@@ -1863,6 +1958,9 @@
     modal.classList.add('flex');
   }
 
+  /**
+   * Đóng hộp thoại modal phân tích giao thoa ma trận.
+   */
   function closeMatrixOverlapModal() {
     const modal = document.getElementById('matrix-overlap-modal') || document.getElementById('heatmap-cell-modal');
     if (modal) {
@@ -1874,6 +1972,12 @@
   // =========================================================================
   // 6. BẢNG CHỈ SỐ KIỂM CHUẨN OFFLINE (OFFLINE BENCHMARKS TABLE)
   // =========================================================================
+
+  /**
+   * Kết xuất bảng số liệu kiểm chuẩn ngoại tuyến (Offline Benchmarks) đầy đủ các độ đo học thuật:
+   * NDCG@10, Hit Rate@10, Precision@10, MAP (Mean Average Precision) và Danh mục phủ sóng (Catalog Coverage).
+   * Tự động làm nổi bật mô hình đạt hiệu năng cao nhất trên từng tiêu chí.
+   */
   function renderOfflineBenchmarks() {
     const tbody = document.getElementById('offline-benchmarks-tbody');
     if (!tbody || !window.MOCK_DATA || !window.MOCK_DATA.offlineBenchmarks) return;
@@ -1910,6 +2014,11 @@
   // =========================================================================
   // 7. MÔ PHỎNG THÁCH THỨC COLD-START & LONG-TAIL PARETO
   // =========================================================================
+
+  /**
+   * Hiển thị biểu đồ chẩn đoán hiệu năng trong kịch bản người dùng mới (Cold-Start & Sparsity Degradation).
+   * Trực quan hóa đường cong suy giảm chất lượng gợi ý NDCG khi số lượng đánh giá N giảm dần từ 50 về 0.
+   */
   function renderColdStartDiagnostics() {
     const container = document.getElementById('cold-start-chart-container');
     if (!container || !window.MOCK_DATA || !window.MOCK_DATA.coldStartData) return;
@@ -1953,6 +2062,10 @@
     container.innerHTML = barsHtml;
   }
 
+  /**
+   * Hiển thị số liệu kiểm định tỷ lệ phủ phim đuôi dài (Long-Tail Novelty & Catalog Coverage).
+   * Phân tích tỷ lệ phim đại chúng (Short-head) so với phim ngách khám phá (Long-tail) cùng hệ số bất bình đẳng Gini Index.
+   */
   function renderLongTailDiagnostics() {
     const container = document.getElementById('long-tail-chart-container');
     if (!container || !window.MOCK_DATA || !window.MOCK_DATA.longTailData) return;
@@ -1997,6 +2110,11 @@
   // =========================================================================
   // 8. TÍCH HỢP HỆ THỐNG VÀO WINDOW.MOODGRAPHAPP
   // =========================================================================
+
+  /**
+   * Khởi tạo toàn diện Phòng thí nghiệm Học thuật Mode B và gắn các trình lắng nghe sự kiện.
+   * Khởi chạy đồ họa không gian 3D, bảng đối đầu, ma trận tương quan nhiệt và các biểu đồ chẩn đoán.
+   */
   function initAcademicLab() {
     // 1. Khởi tạo Không gian 3D
     if (!visualizer3D) {
@@ -2028,7 +2146,7 @@
     if (visualizer3D) visualizer3D.toggleRotation();
   };
 
-  // Hover Interlock
+  // Cơ chế khóa tiêu điểm tương hỗ khi rê chuột qua phim đối đầu (Hover Interlock)
   window.MoodGraphApp.setInterlock = function (movieId) {
     setInterlock(movieId);
   };
@@ -2074,7 +2192,10 @@
     }
   };
 
-  // Callback khi người dùng đánh giá phim ở Trang 1
+  /**
+   * Hàm callback được kích hoạt khi người dùng thêm hoặc sửa điểm đánh giá phim ở Trang 1 (Vòng lặp phản hồi kín).
+   * Tự động tính toán lại kết quả đối đầu Top-10 của 5 mô hình và tái định vị tâm người dùng trong không gian 3D nếu đang xem phiên Live Session.
+   */
   function onUserRatingsChanged() {
     const optLive = document.getElementById('opt-lab-live');
     const numR = (window.MoodGraphState && window.MoodGraphState.userRatings) ? Object.keys(window.MoodGraphState.userRatings).length : 0;

@@ -69,8 +69,8 @@ class ScoreableCatalog:
     """
     Lưu trữ ma trận nhân tố ẩn vật phẩm (Item Factors) và metadata danh mục phục vụ chấm điểm.
     """
-    movie_ids: np.ndarray  # 1D int64 array of shape (M,)
-    factors: np.ndarray    # 2D float32 array of shape (M, rank)
+    movie_ids: np.ndarray  # Mảng 1D int64 kích thước (M,)
+    factors: np.ndarray    # Mảng 2D float32 kích thước (M, rank)
     movie_to_idx: Dict[int, int] = field(default_factory=dict)
     catalog_movie_ids: Optional[Set[int]] = None
 
@@ -94,18 +94,22 @@ class ScoreableCatalog:
 
     @property
     def num_movies(self) -> int:
+        """Tổng số lượng phim có thể chấm điểm trong danh mục."""
         return len(self.movie_ids)
 
     @property
     def rank(self) -> int:
+        """Số chiều của không gian nhân tố ẩn."""
         return self.factors.shape[1]
 
     @property
     def scorable_movie_ids(self) -> Set[int]:
+        """Tập hợp các mã movieId có thể cho điểm."""
         return set(self.movie_to_idx.keys())
 
     @property
     def unscoreable_movie_ids(self) -> Set[int]:
+        """Tập hợp các mã movieId không thể cho điểm (thiếu vector nhân tố)."""
         if self.catalog_movie_ids is None:
             return set()
         return self.catalog_movie_ids - self.scorable_movie_ids
@@ -116,8 +120,8 @@ class UserFactorsContainer:
     """
     Lưu trữ ma trận nhân tố ẩn người dùng (User Factors) và bản đồ tra cứu chỉ mục userId.
     """
-    user_ids: np.ndarray  # 1D int64 array of shape (U,)
-    factors: np.ndarray   # 2D float32 array of shape (U, rank)
+    user_ids: np.ndarray  # Mảng 1D int64 kích thước (U,)
+    factors: np.ndarray   # Mảng 2D float32 kích thước (U, rank)
     user_to_idx: Dict[int, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -139,10 +143,12 @@ class UserFactorsContainer:
 
     @property
     def num_users(self) -> int:
+        """Tổng số lượng người dùng có vector nhân tố ẩn."""
         return len(self.user_ids)
 
     @property
     def rank(self) -> int:
+        """Số chiều của không gian nhân tố ẩn người dùng."""
         return self.factors.shape[1]
 
 
@@ -261,13 +267,13 @@ class ALSCandidateGenerator:
         if not user_path.exists():
             raise FileNotFoundError(f"userFactors parquet directory not found at: {user_path}")
 
-        # 1. Load Item Factors
+        # 1. Nạp ma trận nhân tố vật phẩm
         tbl_items = pq.read_table(item_path)
         item_df = tbl_items.to_pandas()
         item_ids = item_df["id"].values.astype(np.int64)
         item_vecs = np.vstack(item_df["features"].values).astype(np.float32)
 
-        # 2. Load Full Movies Catalog (if provided)
+        # 2. Nạp toàn bộ danh mục phim (nếu được cung cấp)
         catalog_ids: Optional[Set[int]] = None
         if movies_parquet_path is not None:
             mov_path = Path(movies_parquet_path)
@@ -281,7 +287,7 @@ class ALSCandidateGenerator:
             catalog_movie_ids=catalog_ids,
         )
 
-        # 3. Load User Factors
+        # 3. Nạp ma trận nhân tố người dùng
         tbl_users = pq.read_table(user_path)
         user_df = tbl_users.to_pandas()
         user_ids = user_df["id"].values.astype(np.int64)
@@ -337,7 +343,7 @@ class ALSCandidateGenerator:
             return []
 
         u_factor = self.user_factors.factors[user_idx]
-        scores = np.dot(self.catalog.factors, u_factor)  # shape: (M,)
+        scores = np.dot(self.catalog.factors, u_factor)  # kích thước: (M,)
 
         seen_set = seen_movie_ids or set()
         for mid in seen_set:
@@ -373,18 +379,18 @@ class ALSCandidateGenerator:
                 valid_uids.append(uid_int)
                 valid_row_indices.append(idx)
             else:
-                # Cold user: no factor
+                # Người dùng cold-start: không có vector nhân tố
                 results[uid_int] = []
 
         if not valid_uids:
             return results
 
-        # Extract P_batch of shape (B, rank)
-        P_batch = self.user_factors.factors[valid_row_indices]  # shape: (B, rank)
-        # Matrix multiplication: (B, rank) @ (rank, M) -> (B, M)
-        scores_matrix = np.matmul(P_batch, self.catalog.factors.T)  # shape: (B, M)
+        # Trích xuất P_batch kích thước (B, rank)
+        P_batch = self.user_factors.factors[valid_row_indices]  # kích thước: (B, rank)
+        # Phép nhân ma trận: (B, rank) @ (rank, M) -> (B, M)
+        scores_matrix = np.matmul(P_batch, self.catalog.factors.T)  # kích thước: (B, M)
 
-        # Mask seen items per user
+        # Che mặt nạ các vật phẩm đã xem của từng người dùng bằng -inf
         for row_idx, uid in enumerate(valid_uids):
             seen_set = user_histories.get(uid, set())
             for mid in seen_set:
@@ -392,7 +398,7 @@ class ALSCandidateGenerator:
                 if item_idx is not None:
                     scores_matrix[row_idx, item_idx] = -np.inf
 
-        # Extract Top-K per user with vectorized 2D argpartition when possible
+        # Trích xuất Top-K cho từng người dùng với 2D argpartition vectơ hóa khi có thể
         B = len(valid_uids)
         M = self.catalog.num_movies
         if M > k:
@@ -403,7 +409,7 @@ class ALSCandidateGenerator:
                 top_scores = row_scores[top_part]
                 min_top = float(np.min(top_scores))
                 if not np.isfinite(min_top):
-                    # Some items in top K were -inf (user has fewer than K unseen items)
+                    # Một số vật phẩm trong Top K là -inf (người dùng có ít hơn K phim chưa xem)
                     results[uid] = fast_exact_top_k_from_scores(row_scores, self.catalog.movie_ids, k)
                 else:
                     total_ties = int(np.sum(row_scores == min_top))

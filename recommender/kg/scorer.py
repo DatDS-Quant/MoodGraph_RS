@@ -64,6 +64,7 @@ class EvidenceItem:
 
 
 class PathBasedScorer:
+    """Động cơ tính điểm dựa trên đường dẫn siêu liên kết (Metapaths P1, P2, P3) trên đồ thị tri thức."""
     def __init__(
         self,
         min_liked_rating: float = 3.5,
@@ -151,7 +152,7 @@ class PathBasedScorer:
             active_liked = liked_movies
 
         # ======================================================================
-        # P3: COLLABORATIVE GRAPH METAPATH
+        # P3: ĐƯỜNG ĐI ĐỒ THỊ CỘNG TÁC (COLLABORATIVE GRAPH METAPATH)
         # ======================================================================
         neighbor_sims: List[Tuple[int, float, List[int]]] = []
         if enable_p3 and hasattr(graph, "movie_rated_by_users"):
@@ -195,7 +196,7 @@ class PathBasedScorer:
                         all_candidate_ids.add(cand_mid)
 
         # ======================================================================
-        # P2: GENOME METAPATH
+        # P2: ĐƯỜNG ĐI THẺ GENOME (GENOME METAPATH)
         # ======================================================================
         if enable_p2 and hasattr(graph, "movie_has_genome_tag"):
             if is_large_graph:
@@ -233,7 +234,7 @@ class PathBasedScorer:
                                 all_candidate_ids.add(cand_mid)
 
         # ======================================================================
-        # P1: GENRE METAPATH
+        # P1: ĐƯỜNG ĐI THỂ LOẠI (GENRE METAPATH)
         # ======================================================================
         if enable_p1 and hasattr(graph, "movie_in_genre"):
             if is_large_graph:

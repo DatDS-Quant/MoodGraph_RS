@@ -20,7 +20,12 @@
   // 1. ĐỊNH NGHĨA TRẠNG THÁI TOÀN CỤC & TỰ ĐỘNG KHỞI TẠO (STATE STORE)
   // =========================================================================
   
-  // Hàm tải dữ liệu an toàn từ LocalStorage
+  /**
+   * Tải dữ liệu JSON an toàn từ LocalStorage của trình duyệt, tự động bắt lỗi và trả về giá trị mặc định nếu thất bại.
+   * @param {string} key - Khóa lưu trữ trong LocalStorage
+   * @param {*} defaultValue - Giá trị mặc định trả về nếu không tìm thấy hoặc xảy ra lỗi
+   * @returns {*} Dữ liệu đã parse từ JSON hoặc giá trị mặc định
+   */
   function loadStorageJson(key, defaultValue) {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -33,7 +38,11 @@
     return defaultValue;
   }
 
-  // Hàm lưu dữ liệu an toàn vào LocalStorage
+  /**
+   * Lưu trữ dữ liệu JSON an toàn vào LocalStorage của trình duyệt với cơ chế bắt ngoại lệ chống treo ứng dụng.
+   * @param {string} key - Khóa lưu trữ trong LocalStorage
+   * @param {*} value - Giá trị cần tuần tự hóa và lưu trữ
+   */
   function saveStorageJson(key, value) {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -88,8 +97,10 @@
 
     // Trạng thái cho Mode B (Phòng Thí Nghiệm)
     selectedLabUser: "user1",
-    consensusFilter: "all", // "all" | "overlap" | "unique"
-    heatmapMetric: "spearman", // "spearman" | "jaccard"
+    // Bộ lọc đồng thuận: "all" (Toàn bộ), "overlap" (Giao thoa), "unique" (Độc bản)
+    consensusFilter: "all",
+    // Chỉ số ma trận tương quan nhiệt: "spearman" (Tương quan hạng) hoặc "jaccard" (Tương đồng tập hợp)
+    heatmapMetric: "spearman",
     activeInterlockMovieId: null,
 
     // Bộ nhớ đệm danh sách phim đã chấm điểm theo slider & mood
@@ -99,7 +110,10 @@
   // Công khai trạng thái toàn cục để kiểm thử và liên kết
   window.MoodGraphState = MoodGraphState;
 
-  // Đảm bảo đầy đủ 5 Persona trong presetPersonas: user1, user2, user3, user42/user_cold, live_session
+  /**
+   * Đảm bảo đầy đủ 5 Persona trong presetPersonas: user1, user2, user3, user42/user_cold, live_session.
+   * Tự động khởi tạo dữ liệu mẫu nếu thiếu để ứng dụng không bị lỗi truy xuất.
+   */
   function ensurePresetPersonas() {
     if (!window.MOCK_DATA) return;
     if (!window.MOCK_DATA.presetPersonas) {
@@ -183,6 +197,13 @@
   };
 
   // Sinh poster SVG Fallback nội bộ chống 100% vỡ ảnh (BUG-01 / F21)
+  /**
+   * Tạo chuỗi SVG poster tự chứa dự phòng dạng data:image/svg+xml để hiển thị khi ảnh bên ngoài bị lỗi mạng hoặc ngoại tuyến.
+   * @param {string} title - Tiêu đề bộ phim
+   * @param {string} genres - Chuỗi các thể loại của bộ phim
+   * @param {number|string} year - Năm phát hành
+   * @returns {string} URL dữ liệu data:image/svg+xml an toàn
+   */
   function getFallbackPosterSvg(title, genres, year) {
     const safeTitle = escapeHtml(title || 'Phim Điện Ảnh');
     const safeYear = year ? String(year) : '';
@@ -213,12 +234,22 @@
   // 2. HÀM TIỆN ÍCH TRỢ GIÚP (HELPER UTILITIES)
   // =========================================================================
 
+  /**
+   * Tra cứu thông tin chi tiết của một bộ phim theo mã định danh movieId từ danh mục CATALOG toàn cục.
+   * @param {number|string} movieId - Mã định danh bộ phim cần tìm
+   * @returns {Object|null} Đối tượng phim hoặc null nếu không tồn tại
+   */
   function getMovieById(movieId) {
     if (!window.MOCK_DATA || !window.MOCK_DATA.catalog) return null;
     const mid = Number(movieId);
     return window.MOCK_DATA.catalog.find(m => m.movieId === mid) || null;
   }
 
+  /**
+   * Làm sạch và mã hóa các ký tự đặc biệt trong chuỗi HTML để ngăn ngừa lỗ hổng XSS (Cross-Site Scripting).
+   * @param {*} str - Giá trị cần mã hóa ký tự
+   * @returns {string} Chuỗi an toàn sau mã hóa
+   */
   function escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -229,7 +260,11 @@
       .replace(/>/g, '&gt;');
   }
 
-  // Khử dấu tiếng Việt để tìm kiếm không dấu
+  /**
+   * Khử dấu tiếng Việt chuẩn Unicode phục vụ tính năng tìm kiếm phim không dấu tức thì.
+   * @param {string} str - Chuỗi tiếng Việt có dấu
+   * @returns {string} Chuỗi tiếng Việt đã được loại bỏ toàn bộ dấu thanh
+   */
   function removeVietnameseTones(str) {
     if (!str) return '';
     let s = str.toLowerCase();
@@ -245,8 +280,13 @@
     return s;
   }
 
-  // Tạo thẻ poster an toàn: Nếu ảnh ngoài bị lỗi hoặc offline thì nạp ngay poster SVG độc lập
-    function renderPosterImgHtml(movie, extraClass) {
+  /**
+   * Tạo thẻ img hiển thị poster an toàn: Nếu ảnh từ xa bị lỗi tải hoặc offline sẽ tự động thay thế bằng SVG nội bộ độc lập.
+   * @param {Object} movie - Đối tượng phim cần kết xuất ảnh poster
+   * @param {string} [extraClass] - Các lớp CSS bổ sung cho thẻ img
+   * @returns {string} Chuỗi mã HTML thẻ img hoàn chỉnh
+   */
+  function renderPosterImgHtml(movie, extraClass) {
     const titleSafe = escapeHtml(movie.vietnameseTitle || movie.cleanTitle || movie.title);
     const posterClass = extraClass || 'movie-poster-img';
     const genreStr = escapeHtml((movie.genres && movie.genres.join(', ')) || movie.primaryGenre || 'Điện ảnh');
@@ -265,7 +305,11 @@
     `;
   }
 
-  // Tạo SVG poster tự chứa bền vững theo chuẩn phong cách Editorial
+  /**
+   * Tạo chuỗi SVG poster tự chứa bền vững theo chuẩn phong cách tạp chí nghệ thuật Editorial cho một đối tượng phim.
+   * @param {Object} movie - Đối tượng thông tin phim
+   * @returns {string} URL dữ liệu data:image/svg+xml an toàn
+   */
   function generateFallbackSvg(movie) {
     const title = escapeHtml(movie.vietnameseTitle || movie.cleanTitle || 'Phim Điện Ảnh');
     const year = movie.year || '';
@@ -296,6 +340,12 @@
   // 3. TOAST THÔNG BÁO TIẾNG VIỆT THANH LỊCH (EDITORIAL TOAST ENGINE)
   // =========================================================================
 
+  /**
+   * Hiển thị thông báo nổi Toast thông minh với giao diện Glassmorphism sang trọng và tự động biến mất.
+   * @param {string} title - Tiêu đề thông báo
+   * @param {string} message - Nội dung chi tiết thông báo
+   * @param {string} [iconType] - Loại biểu tượng hiển thị ('star', 'remove', 'info')
+   */
   function showToast(title, message, iconType) {
     let container = document.getElementById('toast-container');
     if (!container) {
@@ -321,7 +371,7 @@
         </svg>
       `;
     } else {
-      // Default: Emerald Success / Amber Info
+      // Mặc định: Biểu tượng thành công màu Lục Bảo (Emerald Success) hoặc thông tin Hổ Phách (Amber Info)
       iconSvg = `
         <svg class="w-5 h-5 text-[#10B981] shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -363,6 +413,11 @@
   // 4. BỘ ĐIỀU PHỐI GIAO DIỆN & BỘ CHUYỂN CHẾ ĐỘ (VIEW SWITCHER 2 TRANG)
   // =========================================================================
 
+  /**
+   * Chuyển đổi giữa 2 chế độ hiển thị chính: Mode A (Trải Nghiệm Khán Giả) và Mode B (Phòng Thí Nghiệm Học Thuật).
+   * Tự động đồng bộ Persona từ Trang 1 sang Trang 2 và kích hoạt khởi tạo AcademicLab nếu cần.
+   * @param {string} targetMode - Chế độ cần chuyển đổi ('modeA' hoặc 'modeB')
+   */
   function switchMode(targetMode) {
     MoodGraphState.activeMode = targetMode;
 
@@ -445,6 +500,10 @@
   // 5. BỘ CHỌN TÂM TRẠNG ĐIỆN ẢNH (MOOD SELECTOR — 7 MIỀN CẢM XÚC)
   // =========================================================================
 
+  /**
+   * Kết xuất các nút bấm chip tâm trạng tương tác (7 miền cảm xúc chuẩn học thuật và tùy chọn "Tất cả").
+   * Cập nhật trạng thái active trực quan và nhãn hiển thị tại thanh điều khiển bên cạnh.
+   */
   function renderMoodChips() {
     const container = document.getElementById('mood-chips-container');
     if (!container || !window.MOCK_DATA || !window.MOCK_DATA.moods) return;
@@ -502,6 +561,11 @@
     }
   }
 
+  /**
+   * Kích hoạt lựa chọn một miền tâm trạng điện ảnh, tự động tinh chỉnh 4 thanh trượt theo trọng số mẫu của tâm trạng và tính lại gợi ý.
+   * Nếu click lại vào tâm trạng đang hoạt động sẽ hủy chọn và đưa về trạng thái "Tất cả".
+   * @param {string} moodId - Mã tâm trạng cần chọn ('all', 'mind_bending', 'suspense', ...)
+   */
   function selectMood(moodId) {
     if (MoodGraphState.activeMood === moodId && moodId !== 'all') {
       // Toggle off nếu nhấn lại mood đang active
@@ -564,6 +628,11 @@
     }
   };
 
+  /**
+   * Cập nhật văn bản chú giải ngữ nghĩa động tương ứng theo mức giá trị thanh trượt (Thấp < 35%, Trung bình, Cao >= 70%).
+   * @param {string} axis - Tên trục thẩm mỹ ('depth', 'pacing', 'auteur', 'tone')
+   * @param {number} valNum - Giá trị phần trăm nguyên (0 đến 100)
+   */
   function updateSliderSemanticHint(axis, valNum) {
     const descEl = document.getElementById(`desc-${axis}`);
     if (!descEl) return;
@@ -585,6 +654,9 @@
     }
   }
 
+  /**
+   * Cập nhật đồng loạt toàn bộ chú giải ngữ nghĩa cho cả 4 trục thanh trượt thẩm mỹ theo giá trị hiện thời trong MoodGraphState.
+   */
   function updateAllSliderSemanticHints() {
     ['depth', 'pacing', 'auteur', 'tone'].forEach(axis => {
       const valPct = Math.round((MoodGraphState.sliders[axis] || 0.5) * 100);
@@ -592,6 +664,9 @@
     });
   }
 
+  /**
+   * Đồng bộ hóa giá trị từ MoodGraphState lên các phần tử thanh trượt (slider range) và nhãn số phần trăm trên giao diện DOM.
+   */
   function syncSliderInputs() {
     const axes = ['depth', 'pacing', 'auteur', 'tone'];
     axes.forEach(axis => {
@@ -605,6 +680,12 @@
     });
   }
 
+  /**
+   * Xử lý sự kiện khi người dùng kéo thay đổi giá trị của một thanh trượt sở thích thẩm mỹ.
+   * Cập nhật tức thời giá trị chuẩn hóa [0.0..1.0] vào state, cập nhật gợi ý ngữ nghĩa và tính lại gợi ý động (< 5ms).
+   * @param {string} axis - Tên trục thẩm mỹ ('depth', 'pacing', 'auteur', 'tone')
+   * @param {number|string} value - Giá trị phần trăm nguyên từ 0 đến 100
+   */
   function onSliderChange(axis, value) {
     const valNum = Number(value);
     MoodGraphState.sliders[axis] = valNum / 100.0;
@@ -622,6 +703,9 @@
     updateDynamicRecommendations();
   }
 
+  /**
+   * Đặt lại toàn bộ 4 thanh trượt thẩm mỹ về giá trị cân bằng mặc định ban đầu và đưa tâm trạng về "Tất cả".
+   */
   function resetSliders() {
     MoodGraphState.sliders = {
       depth: 0.75,
@@ -642,6 +726,10 @@
   // 7. ĐỘNG CƠ TÁI TÍNH TOÁN ĐIỂM SỐ GỢI Ý ĐỘNG (DYNAMIC CALCULATION ENGINE)
   // =========================================================================
 
+  /**
+   * Động cơ tính toán lại điểm số tương thích động trong thời gian thực cho toàn bộ catalog theo thanh trượt và tâm trạng.
+   * Đo lường thời gian thực thi (ms), lọc theo từ khóa tìm kiếm và tái kết xuất Hero Banner cùng lưới phim Top 2-11.
+   */
   function updateDynamicRecommendations() {
     if (!window.MoodEngine || !window.MOCK_DATA || !window.MOCK_DATA.catalog) return;
 
@@ -705,6 +793,11 @@
   // 8. KẾT XUẤT HERO BANNER (TOP 1 PERSONALIZED SHOWCASE)
   // =========================================================================
 
+  /**
+   * Kết xuất biểu ngữ nổi bật (Hero Spotlight) dành riêng cho tác phẩm được xếp hạng số 1 trong danh sách gợi ý.
+   * Hiển thị backdrop sắc nét, tỷ lệ tương thích, thông tin đoàn làm phim và nút xem nhanh hoặc lưu watchlist.
+   * @param {Object|null} topMovie - Đối tượng phim đạt điểm số cao nhất
+   */
   function renderHeroBanner(topMovie) {
     const container = document.getElementById('hero-banner-section');
     if (!container) return;
@@ -808,6 +901,11 @@
   // 9. KẾT XUẤT DANH SÁCH GỢI Ý XẾP HẠNG (SIDE RANKING RECOMMENDATION PANEL)
   // =========================================================================
 
+  /**
+   * Kết xuất lưới danh sách xếp hạng Top-10 tác phẩm gợi ý Mode A (từ vị trí thứ 2 đến 11).
+   * Hiển thị huy hiệu thứ hạng, độ tương thích phần trăm, thanh tiến trình và nhãn nguồn gốc giải thích (Metapath P1, P2, P3 hoặc ALS).
+   * @param {Array<Object>} movies - Danh sách các bộ phim đề xuất
+   */
   function renderRecommendationsGrid(movies) {
     const container = document.getElementById('recommendations-grid');
     if (!container) return;
@@ -952,6 +1050,9 @@
   // 10. KẾT XUẤT BỘ LỌC 19 THỂ LOẠI & DANH MỤC TOÀN BỘ PHIM (CATALOG)
   // =========================================================================
 
+  /**
+   * Kết xuất thanh cuộn chứa các nút bấm lọc theo 19 thể loại điện ảnh chuẩn MovieLens 25M.
+   */
   function renderGenreFilters() {
     const container = document.getElementById('genre-filter-track');
     if (!container || !window.MOCK_DATA || !window.MOCK_DATA.genres) return;
@@ -977,12 +1078,20 @@
     container.innerHTML = html;
   }
 
+  /**
+   * Kích hoạt lựa chọn một thể loại điện ảnh và cập nhật lại danh mục phim hiển thị trên giao diện.
+   * @param {string} genreId - Mã định danh thể loại ('all', 'action', 'drama', ...)
+   */
   function selectGenreFilter(genreId) {
     MoodGraphState.activeGenre = genreId;
     renderGenreFilters();
     renderCatalogGrid();
   }
 
+  /**
+   * Kết xuất toàn bộ danh mục tác phẩm điện ảnh (Catalog Grid) kết hợp bộ lọc thể loại và từ khóa tìm kiếm.
+   * Hiển thị poster, thể loại chính, năm phát hành, điểm đánh giá và nút bookmark nhanh cho từng phim.
+   */
   function renderCatalogGrid() {
     const container = document.getElementById('catalog-grid');
     const emptyState = document.getElementById('catalog-empty-state');
@@ -1073,6 +1182,9 @@
     container.innerHTML = html;
   }
 
+  /**
+   * Khôi phục toàn bộ bộ lọc thể loại về 'all' và xóa trắng từ khóa tìm kiếm.
+   */
   function resetFilters() {
     MoodGraphState.activeGenre = 'all';
     MoodGraphState.searchQuery = '';
@@ -1094,6 +1206,11 @@
   // 11. QUẢN LÝ WATCHLIST (DANH SÁCH PHIM MUỐN XEM)
   // =========================================================================
 
+  /**
+   * Thêm hoặc xóa một bộ phim khỏi danh sách muốn xem (Watchlist) hoặc mở/đóng ngăn kéo hiển thị danh sách (Drawer).
+   * Tự động lưu vào LocalStorage, cập nhật các nút bookmark trên toàn giao diện và hiển thị thông báo Toast.
+   * @param {number|string|boolean} [movieIdOrFlag] - Mã ID phim cần toggle hoặc boolean để mở/đóng drawer
+   */
   function toggleWatchlist(movieIdOrFlag) {
     if (typeof movieIdOrFlag === 'number' || (typeof movieIdOrFlag === 'string' && !isNaN(movieIdOrFlag))) {
       // Nhấp vào nút thêm/bớt phim cụ thể
@@ -1163,6 +1280,9 @@
     }
   }
 
+  /**
+   * Xóa sạch toàn bộ danh sách phim muốn xem sau khi nhận được sự xác nhận đồng ý từ người dùng.
+   */
   function clearWatchlist() {
     if (MoodGraphState.watchlist.length === 0) return;
     if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
@@ -1177,6 +1297,9 @@
     showToast("Đã Làm Trống Danh Sách Xem", "Đã dọn dẹp toàn bộ danh sách phim muốn xem.", 'remove');
   }
 
+  /**
+   * Cập nhật số lượng đếm trên huy hiệu Watchlist ở thanh điều hướng trên cùng và đồng bộ lại ngăn kéo.
+   */
   function updateWatchlistUI() {
     const count = MoodGraphState.watchlist.length;
     
@@ -1192,6 +1315,9 @@
     renderWatchlistDrawerItems();
   }
 
+  /**
+   * Kết xuất danh sách các phim đã lưu vào ngăn kéo trượt bên phải (Watchlist Drawer) kèm poster, thể loại và nút xóa nhanh.
+   */
   function renderWatchlistDrawerItems() {
     const container = document.getElementById('watchlist-items-list');
     if (!container) return;
@@ -1252,6 +1378,12 @@
   // Dynamic Closed-Loop Feedback: Phản hồi ngược thời gian thực khi đánh giá 4-5★ (Item 2)
   // =========================================================================
 
+  /**
+   * Kết xuất chuỗi HTML các ngôi sao SVG tương tác hỗ trợ chọn nửa sao (0.5★ đến 5.0★).
+   * @param {number|string} movieId - Mã định danh bộ phim
+   * @param {number} activeRating - Điểm số đánh giá hiện tại của phim
+   * @returns {string} Chuỗi HTML 5 khối sao SVG tương tác
+   */
   function renderRatingStarsSvg(movieId, activeRating) {
     const mid = Number(movieId);
     const ratingVal = Number(activeRating) || 0;
@@ -1293,6 +1425,11 @@
     }).join('');
   }
 
+  /**
+   * Cập nhật giao diện xem trước tạm thời khi con trỏ chuột rê qua các mức điểm nửa sao hoặc nguyên sao.
+   * @param {number|string} movieId - Mã ID phim
+   * @param {number} previewScore - Điểm số xem trước (0.5 đến 5.0)
+   */
   function previewRating(movieId, previewScore) {
     const mid = Number(movieId);
     const scoreVal = Number(previewScore) || 0;
@@ -1314,6 +1451,10 @@
     }
   }
 
+  /**
+   * Khôi phục trạng thái hiển thị điểm đánh giá thực tế đã lưu khi con trỏ chuột rời khỏi khu vực chấm sao.
+   * @param {number|string} movieId - Mã ID phim
+   */
   function resetRatingPreview(movieId) {
     const mid = Number(movieId);
     const currentRating = MoodGraphState.userRatings[mid] || 0;
@@ -1343,6 +1484,12 @@
     }
   }
 
+  /**
+   * Ghi nhận điểm số đánh giá của người dùng cho một bộ phim, lưu trữ vào LocalStorage và kích hoạt cơ chế phản hồi vòng lặp kín (Closed-Loop Feedback).
+   * Khi đánh giá 4-5 sao, thể loại của phim được đưa vào danh sách khuếch đại (boostedGenres) và tái tính toán tức thời điểm số gợi ý.
+   * @param {number|string} movieId - Mã định danh bộ phim được đánh giá
+   * @param {number} score - Điểm số đánh giá (từ 0.5 đến 5.0)
+   */
   function submitRating(movieId, score) {
     const mid = Number(movieId);
     const scoreNum = Number(score);
@@ -1474,6 +1621,11 @@
   let isProvenanceAccordionOpen = true;
   let activeProvenanceData = null;
 
+  /**
+   * Đóng hoặc mở thanh Accordion hiển thị chi tiết nguồn gốc giải thích đề xuất (Why this movie?).
+   * Điều khiển hiệu ứng chuyển động chiều cao, độ trong suốt và xoay mũi tên chevron.
+   * @param {boolean} [forceState] - Trạng thái cưỡng chế đóng/mở (tùy chọn)
+   */
   function toggleProvenanceAccordion(forceState) {
     if (typeof forceState === 'boolean') {
       isProvenanceAccordionOpen = forceState;
@@ -1508,6 +1660,15 @@
     }
   }
 
+  /**
+   * Xây dựng cấu trúc dữ liệu minh chứng nguồn gốc giải thích đa tầng (Provenance) cho một bộ phim:
+   * - P1: Đường đi đồ thị tri thức qua thể loại (Graph Traversal).
+   * - P2: Không gian đặc trưng ngữ nghĩa tâm trạng (Genome 1128-D).
+   * - P3: Cụm khán giả đồng sở thích (Collaborative Filtering).
+   * - P4: Nhân tử tiềm ẩn ma trận ALS (Matrix Factorization 32-D).
+   * @param {Object} movie - Đối tượng thông tin phim
+   * @returns {Object} Bản đồ thông số giải thích 4 tab
+   */
   function buildMovieProvenance(movie) {
     const genresStr = (movie.genres || []).join(' • ') || (movie.primaryGenre || 'Chính Kịch');
     const titleClean = movie.cleanTitle || movie.title;
@@ -1582,6 +1743,11 @@
     };
   }
 
+  /**
+   * Kết xuất nội dung chi tiết dạng chuỗi HTML cho tab nguồn gốc giải thích đang được chọn.
+   * @param {string} tabKey - Khóa tab cần kết xuất ('p1', 'p2', 'p3', 'p4')
+   * @returns {string} Chuỗi mã HTML nội dung tab
+   */
   function renderProvenanceTabBody(tabKey) {
     if (!activeProvenanceData || !activeProvenanceData[tabKey]) return '';
     const data = activeProvenanceData[tabKey];
@@ -1624,6 +1790,10 @@
     `;
   }
 
+  /**
+   * Kích hoạt chuyển đổi giữa 4 tab nguồn gốc gợi ý (P1 Thể loại, P2 Tâm trạng, P3 Khán giả, P4 ALS Vector).
+   * @param {string} tabKey - Khóa tab ('p1', 'p2', 'p3', 'p4')
+   */
   function switchProvenanceTab(tabKey) {
     ['p1', 'p2', 'p3', 'p4'].forEach(k => {
       const btn = document.getElementById('prov-tab-btn-' + k);
@@ -1642,6 +1812,11 @@
     }
   }
 
+  /**
+   * Kết xuất toàn bộ giao diện khối Accordion nguồn gốc đề xuất (Why this movie?) và các nút chuyển tab cho một bộ phim.
+   * @param {Object} movie - Đối tượng phim cần tạo giao diện nguồn gốc
+   * @returns {string} Chuỗi mã HTML của Provenance Explorer
+   */
   function renderProvenanceExplorerHtml(movie) {
     activeProvenanceData = buildMovieProvenance(movie);
 
@@ -1715,6 +1890,11 @@
     `;
   }
 
+  /**
+   * Kích hoạt hiển thị modal chi tiết đầy đủ thông số kỹ thuật và nghệ thuật của một bộ phim.
+   * Bao gồm poster, đạo diễn, biên kịch, diễn viên, thời lượng, điểm MovieLens, thông số không gian 3D, Accordion nguồn gốc và phim tương tự.
+   * @param {number|string} movieId - Mã định danh bộ phim cần mở
+   */
   function openMovieDetailModal(movieId) {
     const modal = document.getElementById('movie-detail-modal');
     const content = document.getElementById('movie-detail-content');
@@ -1950,6 +2130,10 @@
     modal.classList.add('active');
   }
 
+  /**
+   * Đóng hộp thoại modal chi tiết bộ phim khi người dùng bấm nút ✕ hoặc click ra vùng mờ backdrop.
+   * @param {Event} [event] - Sự kiện chuột kích hoạt đóng modal
+   */
   function closeMovieDetailModal(event) {
     if (event && event.target && event.target !== event.currentTarget) return;
     const modal = document.getElementById('movie-detail-modal');
@@ -1960,6 +2144,11 @@
   // 14. HỘP THOẠI HỒ SƠ NGƯỜI DÙNG & BỘ CHUYỂN ĐỔI PERSONA (Item 4)
   // =========================================================================
 
+  /**
+   * Chuyển đổi nhanh hồ sơ khán giả mẫu (Persona Quick Switcher) giữa 5 cấu hình: Khán giả 1, Khán giả 2, Khán giả 3, Khán giả Mới (Cold-Start) và Phiên Trực Tiếp.
+   * Tự động điều chỉnh 4 thanh trượt gu thẩm mỹ, danh sách phim đã đánh giá và đồng bộ sang Mode B.
+   * @param {string} personaId - Khóa persona ('user1', 'user2', 'user3', 'user_cold', 'live_session')
+   */
   function switchPersona(personaId) {
     let pid = personaId;
     if (pid === 'user42') pid = 'user_cold';
@@ -2060,6 +2249,10 @@
     );
   }
 
+  /**
+   * Kích hoạt hiển thị modal hồ sơ khán giả cá nhân (User Profile Modal).
+   * Phân tích tổng số lượt đánh giá, điểm số trung bình, biểu đồ tỷ lệ thể loại yêu thích và danh sách phim đã xem gần nhất.
+   */
   function openUserProfileModal() {
     const modal = document.getElementById('user-profile-modal');
     const content = document.getElementById('user-profile-content');
@@ -2206,6 +2399,10 @@
     modal.classList.add('active');
   }
 
+  /**
+   * Đóng hộp thoại modal hồ sơ khán giả cá nhân.
+   * @param {Event} [event] - Sự kiện chuột kích hoạt đóng modal
+   */
   function closeUserProfileModal(event) {
     if (event && event.target && event.target !== event.currentTarget) return;
     const modal = document.getElementById('user-profile-modal');
@@ -2216,6 +2413,12 @@
   // 15. HỘP THOẠI PHÂN TÍCH GIAO THOA MA TRẬN 2 MÔ HÌNH (MATRIX OVERLAP MODAL)
   // =========================================================================
 
+  /**
+   * Mở hộp thoại modal phân tích giao thoa danh sách phim giữa hai mô hình đề xuất đối đầu.
+   * Hiển thị số lượng phim trùng lặp, thứ hạng trong từng mô hình hoặc thông báo trực giao nếu k = 0.
+   * @param {string} modelA - Khóa mô hình thứ nhất
+   * @param {string} modelB - Khóa mô hình thứ hai
+   */
   function openMatrixOverlapModal(modelA, modelB) {
     const modal = document.getElementById('matrix-overlap-modal') || document.getElementById('heatmap-cell-modal');
     const content = document.getElementById('matrix-overlap-content') || document.getElementById('heatmap-cell-modal-body');
@@ -2295,6 +2498,10 @@
     modal.classList.add('active');
   }
 
+  /**
+   * Đóng hộp thoại modal phân tích giao thoa ma trận.
+   * @param {Event} [event] - Sự kiện chuột kích hoạt đóng modal
+   */
   function closeMatrixOverlapModal(event) {
     if (event && event.target && event.target !== event.currentTarget) return;
     const modal = document.getElementById('matrix-overlap-modal') || document.getElementById('heatmap-cell-modal');
@@ -2306,6 +2513,10 @@
   // Đảm bảo không bao giờ lỗi runtime khi người dùng chuyển sang Tab B
   // =========================================================================
 
+  /**
+   * Khóa tiêu điểm tương hỗ (Hover Interlock) làm nổi bật bộ phim được chọn trên các cột đối đầu của Mode B.
+   * @param {number|string} movieId - Mã ID bộ phim
+   */
   function setInterlock(movieId) {
     MoodGraphState.activeInterlockMovieId = Number(movieId);
     const mid = MoodGraphState.activeInterlockMovieId;
@@ -2337,6 +2548,9 @@
     }
   }
 
+  /**
+   * Hủy bỏ trạng thái khóa tiêu điểm tương hỗ trên bảng đối đầu Mode B.
+   */
   function clearInterlock() {
     MoodGraphState.activeInterlockMovieId = null;
     document.querySelectorAll('[data-interlock-movie-id]').forEach(card => {
@@ -2346,6 +2560,11 @@
     if (banner) banner.classList.add('hidden');
   }
 
+  /**
+   * Thay đổi người dùng kiểm chuẩn trong Mode B và đồng bộ ngược về Persona của Mode A.
+   * @param {string} userKey - Khóa người dùng ('user1', 'user2', 'user3', 'user42', 'live_session')
+   * @param {boolean} [silent] - Cờ tắt thông báo Toast
+   */
   function changeLabUser(userKey, silent) {
     MoodGraphState.selectedLabUser = userKey;
 
@@ -2411,6 +2630,10 @@
     }
   }
 
+  /**
+   * Thiết lập bộ lọc mức độ đồng thuận phim giữa các mô hình ('all', 'overlap', 'unique').
+   * @param {string} filterType - Kiểu lọc đồng thuận
+   */
   function setConsensusFilter(filterType) {
     MoodGraphState.consensusFilter = filterType;
 
@@ -2429,6 +2652,10 @@
     renderHeadToHeadComparison(MoodGraphState.selectedLabUser);
   }
 
+  /**
+   * Chuyển đổi giữa hai thước đo tương quan nhiệt: Spearman rho và Jaccard similarity.
+   * @param {string} metricType - 'spearman' hoặc 'jaccard'
+   */
   function toggleHeatmapMetric(metricType) {
     MoodGraphState.heatmapMetric = metricType;
 
@@ -2446,24 +2673,37 @@
     renderCorrelationHeatmap();
   }
 
+  /**
+   * Đặt lại góc quay và khoảng cách camera không gian 3D về vị trí mặc định.
+   */
   function reset3DCamera() {
     if (window.Academic3D && typeof window.Academic3D.resetCamera === 'function') {
       window.Academic3D.resetCamera();
     }
   }
 
+  /**
+   * Bật hoặc tắt hiển thị các đường tia chiếu kết nối gợi ý trong không gian 3D.
+   */
   function toggle3DRays() {
     if (window.Academic3D && typeof window.Academic3D.toggleRays === 'function') {
       window.Academic3D.toggleRays();
     }
   }
 
+  /**
+   * Bật hoặc tắt chế độ tự động xoay quanh tâm trong không gian 3D.
+   */
   function toggle3DRotation() {
     if (window.Academic3D && typeof window.Academic3D.toggleRotation === 'function') {
       window.Academic3D.toggleRotation();
     }
   }
 
+  /**
+   * Kết xuất bảng so sánh đối đầu 5 mô hình (Head-to-Head Comparison) chế độ dự phòng.
+   * @param {string|number} [userId] - Mã định danh người dùng thí nghiệm
+   */
   function renderHeadToHeadComparison(userId) {
     const container = document.getElementById('head-to-head-columns');
     if (!container) return;
@@ -2538,6 +2778,9 @@
     container.innerHTML = html;
   }
 
+  /**
+   * Kết xuất ma trận nhiệt tương quan 5x5 dự phòng (Correlation Heatmap).
+   */
   function renderCorrelationHeatmap() {
     const container = document.getElementById('heatmap-matrix-container');
     const legend = document.getElementById('heatmap-color-legend');
@@ -2636,6 +2879,9 @@
     container.innerHTML = gridHtml;
   }
 
+  /**
+   * Kết xuất bảng kiểm chuẩn ngoại tuyến dự phòng (Offline Benchmarks Table).
+   */
   function renderOfflineBenchmarks() {
     const tbody = document.getElementById('offline-benchmarks-tbody');
     if (!tbody || !window.MOCK_DATA || !window.MOCK_DATA.offlineBenchmarks) return;
@@ -2663,6 +2909,9 @@
     tbody.innerHTML = html;
   }
 
+  /**
+   * Kết xuất biểu đồ chẩn đoán độ bền Cold-Start dự phòng (Cold-Start Diagnostics).
+   */
   function renderColdStartDiagnostics() {
     const container = document.getElementById('cold-start-chart-container');
     if (!container || !window.MOCK_DATA || !window.MOCK_DATA.coldStartData) return;
@@ -2689,6 +2938,9 @@
     container.innerHTML = html;
   }
 
+  /**
+   * Kết xuất biểu đồ chẩn đoán độ phủ đuôi dài dự phòng (Long-Tail Diagnostics).
+   */
   function renderLongTailDiagnostics() {
     const container = document.getElementById('long-tail-chart-container');
     if (!container || !window.MOCK_DATA || !window.MOCK_DATA.longTailData) return;
@@ -2717,6 +2969,9 @@
   // 17. LẮNG NGHE SỰ KIỆN TOÀN CỤC & PHÍM TẮT (EVENT LISTENERS & SHORTCUTS)
   // =========================================================================
 
+  /**
+   * Đăng ký các trình lắng nghe sự kiện toàn cục: ô tìm kiếm tức thì debounce 120ms và các phím tắt bàn phím tiện ích ('/' và 'Escape').
+   */
   function setupGlobalListeners() {
     // Kết nối ô tìm kiếm tức thì
     const searchInputs = [
@@ -2762,6 +3017,9 @@
   // 18. KHỞI TẠO ỨNG DỤNG (APPLICATION BOOTSTRAPPER)
   // =========================================================================
 
+  /**
+   * Hàm khởi tạo chính của ứng dụng MoodGraph: nạp persona mặc định, kết xuất bộ chọn tâm trạng, thanh trượt, thể loại, danh mục phim và kết nối sự kiện.
+   */
   function init() {
     console.log("🎬 Khởi tạo MoodGraph Standalone Interactive Prototype (Page 1 Discovery)...");
 
@@ -2814,13 +3072,13 @@
 
   const existingApp = (typeof window !== 'undefined' && window.MoodGraphApp) || {};
   window.MoodGraphApp = Object.assign(existingApp, {
-    // Mode Switcher
+    // Bộ chuyển đổi chế độ trải nghiệm (Mode A Người dùng đại chúng / Mode B Phòng thí nghiệm Học thuật)
     switchMode,
 
-    // Persona Quick Switcher (Item 4)
+    // Bộ chuyển nhanh hồ sơ người dùng mẫu (Persona Quick Switcher)
     switchPersona,
 
-    // Sliders & Moods & Semantic Hints (Item 3)
+    // Thanh trượt trọng số, bộ lọc tâm trạng và gợi ý ngữ nghĩa tương tác
     onSliderChange,
     resetSliders,
     selectMood,
@@ -2832,7 +3090,7 @@
       }
     },
 
-    // Genre Filters & Closed-Loop Boost
+    // Bộ lọc thể loại điện ảnh và cơ chế khuếch đại sở thích vòng lặp kín
     selectGenreFilter,
     resetFilters,
     toggleGenreBoost: function (genre) {
@@ -2845,35 +3103,35 @@
       }
     },
 
-    // Movie Detail Modal & Provenance Explorer
+    // Hộp thoại chi tiết phim và khám phá nguồn gốc gợi ý (Provenance Explorer)
     getFallbackPosterSvg: getFallbackPosterSvg,
     openMovieDetailModal,
     closeMovieDetailModal,
     switchProvenanceTab,
     toggleProvenanceAccordion,
 
-    // User Profile Modal
+    // Hộp thoại hồ sơ người dùng và thống kê lịch sử đánh giá
     openUserProfileModal,
     closeUserProfileModal,
 
-    // Matrix Overlap Modal
+    // Hộp thoại chi tiết ma trận giao thoa giữa các cặp mô hình đối đầu
     openMatrixOverlapModal,
     closeMatrixOverlapModal,
     openHeatmapCellModal: openMatrixOverlapModal,
     closeHeatmapCellModal: closeMatrixOverlapModal,
 
-    // Watchlist Management
+    // Quản lý danh sách phim muốn xem (Watchlist)
     toggleWatchlist,
     clearWatchlist,
     clearAllWatchlist: clearWatchlist,
 
-    // Ratings System (Item 2 Closed-Loop)
+    // Hệ thống chấm điểm đánh giá phim và cập nhật sở thích thời gian thực (Vòng lặp kín)
     submitRating,
     previewRating,
     resetRatingPreview,
     renderRatingStarsSvg,
 
-    // Mode B Academic Lab Hooks
+    // Các móc nối điều khiển Phòng thí nghiệm Học thuật Mode B
     setInterlock,
     clearInterlock,
     changeLabUser,
@@ -2883,7 +3141,7 @@
     toggle3DRays,
     toggle3DRotation,
 
-    // Toast Engine
+    // Động cơ hiển thị thông báo nổi thông minh (Toast Notification)
     showToast
   });
 
@@ -2899,7 +3157,10 @@
 })(window, document);
 
 
-    // Cơ chế Fallback chủ động chống 100% ảnh vỡ (BUG-01 / F21)
+  /**
+   * Cơ chế Fallback chủ động phòng vệ chống 100% ảnh vỡ trên toàn hệ thống (BUG-01 / F21).
+   * Tự động quét và thay thế tất cả ảnh tải thất bại bằng vector SVG poster tự chứa.
+   */
   function initZeroBrokenImagesGuard() {
     function patchAllImgs() {
       document.querySelectorAll('img').forEach(img => {

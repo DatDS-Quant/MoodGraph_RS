@@ -345,7 +345,7 @@ class HybridRecommenderService:
         return response
 
 
-# Singleton instance
+# Thể hiện singleton toàn cục của dịch vụ
 _HYBRID_SERVICE_INSTANCE: Optional[HybridRecommenderService] = None
 
 

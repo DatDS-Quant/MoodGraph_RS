@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: Recommendation Lab Application Service.
-Provides multi-model comparison, overlap analysis (Jaccard, rank correlation),
-model registry, and verified benchmark evaluation serving for Mode B.
+MoodGraph Giai đoạn 5: Dịch vụ Phòng Thí nghiệm Gợi ý (Recommendation Lab Application Service).
+Cung cấp chức năng so sánh đối chiếu đa mô hình, phân tích độ trùng lặp (Jaccard, tương quan thứ hạng Spearman),
+sổ đăng ký mô hình (model registry) và báo cáo kiểm định benchmark chính thức cho Chế độ Nghiên cứu (Mode B Lab).
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ logger = logging.getLogger("recommender.services.lab_service")
 
 
 class LabService:
-    """Service orchestrating Mode B Recommendation Lab experiments and comparisons."""
+    """Dịch vụ điều phối các thực nghiệm và so sánh thuật toán gợi ý trong Phòng thí nghiệm Mode B."""
 
     def __init__(
         self,
@@ -39,7 +39,7 @@ class LabService:
         self.sqlite_repo = sqlite_repo or get_sqlite_state_repository()
 
     def get_registered_models(self) -> Dict[str, Any]:
-        """Returns catalog of models registered in the Recommendation Lab."""
+        """Trả về danh mục các mô hình gợi ý đã được đăng ký trong Phòng thí nghiệm."""
         models = self.metrics_repo.get_registered_models()
         return {
             "models": models,
@@ -47,11 +47,11 @@ class LabService:
         }
 
     def get_benchmark_metrics(self, split: str = "validation", metric_group: str = "all") -> Dict[str, Any]:
-        """Returns verified experimental offline evaluation metrics from Phase 4."""
+        """Trả về các chỉ số đo kiểm offline chính thức đã được xác nhận từ Giai đoạn 4."""
         return self.metrics_repo.get_metrics_comparison(split=split, metric_group=metric_group)
 
     def get_system_metadata(self) -> Dict[str, Any]:
-        """Returns end-to-end dataset size, split provenance, model dims, and system info."""
+        """Trả về siêu dữ liệu toàn diện về tập dữ liệu, nguồn gốc phân vùng dữ liệu và thông tin hệ thống."""
         return self.metrics_repo.get_system_metadata()
 
     def get_subgraph(self, user_id: int, movie_id: int) -> Dict[str, Any]:
@@ -73,8 +73,8 @@ class LabService:
         weight_kg: float = 0.5,
     ) -> Dict[str, Any]:
         """
-        Runs multiple recommendation models in parallel/sequence for user_id,
-        records latency, and computes cross-model alignment metrics (Jaccard, Rank correlation).
+        Chạy song song/tuần tự nhiều mô hình gợi ý cho cùng một người dùng user_id,
+        đo đạc thời gian phản hồi (latency), và tính toán các chỉ số tương đồng giữa các mô hình (Jaccard, Spearman).
         """
         results: Dict[str, Dict[str, Any]] = {}
 
@@ -160,7 +160,7 @@ class LabService:
                             for it in resp.recommendations
                         ]
                     elif model_id == "popularity":
-                        # Return top popular movies from catalog
+                        # Trả về các bộ phim phổ biến nhất từ danh mục
                         recs_items = [
                             {
                                 "movieId": mid,
@@ -172,7 +172,7 @@ class LabService:
                             for idx, mid in enumerate([318, 296, 356, 593, 260, 480, 2571, 110, 589, 527][:top_n])
                         ]
                 else:
-                    # Fallback if engine is not pre-warmed
+                    # Dự phòng khi động cơ chưa được nạp sẵn vào RAM
                     recs_items = []
             except Exception as e:
                 logger.error(f"Error executing model {model_id} for user {user_id}: {e}")
@@ -186,7 +186,7 @@ class LabService:
                 "recommendations": recs_items,
             }
 
-        # Compute Pairwise Overlap Metrics
+        # Tính toán các chỉ số trùng lặp cặp mô hình (Pairwise Overlap Metrics)
         pairwise_overlaps: List[Dict[str, Any]] = []
         model_keys = list(results.keys())
         for i in range(len(model_keys)):
@@ -197,7 +197,7 @@ class LabService:
                 list_a = results[m_a]["recommendations"]
                 list_b = results[m_b]["recommendations"]
 
-                # Deduplicate candidates while preserving first occurrence and rank order
+                # Khử trùng lặp các ứng viên trong khi vẫn bảo toàn thứ tự xuất hiện ban đầu và thứ hạng
                 seen_a: Set[int] = set()
                 ordered_a: List[Dict[str, Any]] = []
                 for it in list_a:
@@ -221,15 +221,14 @@ class LabService:
                 union = set_a | set_b
                 jaccard = len(intersection) / float(len(union)) if union else 0.0
 
-                # Compute Spearman rank correlation strictly on relative order of common items
-                # Semantics:
-                # - For k < 2 (0 or 1 common movie): rank correlation is undefined (return None).
-                # - For k >= 2: we extract the common movies in their relative rank order in Model A and Model B.
-                #   Assigning relative ranks 1..k ensures rho is mathematically well-defined and strictly in [-1.0, 1.0].
+                # Tính toán hệ số tương quan thứ hạng Spearman nghiêm ngặt trên thứ tự tương đối của các phần tử chung:
+                # - Nếu k < 2 (0 hoặc 1 phim chung): tương quan thứ hạng không xác định (trả về None).
+                # - Nếu k >= 2: trích xuất các phim chung theo thứ tự hạng tương đối trong Mô hình A và Mô hình B.
+                #   Gán thứ hạng tương đối 1..k bảo đảm rho chuẩn toán học và nằm nghiêm ngặt trong khoảng [-1.0, 1.0].
                 spearman_corr = None
                 k = len(intersection)
                 if k >= 2:
-                    # Filter items in intersection preserving order in list A and list B
+                    # Lọc các phần tử thuộc tập giao bảo toàn thứ tự trong danh sách A và danh sách B
                     common_in_a = [it["movieId"] for it in ordered_a if it["movieId"] in intersection]
                     common_in_b = [it["movieId"] for it in ordered_b if it["movieId"] in intersection]
 
@@ -248,7 +247,7 @@ class LabService:
                     "common_movies_count": len(intersection),
                 })
 
-        # Save session to SQLite if available
+        # Lưu phiên thực nghiệm vào SQLite nếu khả dụng
         session_id = f"lab_exp_{user_id}_{int(time.time() * 1000)}_{uuid.uuid4().hex[:6]}"
         try:
             self.sqlite_repo.log_experiment_session(
@@ -275,6 +274,7 @@ class LabService:
         }
 
 
+# Thể hiện Singleton của LabService
 _global_lab_service: Optional[LabService] = None
 
 
@@ -284,7 +284,7 @@ def get_lab_service(
     catalog_repo: Optional[MovieCatalogRepository] = None,
     sqlite_repo: Optional[SQLiteStateRepository] = None,
 ) -> LabService:
-    """Singleton getter for LabService."""
+    """Hàm lấy hoặc khởi tạo thể hiện Singleton của LabService."""
     global _global_lab_service
     if _global_lab_service is None or hybrid_engine is not None:
         _global_lab_service = LabService(hybrid_engine, metrics_repo, catalog_repo, sqlite_repo)

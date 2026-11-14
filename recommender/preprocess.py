@@ -71,14 +71,14 @@ def compute_file_sha256(filepath: Path) -> str:
 
 
 def compute_dir_sha256_and_size(directory: Path):
-    """Compute total size and file-level SHA256 list for a dataset directory."""
+    """Tính toán tổng dung lượng và danh sách mã băm SHA-256 mức tệp cho một thư mục tập dữ liệu."""
     total_size = 0
     file_hashes = {}
     for p in sorted(directory.rglob("*")):
         if p.is_file():
             sz = p.stat().st_size
             total_size += sz
-            # Compute hash for non-crc / non-empty files
+            # Tính mã băm cho các tệp không phải .crc và không rỗng
             if not p.name.endswith(".crc") and not p.name.startswith("."):
                 file_hashes[p.name] = {
                     "size_bytes": sz,
@@ -88,6 +88,7 @@ def compute_dir_sha256_and_size(directory: Path):
 
 
 def run_pipeline():
+    """Thực thi toàn bộ quy trình tiền xử lý dữ liệu MovieLens 25M và phân chia tập dữ liệu chuẩn hóa."""
     start_total_time = time.time()
     base_dir = Path(__file__).resolve().parent.parent
     raw_dir = base_dir / "data" / "raw" / "ml-25m"
@@ -312,7 +313,7 @@ def run_pipeline():
     print(f"Features completed in {step_times['features']:.2f}s.")
 
     # -------------------------------------------------------------------------
-    # 5. GENERATE MANIFEST AND INTEGRITY CHECKSUMS
+    # 5. TẠO TẬP TIN MANIFEST VÀ MÃ BĂM TOÀN VẸN DỮ LIỆU SHA-256
     # -------------------------------------------------------------------------
     print("\n" + "=" * 60)
     print("COMPUTING MANIFEST & SHA-256 CHECKSUMS")

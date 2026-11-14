@@ -24,7 +24,7 @@ def compute_ndcg_at_k(target_movie_id: int, rec_movie_ids: List[int], k: int) ->
     """Tính NDCG@K cho 1 target item."""
     top_k = rec_movie_ids[:k]
     if target_movie_id in top_k:
-        rank = top_k.index(target_movie_id) + 1  # 1-based rank
+        rank = top_k.index(target_movie_id) + 1  # Thứ hạng bắt đầu từ 1 (1-based rank)
         dcg = 1.0 / math.log2(rank + 1)
         idcg = 1.0  # Chỉ có 1 ground-truth positive item
         return dcg / idcg
@@ -46,6 +46,7 @@ def compute_mrr_at_k(target_movie_id: int, rec_movie_ids: List[int], k: int) -> 
 
 
 class ValidationEvaluator:
+    """Bộ đánh giá hiệu năng offline trên tập dữ liệu Validation cho hệ gợi ý Knowledge Graph."""
     def __init__(self, data_root: Path, positive_threshold: float = 3.5):
         self.data_root = Path(data_root)
         self.positive_threshold = positive_threshold

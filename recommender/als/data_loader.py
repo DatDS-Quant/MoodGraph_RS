@@ -67,7 +67,7 @@ def _validate_schema(df: DataFrame, dataset_name: str, expected_fields: dict) ->
     """
     actual_fields = {field.name: field.dataType for field in df.schema.fields}
 
-    # Check for missing columns
+    # Kiểm tra các cột bị thiếu
     missing_cols = [col for col in expected_fields if col not in actual_fields]
     if missing_cols:
         raise ValueError(
@@ -75,16 +75,16 @@ def _validate_schema(df: DataFrame, dataset_name: str, expected_fields: dict) ->
             f"Actual columns found: {list(actual_fields.keys())}"
         )
 
-    # Check for incompatible data types
+    # Kiểm tra các kiểu dữ liệu không tương thích
     type_mismatches = []
     for col, expected_type in expected_fields.items():
         actual_type = actual_fields[col]
-        # Allow FloatType and DoubleType for ratings interchangeably
+        # Chấp nhận FloatType và DoubleType thay thế cho nhau đối với ratings
         if isinstance(expected_type, (FloatType, DoubleType)) and isinstance(
             actual_type, (FloatType, DoubleType)
         ):
             continue
-        # Allow LongType and IntegerType for timestamps or IDs if compatible
+        # Chấp nhận LongType và IntegerType cho timestamps hoặc IDs nếu tương thích
         if isinstance(expected_type, LongType) and isinstance(actual_type, (LongType, IntegerType)):
             continue
         if actual_type != expected_type:

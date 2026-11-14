@@ -16,7 +16,7 @@ import sys
 import time
 from pathlib import Path
 
-# Ensure worker Python points to current environment executable on Windows
+# Đảm bảo tiến trình worker của Spark trỏ chính xác vào Python thực thi trên Windows
 os.environ["PYSPARK_PYTHON"] = sys.executable
 os.environ["PYSPARK_DRIVER_PYTHON"] = sys.executable
 
@@ -33,7 +33,7 @@ from pyspark.sql.types import (
 
 
 def get_spark_session(app_name: str = "MoodGraph_EDA") -> SparkSession:
-    """Initialize an optimized SparkSession for local execution on Windows 11."""
+    """Khởi tạo SparkSession tối ưu hóa cho thực thi cục bộ trên Windows 11."""
     return (
         SparkSession.builder.appName(app_name)
         .master("local[*]")
@@ -49,7 +49,7 @@ def get_spark_session(app_name: str = "MoodGraph_EDA") -> SparkSession:
 
 
 def load_datasets(spark: SparkSession, raw_data_dir: Path):
-    """Load MovieLens 25M CSVs using predefined strict schemas."""
+    """Nạp các tệp CSV của bộ dữ liệu MovieLens 25M bằng lược đồ định nghĩa trước nghiêm ngặt."""
     ratings_schema = StructType([
         StructField("userId", IntegerType(), nullable=False),
         StructField("movieId", IntegerType(), nullable=False),
@@ -134,7 +134,7 @@ def load_datasets(spark: SparkSession, raw_data_dir: Path):
 
 
 def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Path):
-    """Execute all EDA metrics using Spark transformations and write comprehensive report."""
+    """Thực thi toàn bộ các phép biến đổi Spark để tính toán chỉ số EDA và xuất báo cáo toàn diện."""
     print("=" * 80)
     print("STARTING PYSPARK EDA ON MOVIELENS 25M")
     print("=" * 80)
@@ -144,7 +144,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
         load_datasets(spark, raw_data_dir)
     )
 
-    # Cache frequently referenced DataFrames
+    # Lưu vào bộ nhớ đệm Cache các DataFrame được tham chiếu thường xuyên
     ratings_df.cache()
     movies_df.cache()
 
@@ -153,13 +153,13 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     print(f"Total ratings loaded: {total_ratings:,}")
     print(f"Total movies in catalog: {total_movies_catalog:,}")
 
-    # 1. User & Movie Cardinality & Sparsity
+    # 1. Lực lượng Người dùng & Phim cùng Độ thưa Ma trận
     print("\n--- [1] CARDINALITY & MATRIX SPARSITY ---")
     distinct_users = ratings_df.select("userId").distinct().count()
     distinct_movies_rated = ratings_df.select("movieId").distinct().count()
     unrated_movies = total_movies_catalog - distinct_movies_rated
 
-    # Sparsity calculation
+    # Tính toán độ thưa ma trận
     theoretical_entries_active = distinct_users * distinct_movies_rated
     theoretical_entries_catalog = distinct_users * total_movies_catalog
     sparsity_active = 1.0 - (total_ratings / theoretical_entries_active)
@@ -171,7 +171,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     print(f"User-Movie Matrix Sparsity (Active):  {sparsity_active * 100:.4f}% (density = {(1 - sparsity_active) * 100:.4f}%)")
     print(f"User-Movie Matrix Sparsity (Catalog): {sparsity_catalog * 100:.4f}% (density = {(1 - sparsity_catalog) * 100:.4f}%)")
 
-    # 2. Duplicate Check
+    # 2. Kiểm tra trùng lặp bản ghi
     print("\n--- [2] DUPLICATE CHECK (userId, movieId) ---")
     duplicate_records_count = (
         ratings_df.groupBy("userId", "movieId")
@@ -181,7 +181,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     )
     print(f"Duplicate (userId, movieId) pairs count: {duplicate_records_count}")
 
-    # 3. Rating Distribution & Summary Statistics
+    # 3. Phân phối điểm đánh giá & Thống kê tóm tắt
     print("\n--- [3] RATING DISTRIBUTION & SUMMARY STATS ---")
     rating_stats_row = ratings_df.select(
         F.mean("rating").alias("mean_rating"),
@@ -209,7 +209,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
         rating_dist_list.append((float(r["rating"]), int(r["count"]), pct))
         print(f"  Rating {r['rating']:3.1f}: {r['count']:10,d} ({pct:5.2f}%)")
 
-    # 4. User Rating Distribution (Activity Levels)
+    # 4. Phân phối đánh giá của Người dùng (Mức độ hoạt động)
     print("\n--- [4] USER ACTIVITY LEVEL DISTRIBUTION ---")
     user_counts_df = ratings_df.groupBy("userId").agg(F.count("*").alias("num_ratings"))
     user_quantiles = user_counts_df.select(
@@ -228,7 +228,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     print(f"User percentiles: p5={u_quantiles_vals[0]}, p25={u_quantiles_vals[1]}, p50 (median)={u_quantiles_vals[2]}, "
           f"p75={u_quantiles_vals[3]}, p90={u_quantiles_vals[4]}, p95={u_quantiles_vals[5]}, p99={u_quantiles_vals[6]}, p99.9={u_quantiles_vals[7]}")
 
-    # 5. Movie Popularity Distribution (Long-tail)
+    # 5. Phân phối mức độ phổ biến của Phim (Hiện tượng đuôi dài)
     print("\n--- [5] MOVIE POPULARITY DISTRIBUTION ---")
     movie_counts_df = ratings_df.groupBy("movieId").agg(F.count("*").alias("num_ratings"))
     movie_quantiles = movie_counts_df.select(
@@ -247,21 +247,21 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     print(f"Movie percentiles: p5={m_quantiles_vals[0]}, p25={m_quantiles_vals[1]}, p50 (median)={m_quantiles_vals[2]}, "
           f"p75={m_quantiles_vals[3]}, p90={m_quantiles_vals[4]}, p95={m_quantiles_vals[5]}, p99={m_quantiles_vals[6]}, p99.9={m_quantiles_vals[7]}")
 
-    # Long tail check: how many movies have <= 5 ratings?
+    # Kiểm tra hiện tượng đuôi dài: bao nhiêu phim có <= 5 lượt đánh giá?
     cold_movies_5 = movie_counts_df.filter(F.col("num_ratings") <= 5).count()
     cold_movies_10 = movie_counts_df.filter(F.col("num_ratings") <= 10).count()
     print(f"Movies with <= 5 ratings:  {cold_movies_5:,} ({cold_movies_5 / distinct_movies_rated * 100:.2f}% of rated movies)")
     print(f"Movies with <= 10 ratings: {cold_movies_10:,} ({cold_movies_10 / distinct_movies_rated * 100:.2f}% of rated movies)")
 
-    # 6. Coverage of Genre, Tags, and Tag Genome
+    # 6. Phân tích độ phủ của Thể loại, Thẻ nhãn và Tag Genome
     print("\n--- [6] COVERAGE ANALYSIS (GENRE, TAGS, TAG GENOME) ---")
-    # Genre coverage
+    # Độ phủ thể loại
     no_genres_count = movies_df.filter(F.col("genres") == "(no genres listed)").count()
     valid_genres_count = total_movies_catalog - no_genres_count
     print(f"Movies with valid genres: {valid_genres_count:,} ({valid_genres_count / total_movies_catalog * 100:.2f}%)")
     print(f"Movies with '(no genres listed)': {no_genres_count:,} ({no_genres_count / total_movies_catalog * 100:.2f}%)")
 
-    # Genre breakdown
+    # Chi tiết phân bố thể loại
     genre_freq_rows = (
         movies_df.withColumn("genre", F.explode(F.split("genres", "\\|")))
         .groupBy("genre")
@@ -270,7 +270,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
         .collect()
     )
 
-    # Tags coverage
+    # Độ phủ thẻ nhãn
     distinct_tagged_movies = tags_df.select("movieId").distinct().count()
     distinct_tagging_users = tags_df.select("userId").distinct().count()
     total_tags_records = tags_df.count()
@@ -280,13 +280,13 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     print(f"Users applying tags:      {distinct_tagging_users:,} ({distinct_tagging_users / distinct_users * 100:.2f}% of rated users)")
     print(f"Movies with >= 1 user tag:{distinct_tagged_movies:,} ({distinct_tagged_movies / total_movies_catalog * 100:.2f}% of catalog)")
 
-    # Tag Genome coverage
+    # Độ phủ Tag Genome
     genome_movies_df = genome_scores_df.select("movieId").distinct()
     genome_movies_df.cache()
     distinct_genome_movies = genome_movies_df.count()
     total_genome_tags = genome_tags_df.count()
 
-    # Join ratings with genome movies to find rating coverage
+    # Nối kết ratings với phim có genome để tính toán độ phủ tương tác
     ratings_with_genome_df = ratings_df.join(genome_movies_df, on="movieId", how="inner")
     ratings_on_genome_movies = ratings_with_genome_df.count()
     pct_ratings_on_genome = (ratings_on_genome_movies / total_ratings) * 100
@@ -301,7 +301,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     print(f"Ratings on Tag Genome Movies:      {ratings_on_genome_movies:,} out of {total_ratings:,}")
     print(f"CRITICAL RATIO: Ratings coverage on Genome Movies: {pct_ratings_on_genome:.2f}%")
 
-    # 7. Temporal Analysis (Timestamps)
+    # 7. Phân tích dòng thời gian tương tác (Timestamps)
     print("\n--- [7] TEMPORAL TIMELINE ANALYSIS ---")
     ratings_time_row = ratings_df.select(
         F.min("timestamp").alias("min_ts"),
@@ -322,7 +322,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     print(f"Tags Time Window:    {tags_time_row['min_dt']} -> {tags_time_row['max_dt']}")
     print(f"Tags Min/Max TS:     {tags_time_row['min_ts']} -> {tags_time_row['max_ts']}")
 
-    # Yearly breakdown of ratings
+    # Thống kê số lượng đánh giá theo từng năm
     yearly_ratings_rows = (
         ratings_df.withColumn("year", F.year(F.from_unixtime("timestamp")))
         .groupBy("year")
@@ -334,7 +334,7 @@ def run_full_eda(spark: SparkSession, raw_data_dir: Path, output_report_path: Pa
     elapsed_time = time.time() - start_time
     print(f"\nAll PySpark EDA computations completed in {elapsed_time:.2f} seconds.")
 
-    # 8. Write Markdown Documentation
+    # 8. Ghi tài liệu báo cáo định dạng Markdown
     print(f"\nWriting comprehensive EDA report to {output_report_path}...")
     output_report_path.parent.mkdir(parents=True, exist_ok=True)
 

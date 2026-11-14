@@ -1,7 +1,7 @@
 """
-MoodGraph Phase 5: Production-Ready FastAPI Application.
-Integrates Movie Discovery (Mode A), Recommendation Lab (Mode B),
-SQLite state persistence, pre-warmed lifespan loading, and CORS support.
+MoodGraph Giai đoạn 5: Ứng dụng FastAPI Sẵn sàng Vận hành Thực tế (Production-Ready FastAPI Application).
+Tích hợp Chế độ Khám phá Phim (Mode A), Chế độ Phòng thí nghiệm Gợi ý (Mode B),
+lưu trữ trạng thái ứng dụng bằng SQLite WAL, cơ chế nạp trước lifespan tăng tốc, và hỗ trợ CORS.
 """
 
 from __future__ import annotations
@@ -41,41 +41,41 @@ logger = logging.getLogger("recommender.api")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
-    FastAPI Lifespan Manager:
-    Pre-warms in-memory movie catalog, train seen CSR index, and hybrid engines
-    to eliminate cold-start latency spikes.
+    Bộ quản lý Vòng đời Ứng dụng FastAPI (Lifespan Manager):
+    Nạp trước toàn bộ danh mục phim vào RAM, lập chỉ mục ma trận thưa CSR tập Train, và khởi động Hybrid Engine
+    nhằm triệt tiêu hoàn toàn hiện tượng trễ khởi động nguội (cold-start latency spikes).
     """
     logger.info("Starting MoodGraph Phase 5 API Lifespan Pre-warming...")
 
-    # 1. Pre-warm Movie Catalog (~4.35 MB)
+    # 1. Nạp trước Danh mục Phim in-memory (~4.35 MB)
     catalog_repo = get_catalog_repository()
     catalog_repo.ensure_loaded()
     logger.info(f"Movie Catalog pre-warmed: {catalog_repo.get_movie_count()} movies indexed.")
 
-    # 2. Pre-warm User History CSR Index (~50 MB)
+    # 2. Nạp trước Chỉ mục CSR Lịch sử Người dùng (~50 MB)
     history_repo = get_user_history_repository()
     history_repo.warmup_index()
     logger.info("User History CSR index pre-warmed.")
 
-    # 3. Initialize Metrics and SQLite repositories
+    # 3. Khởi tạo kho lưu trữ Metrics thực nghiệm và SQLite trạng thái
     metrics_repo = get_research_metrics_repository()
     sqlite_repo = get_sqlite_state_repository()
 
-    # 4. Initialize Hybrid Engine
+    # 4. Khởi tạo Động cơ Gợi ý Lai (Hybrid Engine)
     hybrid_engine = None
     try:
         from recommender.hybrid.engine import HybridRecommenderService
         from recommender.hybrid.config import HybridConfig
         config = HybridConfig(cache_enabled=True, cross_score_als=True)
         hybrid_engine = HybridRecommenderService(config=config)
-        # Trigger warm-up of internal ALS model if available
+        # Kích hoạt nạp trước mô hình Spark ALS nội bộ nếu khả dụng
         if hasattr(hybrid_engine.als_service, "warmup"):
             hybrid_engine.als_service.warmup()
         logger.info("HybridRecommenderService pre-warmed successfully.")
     except Exception as e:
         logger.warning(f"HybridRecommenderService initialization note: {e}")
 
-    # 4b. Pre-warm Embedded Knowledge Graph snapshot cache (<0.5s)
+    # 4b. Nạp trước bộ đệm snapshot Đồ thị Tri thức nhúng (<0.5s)
     embedded_kg = None
     try:
         from recommender.kg.cache_manager import CacheManager
@@ -87,7 +87,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.warning(f"EmbeddedKnowledgeGraph pre-warm note: {e}")
 
-    # 5. Wire Application Services
+    # 5. Kết nối các Dịch vụ Nghiệp vụ Ứng dụng (Application Services)
     catalog_svc = CatalogService(catalog_repo=catalog_repo)
     user_svc = UserProfileService(history_repo=history_repo, catalog_repo=catalog_repo)
     explain_svc = ExplainabilityService(
@@ -107,7 +107,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         hybrid_engine=hybrid_engine,
     )
 
-    # Attach singletons to application state for dependency injection
+    # Gắn các thể hiện Singleton vào app.state phục vụ Tiêm Phụ thuộc (Dependency Injection)
     app.state.catalog_repo = catalog_repo
     app.state.history_repo = history_repo
     app.state.metrics_repo = metrics_repo
@@ -126,7 +126,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 def create_app() -> FastAPI:
-    """Factory function for creating the FastAPI application."""
+    """Hàm khởi tạo (Factory Function) để cấu hình và tạo đối tượng ứng dụng FastAPI."""
     application = FastAPI(
         title="MoodGraph Recommender API",
         description=(
@@ -138,7 +138,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Enable CORS for interactive UI clients
+    # Kích hoạt cấu hình CORS cho các ứng dụng web tương tác phía client
     application.add_middleware(
         CORSMiddleware,
         allow_origins=[
@@ -165,13 +165,13 @@ def create_app() -> FastAPI:
             response.headers["Expires"] = "0"
         return response
 
-    # Mount Routers
+    # Đăng ký các Bộ định tuyến (Mount Routers)
     application.include_router(system_router)
     application.include_router(discovery_router)
     application.include_router(lab_router)
     application.include_router(interaction_router)
 
-    # Mount Static Web Client (demo/ directory)
+    # Phục vụ Giao diện Web tĩnh (Mount Static Web Client demo/)
     from pathlib import Path
     from fastapi.staticfiles import StaticFiles
 

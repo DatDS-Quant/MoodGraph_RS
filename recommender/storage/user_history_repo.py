@@ -35,10 +35,15 @@ class UserHistoryRepository:
         self.train_split_path = self.data_root / "splits" / "train"
         self.csr_path = Path(csr_path) if csr_path else _DEFAULT_CSR_PATH
 
+        # Khóa đồng bộ đa luồng bảo vệ truy cập chỉ mục CSR
         self._lock = threading.RLock()
+        # Mảng vị trí bắt đầu và kết thúc của từng user trong ma trận CSR
         self._csr_offsets: Optional[np.ndarray] = None
+        # Mảng movieId tương ứng mà các user đã xem trong tập Train
         self._csr_mids: Optional[np.ndarray] = None
+        # Cờ đánh dấu trạng thái nạp dữ liệu CSR vào RAM
         self._is_csr_loaded: bool = False
+        # Bộ nhớ đệm danh sách đánh giá chi tiết của người dùng: userId -> List[Rating]
         self._user_ratings_cache: Dict[int, List[Dict[str, Any]]] = {}
 
     def warmup_index(self) -> None:
@@ -178,7 +183,7 @@ class UserHistoryRepository:
         }
 
 
-# Singleton UserHistoryRepository instance
+# Thể hiện Singleton của UserHistoryRepository
 _USER_HISTORY_REPO_INSTANCE: Optional[UserHistoryRepository] = None
 
 

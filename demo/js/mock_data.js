@@ -1,5 +1,5 @@
 /**
- * MOODGRAPH PHASE 6 - STANDALONE WEB PROTOTYPE MOCK DATA & RECOMMENDATION ENGINE
+ * HỆ THỐNG GỢI Ý ĐIỆN ẢNH MOODGRAPH - KHO DỮ LIỆU MẪU & BỘ MÁY ĐỀ XUẤT ĐỘC LẬP (STANDALONE PROTOTYPE)
  * File: js/mock_data.js
  * 
  * Bộ dữ liệu mẫu tự chứa phong phú và chuẩn xác 100% theo MovieLens 25M (ml-25m)
@@ -2746,6 +2746,15 @@
   // Tính điểm tức thì < 5ms (60 FPS) theo Vector Gu Sliders & Mood Selector
   // =========================================================================
   const MoodEngine = {
+    /**
+     * Tính toán điểm số tương thích động thời gian thực cho từng bộ phim trong catalog dựa trên vector thanh trượt sở thích, bộ lọc tâm trạng và thể loại khuếch đại (vòng lặp kín).
+     * Thuật toán kết hợp độ tương đồng Cosine giữa vector người dùng và tasteFeatures của phim, điểm đánh giá trung bình, thưởng tâm trạng và thưởng thể loại.
+     * @param {Object} sliders - Tọa độ thanh trượt sở thích (depth, pacing, auteur, tone)
+     * @param {string} selectedMood - Tâm trạng được chọn ('all', 'mind_bending', 'adrenaline_rush', ...)
+     * @param {Array<Object>} [targetCatalog] - Danh mục phim cần tính điểm (mặc định là CATALOG)
+     * @param {Object} [options] - Tùy chọn nâng cao (boostedGenres, favoriteGenres, isColdStart)
+     * @returns {Array<Object>} Danh sách phim đã được gán điểm động và sắp xếp giảm dần theo dynamicScore
+     */
     calculateDynamicScores: function(sliders, selectedMood, targetCatalog, options) {
       const catalog = targetCatalog || CATALOG;
       const opts = options || {};

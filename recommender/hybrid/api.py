@@ -31,6 +31,7 @@ _service_instance: Optional[HybridRecommenderService] = None
 
 
 def get_api_service() -> HybridRecommenderService:
+    """Lấy thể hiện dịch vụ gợi ý lai kết hợp (HybridRecommenderService) toàn cục."""
     global _service_instance
     if _service_instance is None:
         _service_instance = get_hybrid_service()
@@ -38,12 +39,14 @@ def get_api_service() -> HybridRecommenderService:
 
 
 def set_api_service(service: HybridRecommenderService) -> None:
+    """Gán thể hiện dịch vụ gợi ý lai kết hợp (dùng cho testing và mocking)."""
     global _service_instance
     _service_instance = service
 
 
 # Pydantic Schemas cho API
 class RecommendationItemSchema(BaseModel):
+    """Schema dữ liệu cho một mục phim gợi ý trong kết quả trả về của API."""
     userId: int
     movieId: int
     title: Optional[str] = None
@@ -61,12 +64,14 @@ class RecommendationItemSchema(BaseModel):
 
 
 class RecommendationResponseSchema(BaseModel):
+    """Schema dữ liệu phản hồi danh sách gợi ý cho người dùng kèm siêu dữ liệu."""
     userId: int
     recommendations: List[RecommendationItemSchema]
     metadata: Dict[str, Any]
 
 
 class HealthResponseSchema(BaseModel):
+    """Schema dữ liệu phản hồi trạng thái sức khỏe và độ sẵn sàng của hệ thống."""
     status: str
     service: str
     version: str
@@ -75,6 +80,7 @@ class HealthResponseSchema(BaseModel):
 
 
 class ModelInfoSchema(BaseModel):
+    """Schema dữ liệu cung cấp thông tin cấu hình và siêu dữ liệu các mô hình đăng ký."""
     hybrid_version: str
     als_champion: str
     kg_paths: List[str]

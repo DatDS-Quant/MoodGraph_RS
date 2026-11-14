@@ -1,5 +1,5 @@
 """
-MoodGraph - Task 3A: Evaluation Engine for Top-N Recommender Systems
+MoodGraph - Nhiệm vụ 3A: Động cơ Đánh giá Hệ thống Gợi ý Top-N (Evaluation Engine)
 Mô-đun: M02 - Động cơ đánh giá Top-N đa chỉ số chuẩn khoa học.
 
 Cung cấp công cụ đánh giá ngoại tuyến (offline evaluation) chính xác theo giao thức
@@ -133,7 +133,7 @@ def sort_and_rank_candidates(
             raise ValueError(f"Duplicate movieId detected in scored candidates: {mid}")
         seen_ids.add(mid)
 
-    # Sort: raw_score descending (-score), movieId ascending (+mid)
+    # Sắp xếp: raw_score giảm dần (-score), movieId tăng dần (+mid)
     sorted_items = sorted(items_list, key=lambda x: (-x[1], x[0]))
 
     if k is not None:
@@ -164,7 +164,7 @@ def compute_single_user_metrics(
     """
     validate_k(k)
 
-    # Validate no duplicate IDs in recommendations
+    # Xác thực không có movieId trùng lặp trong danh sách gợi ý
     top_k = list(recommended_movie_ids[:k])
     seen: Set[int] = set()
     for mid in top_k:
@@ -172,7 +172,7 @@ def compute_single_user_metrics(
             raise ValueError(f"Duplicate movieId {mid} detected in recommendation list")
         seen.add(mid)
 
-    # Search for target in top_k
+    # Tìm kiếm phim mục tiêu trong danh sách top_k
     rank_found: Optional[int] = None
     for idx, mid in enumerate(top_k, start=1):
         if mid == target_movie_id:
@@ -296,7 +296,7 @@ class TopNEvaluator:
         Returns:
             Bản đồ k -> EvaluationSummary (tổng hợp đầy đủ chỉ số HR, Recall, Precision, NDCG, MRR, Coverage).
         """
-        # Normalize targets to HeldOutTarget
+        # Chuẩn hóa thông tin mục tiêu sang đối tượng HeldOutTarget
         norm_targets: Dict[int, HeldOutTarget] = {}
         for uid, t in targets.items():
             if isinstance(t, HeldOutTarget):
@@ -339,7 +339,7 @@ class TopNEvaluator:
             users_missing_rec = 0
             unique_recommended_movies: Set[int] = set()
 
-            # Evaluate positive cohort (Primary Evaluation)
+            # Đánh giá trên nhóm thuần tập mục tiêu dương (Đánh giá chính)
             for uid, target in positive_users.items():
                 user_rec = recommendations.get(uid, [])
                 if len(user_rec) > 0:
@@ -373,7 +373,7 @@ class TopNEvaluator:
                 avg_ndcg = 0.0
                 avg_mrr = 0.0
 
-            # Catalog coverage
+            # Độ bao phủ danh mục (Catalog coverage)
             num_unique_rec = len(unique_recommended_movies)
             cov_full = (
                 num_unique_rec / float(self.catalog_size)
@@ -386,10 +386,10 @@ class TopNEvaluator:
                 else None
             )
 
-            # Diagnostic for all users (if requested)
+            # Chỉ số chẩn đoán cho toàn bộ người dùng (nếu được yêu cầu)
             diagnostic_all: Optional[Dict[str, float]] = None
             if total_target_users > 0:
-                # Under all-users diagnostic, non-positive users get hit=0.0
+                # Trong chẩn đoán toàn bộ người dùng, người dùng không có mục tiêu dương nhận hit=0.0
                 diag_hr = sum_hit / float(total_target_users)
                 diagnostic_all = {
                     "all_users_hit_rate": diag_hr,

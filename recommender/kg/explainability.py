@@ -39,7 +39,7 @@ def extract_subgraph_for_pair(
     edges: List[Dict[str, Any]] = []
     node_ids: Set[str] = set()
 
-    # 1. User Node
+    # 1. Đỉnh Khán giả (User Node)
     user_node_id = f"user_{user_id}"
     nodes.append({
         "id": user_node_id,
@@ -49,7 +49,7 @@ def extract_subgraph_for_pair(
     })
     node_ids.add(user_node_id)
 
-    # 2. Recommended Movie Node
+    # 2. Đỉnh Phim được Đề xuất (Recommended Movie Node)
     cand_movie = getattr(graph, "movies", {}).get(movie_id, {})
     cand_title = cand_movie.get("title", f"Movie #{movie_id}")
     cand_node_id = f"cand_{movie_id}"

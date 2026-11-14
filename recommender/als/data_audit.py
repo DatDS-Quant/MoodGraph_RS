@@ -30,7 +30,7 @@ def validate_train_input_constraints(
     - Tính toàn vẹn tham chiếu: Toàn bộ movieId trong Train phải tồn tại trong danh mục phim.
     - Không tồn tại đánh giá bằng 0.0 giả tạo.
     """
-    # 1. Single-pass aggregation for all row-level constraint checks
+    # 1. Phép gom cụm một lượt kiểm tra toàn bộ ràng buộc cấp dòng
     agg_row = train_df.select(
         F.count(F.lit(1)).alias("total_train_rows"),
         F.count(F.when(F.col("userId").isNull() | (F.col("userId") <= 0), 1)).alias("null_userId_count"),
@@ -51,14 +51,14 @@ def validate_train_input_constraints(
     zero_rating_cnt = agg_row["zero_rating_count"] if agg_row else 0
     step_violation_cnt = agg_row["step_violation_count"] if agg_row else 0
 
-    # 2. Duplicate (userId, movieId) check
+    # 2. Kiểm tra trùng lặp cặp (userId, movieId)
     if total_rows > 0:
         distinct_pairs = train_df.select("userId", "movieId").distinct().count()
         duplicate_pair_cnt = total_rows - distinct_pairs
     else:
         duplicate_pair_cnt = 0
 
-    # 3. Referential integrity: train movieId in catalog movies
+    # 3. Tính toàn vẹn tham chiếu: movieId trong Train phải tồn tại trong danh mục movies
     if total_rows > 0:
         train_movie_ids = train_df.select("movieId").distinct()
         catalog_movie_ids = movies_df.select("movieId").distinct()
@@ -113,7 +113,7 @@ def audit_als_input_distribution(
     catalog_movie_count = movies_df.select("movieId").distinct().count()
 
     if total_ratings > 0:
-        # User activity distribution
+        # Phân phối mức độ hoạt động của người dùng
         user_counts_df = train_df.groupBy("userId").agg(F.count("movieId").alias("user_ratings"))
         user_stats = user_counts_df.select(
             F.min("user_ratings").alias("min_val"),
@@ -128,7 +128,7 @@ def audit_als_input_distribution(
             "max": int(user_stats["max_val"]) if user_stats else 0,
         }
 
-        # Movie popularity distribution
+        # Phân phối mức độ phổ biến của phim
         movie_counts_df = train_df.groupBy("movieId").agg(F.count("userId").alias("movie_ratings"))
         movie_stats = movie_counts_df.select(
             F.min("movie_ratings").alias("min_val"),
@@ -143,7 +143,7 @@ def audit_als_input_distribution(
             "max": int(movie_stats["max_val"]) if movie_stats else 0,
         }
 
-        # Long-tail popularity buckets among train-known movies in a single pass
+        # Phân nhóm độ phổ biến đuôi dài cho các phim đã biết trong Train bằng một lượt quét
         bucket_row = movie_counts_df.select(
             F.count(F.when(F.col("movie_ratings").between(1, 5), 1)).alias("b_1_5"),
             F.count(F.when(F.col("movie_ratings").between(6, 10), 1)).alias("b_6_10"),
@@ -160,16 +160,16 @@ def audit_als_input_distribution(
         movies_6_to_10 = 0
         movies_gt_10 = 0
 
-    # Movies with 0 train ratings
+    # Số lượng phim có 0 lượt đánh giá trong Train
     catalog_zero_train_ratings = catalog_movie_count - distinct_train_movies
 
-    # Density & Sparsity calculations
-    # 1. Train-known movie universe
+    # Tính toán mật độ và độ thưa thớt ma trận
+    # 1. Không gian phim đã biết trong Train
     known_cells = float(distinct_users) * float(distinct_train_movies)
     density_known = float(total_ratings) / known_cells if known_cells > 0 else 0.0
     sparsity_known = 1.0 - density_known
 
-    # 2. Full catalog universe
+    # 2. Không gian toàn bộ danh mục phim
     catalog_cells = float(distinct_users) * float(catalog_movie_count)
     density_catalog = float(total_ratings) / catalog_cells if catalog_cells > 0 else 0.0
     sparsity_catalog = 1.0 - density_catalog
@@ -227,7 +227,7 @@ def audit_movie_cold_start(
     train_unseen_count = catalog_count - train_known_count
     unseen_ratio = (float(train_unseen_count) / float(catalog_count)) * 100.0 if catalog_count > 0 else 0.0
 
-    # Count movies with exactly 1 rating in train
+    # Đếm số lượng phim chỉ có đúng 1 lượt đánh giá trong Train
     if train_df.count() > 0:
         single_rating_movies_count = (
             train_df.groupBy("movieId")
@@ -238,13 +238,13 @@ def audit_movie_cold_start(
     else:
         single_rating_movies_count = 0
 
-    # 1. Overall Validation Coverage
+    # 1. Độ bao phủ tập Validation tổng thể
     val_total = val_df.count()
     val_scoreable = val_df.join(train_movie_ids, on="movieId", how="left_semi").count() if val_total > 0 else 0
     val_unscorable = val_total - val_scoreable
     val_coverage_rate = (float(val_scoreable) / float(val_total)) * 100.0 if val_total > 0 else 0.0
 
-    # 2. Positive-Target Validation Cohort (rating >= 3.5)
+    # 2. Nhóm thuần tập mục tiêu Validation dương (rating >= 3.5)
     val_pos_df = val_df.filter(F.col("rating") >= 3.5)
     val_pos_total = val_pos_df.count()
     val_pos_scoreable = (

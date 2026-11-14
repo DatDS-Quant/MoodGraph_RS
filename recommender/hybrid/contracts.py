@@ -94,6 +94,7 @@ class HybridRecommendationResponse:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi toàn bộ kết quả phản hồi sang dictionary."""
         return {
             "userId": int(self.userId),
             "recommendations": [item.to_dict() for item in self.recommendations],
