@@ -1252,6 +1252,97 @@
   // Dynamic Closed-Loop Feedback: Phản hồi ngược thời gian thực khi đánh giá 4-5★ (Item 2)
   // =========================================================================
 
+  function renderRatingStarsSvg(movieId, activeRating) {
+    const mid = Number(movieId);
+    const ratingVal = Number(activeRating) || 0;
+
+    return [1, 2, 3, 4, 5].map(starIndex => {
+      const valLeft = starIndex - 0.5;
+      const valRight = starIndex;
+      const isFull = ratingVal >= valRight;
+      const isHalf = !isFull && ratingVal >= valLeft;
+
+      return `
+        <div class="relative inline-block w-6 h-6 select-none group/star" data-star-index="${starIndex}">
+          <svg class="w-6 h-6 pointer-events-none transition-transform duration-150 group-hover/star:scale-110 drop-shadow-sm" viewBox="0 0 24 24">
+            <defs>
+              <linearGradient id="half-star-grad-${mid}-${starIndex}">
+                <stop offset="50%" stop-color="#F59E0B"/>
+                <stop offset="50%" stop-color="#334155"/>
+              </linearGradient>
+            </defs>
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                     fill="${isFull ? '#F59E0B' : (isHalf ? `url(#half-star-grad-${mid}-${starIndex})` : 'none')}"
+                     stroke="${isFull || isHalf ? '#F59E0B' : '#475569'}"
+                     stroke-width="1.8"/>
+          </svg>
+          <button type="button" 
+                  onclick="MoodGraphApp.submitRating(${mid}, ${valLeft})" 
+                  onmouseenter="MoodGraphApp.previewRating(${mid}, ${valLeft})"
+                  class="absolute left-0 top-0 w-1/2 h-full z-10 cursor-pointer focus:outline-none"
+                  aria-label="${valLeft} sao">
+          </button>
+          <button type="button" 
+                  onclick="MoodGraphApp.submitRating(${mid}, ${valRight})" 
+                  onmouseenter="MoodGraphApp.previewRating(${mid}, ${valRight})"
+                  class="absolute right-0 top-0 w-1/2 h-full z-10 cursor-pointer focus:outline-none"
+                  aria-label="${valRight} sao">
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function previewRating(movieId, previewScore) {
+    const mid = Number(movieId);
+    const scoreVal = Number(previewScore) || 0;
+    const starsContainer = document.getElementById(`modal-stars-container-${mid}`);
+    const labelEl = document.getElementById(`modal-rating-label-${mid}`);
+    const scoreBadge = document.getElementById(`modal-rating-score-${mid}`);
+
+    if (starsContainer) {
+      starsContainer.innerHTML = renderRatingStarsSvg(mid, scoreVal);
+    }
+    if (labelEl) {
+      labelEl.textContent = RATING_LABELS[scoreVal] || `${scoreVal.toFixed(1)}★`;
+      labelEl.classList.remove('text-slate-400');
+      labelEl.classList.add('text-amber-400');
+    }
+    if (scoreBadge) {
+      scoreBadge.textContent = scoreVal.toFixed(1) + '★';
+      scoreBadge.className = 'text-amber-400 font-mono font-bold transition-all duration-150';
+    }
+  }
+
+  function resetRatingPreview(movieId) {
+    const mid = Number(movieId);
+    const currentRating = MoodGraphState.userRatings[mid] || 0;
+    const starsContainer = document.getElementById(`modal-stars-container-${mid}`);
+    const labelEl = document.getElementById(`modal-rating-label-${mid}`);
+    const scoreBadge = document.getElementById(`modal-rating-score-${mid}`);
+
+    if (starsContainer) {
+      starsContainer.innerHTML = renderRatingStarsSvg(mid, currentRating);
+    }
+    if (labelEl) {
+      if (currentRating > 0) {
+        labelEl.textContent = (RATING_LABELS[currentRating] || `${currentRating.toFixed(1)}★`) + ' ✓ Đã lưu';
+        labelEl.classList.remove('text-slate-400');
+        labelEl.classList.add('text-amber-300');
+      } else {
+        labelEl.textContent = 'Nhấp nửa trái/phải để chấm 0.5★ — 5.0★';
+        labelEl.classList.remove('text-amber-400', 'text-amber-300');
+        labelEl.classList.add('text-slate-400');
+      }
+    }
+    if (scoreBadge) {
+      scoreBadge.textContent = currentRating > 0 ? currentRating.toFixed(1) + '★' : '0.0★';
+      scoreBadge.className = currentRating > 0 
+        ? 'text-amber-400 font-mono font-bold transition-all duration-150' 
+        : 'text-slate-500 font-mono font-bold transition-all duration-150';
+    }
+  }
+
   function submitRating(movieId, score) {
     const mid = Number(movieId);
     const scoreNum = Number(score);
@@ -1267,6 +1358,28 @@
     MoodGraphState.liveSessionRatings[mid] = scoreNum;
     MoodGraphState.hasUserRatedInLiveSession = true;
     saveStorageJson("moodgraph_live_user_ratings", MoodGraphState.liveSessionRatings);
+
+    // Cập nhật giao diện modal tức thì (Live Visual Feedback)
+    const starsContainer = document.getElementById(`modal-stars-container-${mid}`);
+    const labelEl = document.getElementById(`modal-rating-label-${mid}`);
+    const scoreBadge = document.getElementById(`modal-rating-score-${mid}`);
+
+    if (starsContainer) {
+      starsContainer.innerHTML = renderRatingStarsSvg(mid, scoreNum);
+    }
+    if (labelEl) {
+      labelEl.textContent = (RATING_LABELS[scoreNum] || `${scoreNum.toFixed(1)}★`) + ' ✓ Đã lưu thành công';
+      labelEl.classList.remove('text-slate-400');
+      labelEl.classList.add('text-amber-300', 'font-semibold');
+    }
+    if (scoreBadge) {
+      scoreBadge.textContent = scoreNum.toFixed(1) + '★';
+      scoreBadge.className = 'text-amber-400 font-mono font-bold transition-transform duration-200 scale-110';
+      setTimeout(() => {
+        const badge = document.getElementById(`modal-rating-score-${mid}`);
+        if (badge) badge.classList.remove('scale-110');
+      }, 250);
+    }
 
     // Nếu đang ở Persona Khán giả Mới, người dùng đã có tương tác nên không còn là cold-start
     if (MoodGraphState.activePersonaId === 'user_cold' || MoodGraphState.activePersonaId === 'user42') {
@@ -1703,50 +1816,20 @@
             </button>
 
             <!-- Bộ Chấm Sao Cá Nhân 10 Nấc Nửa Sao (0.5★ - 5.0★) (ISS-04 / F10) -->
-            <div class="p-3 rounded-lg bg-[#141A24] border border-white/10 space-y-1.5 text-center">
+            <div id="modal-rating-card-${movie.movieId}" 
+                 onmouseleave="MoodGraphApp.resetRatingPreview(${movie.movieId})" 
+                 class="p-3 rounded-lg bg-[#141A24] border border-white/10 space-y-1.5 text-center transition-all duration-200 hover:border-amber-500/30">
               <div class="flex items-center justify-between text-[11px] text-slate-400 shrink-0 whitespace-nowrap px-1">
                 <span>Đánh giá của bạn:</span>
-                <span class="text-amber-400 font-mono font-bold">${userRating > 0 ? userRating.toFixed(1) + '★' : '0.0★'}</span>
+                <span id="modal-rating-score-${movie.movieId}" class="${userRating > 0 ? 'text-amber-400' : 'text-slate-500'} font-mono font-bold transition-all duration-200">
+                  ${userRating > 0 ? userRating.toFixed(1) + '★' : '0.0★'}
+                </span>
               </div>
-              <div class="flex items-center justify-center gap-1.5 py-1">
-                ${[1, 2, 3, 4, 5].map(starIndex => {
-                  const valLeft = starIndex - 0.5;
-                  const valRight = starIndex;
-                  const isFull = userRating >= valRight;
-                  const isHalf = !isFull && userRating >= valLeft;
-                  
-                  return `
-                    <div class="relative inline-block w-6 h-6 select-none group/star" title="${valLeft}★ hoặc ${valRight}★">
-                      <svg class="w-6 h-6 pointer-events-none transition-transform group-hover/star:scale-110" viewBox="0 0 24 24">
-                        <defs>
-                          <linearGradient id="half-star-grad-${movie.movieId}-${starIndex}">
-                            <stop offset="50%" stop-color="#F59E0B"/>
-                            <stop offset="50%" stop-color="#334155"/>
-                          </linearGradient>
-                        </defs>
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                                 fill="${isFull ? '#F59E0B' : (isHalf ? `url(#half-star-grad-${movie.movieId}-${starIndex})` : 'none')}"
-                                 stroke="${isFull || isHalf ? '#F59E0B' : '#475569'}"
-                                 stroke-width="1.8"/>
-                      </svg>
-                      <button type="button" 
-                              onclick="MoodGraphApp.submitRating(${movie.movieId}, ${valLeft})" 
-                              class="absolute left-0 top-0 w-1/2 h-full z-10 cursor-pointer focus:outline-none"
-                              aria-label="${valLeft} sao — ${RATING_LABELS[valLeft] || ''}"
-                              title="${valLeft} sao — ${RATING_LABELS[valLeft] || ''}">
-                      </button>
-                      <button type="button" 
-                              onclick="MoodGraphApp.submitRating(${movie.movieId}, ${valRight})" 
-                              class="absolute right-0 top-0 w-1/2 h-full z-10 cursor-pointer focus:outline-none"
-                              aria-label="${valRight} sao — ${RATING_LABELS[valRight] || ''}"
-                              title="${valRight} sao — ${RATING_LABELS[valRight] || ''}">
-                      </button>
-                    </div>
-                  `;
-                }).join('')}
+              <div id="modal-stars-container-${movie.movieId}" class="flex items-center justify-center gap-1.5 py-1">
+                ${renderRatingStarsSvg(movie.movieId, userRating)}
               </div>
-              <div class="text-[10px] text-amber-300 font-mono mt-1 shrink-0 whitespace-nowrap min-h-[16px]">
-                ${userRating > 0 ? (RATING_LABELS[userRating] || (userRating + '★')) : 'Nhấp nửa trái/phải để chấm 0.5★ — 5.0★'}
+              <div id="modal-rating-label-${movie.movieId}" class="text-[10px] ${userRating > 0 ? 'text-amber-300 font-semibold' : 'text-slate-400'} font-mono mt-1 shrink-0 whitespace-nowrap min-h-[16px] transition-colors duration-150">
+                ${userRating > 0 ? (RATING_LABELS[userRating] || (userRating + '★')) + ' ✓ Đã lưu' : 'Nhấp nửa trái/phải để chấm 0.5★ — 5.0★'}
               </div>
             </div>
 
@@ -2786,6 +2869,9 @@
 
     // Ratings System (Item 2 Closed-Loop)
     submitRating,
+    previewRating,
+    resetRatingPreview,
+    renderRatingStarsSvg,
 
     // Mode B Academic Lab Hooks
     setInterlock,
