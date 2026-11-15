@@ -39,17 +39,56 @@
   * Các đường dây nối giữa chúng là các **Cạnh (Edges)**.
 
 ```text
-[Người Dùng: Anh] ──(Thích 5★)──> [Phim: Inception]
-                                        │
-                                        ├──(Thể loại)───> [Sci-Fi] ──(Thể loại)───> [Phim: Interstellar]
-                                        │                                                  ▲
-                                        └──(Tâm trạng)──> [Mind-bending] ──(Tâm trạng)─────┘
+========================================================================================
+           SƠ ĐỒ MẠNG LƯỚI ĐỒ THỊ TRI THỨC ĐA TẦNG TRỰC QUAN (HETEROGENEOUS KG)
+========================================================================================
+
+                 ┌────────────────────────────────────────────────────────┐
+                 │                [KHÁN GIẢ / NGƯỜI DÙNG]                │
+                 │                 (User Node - Màu Vàng)                 │
+                 └───────────────────────────┬────────────────────────────┘
+                                             │
+                   Đánh giá cao (rating >= 3.5★, w = (r - 3.0)/2.0)
+                                             │
+                                             ▼
+                 ┌────────────────────────────────────────────────────────┐
+                 │               [PHIM MỎ NEO ĐÃ TỪNG XEM]                │
+                 │               (Liked Movie - Màu Xanh Cyan)            │
+                 │           Ví dụ: "Inception (2010)" - 5.0★             │
+                 └───────┬───────────────────┼────────────────────┬───────┘
+                         │                   │                    │
+        [ĐƯỜNG P1: THỂ LOẠI]       [ĐƯỜNG P2: TÂM TRẠNG]     [ĐƯỜNG P3: CỘNG ĐỒNG]
+                         │                   │                    │
+                         ▼                   ▼                    ▼
+                 ┌───────────────┐   ┌───────────────┐    ┌───────────────┐
+                 │  [THỂ LOẠI]   │   │ [THẺ CẢM XÚC] │    │  [KHÁN GIẢ]   │
+                 │ (Genre Node)  │   │ (Genome Tag)  │    │ (Neighbor)    │
+                 │  Màu Lục Bảo  │   │ Màu Xanh Ngọc │    │  Cùng gu xem  │
+                 │  "Sci-Fi",    │   │ "Mind-bending"│    │  Inception    │
+                 │  "Action"     │   │ "Existential" │    │               │
+                 └───────┬───────┘   └───────┬───────┘    └───────┬───────┘
+                         │                   │                    │
+              Thuộc thể loại này       Gắn thẻ cảm xúc      Cũng đánh giá cao
+                         │                   │                    │
+                         └───────────────────┼────────────────────┘
+                                             │
+                                             ▼
+                 ┌────────────────────────────────────────────────────────┐
+                 │               [BỘ PHIM ỨNG VIÊN ĐỀ XUẤT]               │
+                 │           (Recommended Movie - Màu Tím Thạch Anh)      │
+                 │           Ví dụ: "Interstellar (2014)" - Top #1        │
+                 └────────────────────────────────────────────────────────┘
+
+ CÔNG THỨC ĐIỂM SỐ: Score_KG = (0.35 × P1_Thể_Loại) + (0.45 × P2_Cảm_Xúc) + (0.20 × P3_Cộng_Đồng)
+========================================================================================
 ```
 
 👉 **Lợi ích số 1**: Khi gợi ý phim *Interstellar*, hệ thống không chỉ đưa ra tên phim mà còn nói được cho anh một câu chuyện thuyết phục:
 *"Gợi ý cho bạn vì bạn từng thích Inception: Cả hai phim đều chung thể loại Sci-Fi và cùng chia sẻ sắc thái cảm xúc hack não (Mind-bending) với độ tương đồng 92%!"*
 
 👉 **Lợi ích số 2**: Ngay cả khi người dùng mới tinh chưa có bạn bè nào trên mạng (Cold-Start), chỉ cần họ chọn 1 bộ phim yêu thích hoặc 1 tâm trạng, Đồ thị Tri thức ngay lập tức lần theo các sợi dây nối để tìm ra các phim tương ứng mà không cần phải chờ huấn luyện lại mô hình!
+
+👉 **Trực quan hóa trực tiếp trên Web**: Trong dự án của chúng ta, toàn bộ mạng lưới đồ thị tri thức này đã được lập trình sẵn thành **Mạng nhện tương tác thời gian thực bằng thư viện `vis-network`** ngay trên giao diện web Mode B (Academic Lab)! Anh có thể kéo thả, phóng to thu nhỏ và bấm vào từng nút để xem các đường phát sáng cực kỳ ấn tượng trước mặt thầy cô!
 
 ---
 
