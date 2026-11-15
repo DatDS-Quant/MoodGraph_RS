@@ -1380,6 +1380,7 @@
 
   /**
    * Kết xuất chuỗi HTML các ngôi sao SVG tương tác hỗ trợ chọn nửa sao (0.5★ đến 5.0★).
+   * Gán ID cố định cho từng thẻ polygon để cập nhật giao diện mượt mà không làm rách cây DOM (Zero DOM Tearing).
    * @param {number|string} movieId - Mã định danh bộ phim
    * @param {number} activeRating - Điểm số đánh giá hiện tại của phim
    * @returns {string} Chuỗi HTML 5 khối sao SVG tương tác
@@ -1403,18 +1404,21 @@
                 <stop offset="50%" stop-color="#334155"/>
               </linearGradient>
             </defs>
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+            <polygon id="star-poly-${mid}-${starIndex}"
+                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
                      fill="${isFull ? '#F59E0B' : (isHalf ? `url(#half-star-grad-${mid}-${starIndex})` : 'none')}"
                      stroke="${isFull || isHalf ? '#F59E0B' : '#475569'}"
                      stroke-width="1.8"/>
           </svg>
           <button type="button" 
+                  onpointerdown="MoodGraphApp.submitRating(${mid}, ${valLeft})"
                   onclick="MoodGraphApp.submitRating(${mid}, ${valLeft})" 
                   onmouseenter="MoodGraphApp.previewRating(${mid}, ${valLeft})"
                   class="absolute left-0 top-0 w-1/2 h-full z-10 cursor-pointer focus:outline-none"
                   aria-label="${valLeft} sao">
           </button>
           <button type="button" 
+                  onpointerdown="MoodGraphApp.submitRating(${mid}, ${valRight})"
                   onclick="MoodGraphApp.submitRating(${mid}, ${valRight})" 
                   onmouseenter="MoodGraphApp.previewRating(${mid}, ${valRight})"
                   class="absolute right-0 top-0 w-1/2 h-full z-10 cursor-pointer focus:outline-none"
@@ -1426,6 +1430,28 @@
   }
 
   /**
+   * Cập nhật trực tiếp màu sắc tô (fill) và viền (stroke) của 5 ngôi sao SVG trên DOM hiện hữu.
+   * Tuyệt đối không xóa hay gán lại innerHTML để bảo toàn 100% sự kiện nhấn chuột của người dùng.
+   * @param {number|string} movieId - Mã ID phim
+   * @param {number} scoreVal - Điểm số cần hiển thị trực quan (0.0 đến 5.0)
+   */
+  function updateStarVisuals(movieId, scoreVal) {
+    const mid = Number(movieId);
+    const sVal = Number(scoreVal) || 0;
+    for (let starIndex = 1; starIndex <= 5; starIndex++) {
+      const poly = document.getElementById(`star-poly-${mid}-${starIndex}`);
+      if (!poly) continue;
+      const valLeft = starIndex - 0.5;
+      const valRight = starIndex;
+      const isFull = sVal >= valRight;
+      const isHalf = !isFull && sVal >= valLeft;
+
+      poly.setAttribute('fill', isFull ? '#F59E0B' : (isHalf ? `url(#half-star-grad-${mid}-${starIndex})` : 'none'));
+      poly.setAttribute('stroke', isFull || isHalf ? '#F59E0B' : '#475569');
+    }
+  }
+
+  /**
    * Cập nhật giao diện xem trước tạm thời khi con trỏ chuột rê qua các mức điểm nửa sao hoặc nguyên sao.
    * @param {number|string} movieId - Mã ID phim
    * @param {number} previewScore - Điểm số xem trước (0.5 đến 5.0)
@@ -1433,13 +1459,11 @@
   function previewRating(movieId, previewScore) {
     const mid = Number(movieId);
     const scoreVal = Number(previewScore) || 0;
-    const starsContainer = document.getElementById(`modal-stars-container-${mid}`);
     const labelEl = document.getElementById(`modal-rating-label-${mid}`);
     const scoreBadge = document.getElementById(`modal-rating-score-${mid}`);
 
-    if (starsContainer) {
-      starsContainer.innerHTML = renderRatingStarsSvg(mid, scoreVal);
-    }
+    updateStarVisuals(mid, scoreVal);
+
     if (labelEl) {
       labelEl.textContent = RATING_LABELS[scoreVal] || `${scoreVal.toFixed(1)}★`;
       labelEl.classList.remove('text-slate-400');
@@ -1458,13 +1482,11 @@
   function resetRatingPreview(movieId) {
     const mid = Number(movieId);
     const currentRating = MoodGraphState.userRatings[mid] || 0;
-    const starsContainer = document.getElementById(`modal-stars-container-${mid}`);
     const labelEl = document.getElementById(`modal-rating-label-${mid}`);
     const scoreBadge = document.getElementById(`modal-rating-score-${mid}`);
 
-    if (starsContainer) {
-      starsContainer.innerHTML = renderRatingStarsSvg(mid, currentRating);
-    }
+    updateStarVisuals(mid, currentRating);
+
     if (labelEl) {
       if (currentRating > 0) {
         labelEl.textContent = (RATING_LABELS[currentRating] || `${currentRating.toFixed(1)}★`) + ' ✓ Đã lưu';
@@ -1484,9 +1506,13 @@
     }
   }
 
+  let lastRatingSubmitTimestamp = 0;
+  let lastRatingSubmitMovieId = null;
+  let lastRatingSubmitScore = null;
+
   /**
    * Ghi nhận điểm số đánh giá của người dùng cho một bộ phim, lưu trữ vào LocalStorage và kích hoạt cơ chế phản hồi vòng lặp kín (Closed-Loop Feedback).
-   * Khi đánh giá 4-5 sao, thể loại của phim được đưa vào danh sách khuếch đại (boostedGenres) và tái tính toán tức thời điểm số gợi ý.
+   * Hỗ trợ thay đổi điểm số linh hoạt nhiều lần (Re-rate / Update rating) trên cả Tài khoản trải nghiệm và Phiên trực tiếp.
    * @param {number|string} movieId - Mã định danh bộ phim được đánh giá
    * @param {number} score - Điểm số đánh giá (từ 0.5 đến 5.0)
    */
@@ -1494,11 +1520,32 @@
     const mid = Number(movieId);
     const scoreNum = Number(score);
 
+    // Chống kích hoạt đúp tức thời giữa onpointerdown và onclick
+    const now = Date.now();
+    if (now - lastRatingSubmitTimestamp < 80 && lastRatingSubmitMovieId === mid && lastRatingSubmitScore === scoreNum) {
+      return;
+    }
+    lastRatingSubmitTimestamp = now;
+    lastRatingSubmitMovieId = mid;
+    lastRatingSubmitScore = scoreNum;
+
     // 1. Cập nhật vào userRatings hiện hành
     MoodGraphState.userRatings[mid] = scoreNum;
     saveStorageJson("moodgraph_user_ratings", MoodGraphState.userRatings);
 
-    // 2. Bảo toàn độc lập vào liveSessionRatings của Live Session
+    // 2. Cập nhật vào initialRatings của Persona hiện hành (đối với Khán giả 1, 2, 3) để bảo toàn điểm số khi đổi qua lại
+    const currentPid = MoodGraphState.activePersonaId;
+    if (window.MOCK_DATA && window.MOCK_DATA.presetPersonas && window.MOCK_DATA.presetPersonas[currentPid]) {
+      const p = window.MOCK_DATA.presetPersonas[currentPid];
+      if (!p.initialRatings) p.initialRatings = {};
+      p.initialRatings[mid] = scoreNum;
+    }
+    if (MoodGraphState.currentUser) {
+      if (!MoodGraphState.currentUser.initialRatings) MoodGraphState.currentUser.initialRatings = {};
+      MoodGraphState.currentUser.initialRatings[mid] = scoreNum;
+    }
+
+    // 3. Bảo toàn độc lập vào liveSessionRatings của Live Session
     if (!MoodGraphState.liveSessionRatings) {
       MoodGraphState.liveSessionRatings = {};
     }
@@ -1506,14 +1553,12 @@
     MoodGraphState.hasUserRatedInLiveSession = true;
     saveStorageJson("moodgraph_live_user_ratings", MoodGraphState.liveSessionRatings);
 
-    // Cập nhật giao diện modal tức thì (Live Visual Feedback)
-    const starsContainer = document.getElementById(`modal-stars-container-${mid}`);
+    // 4. Cập nhật visual ngôi sao trực tiếp qua DOM thuộc tính, không làm vỡ các nút bấm
+    updateStarVisuals(mid, scoreNum);
+
     const labelEl = document.getElementById(`modal-rating-label-${mid}`);
     const scoreBadge = document.getElementById(`modal-rating-score-${mid}`);
 
-    if (starsContainer) {
-      starsContainer.innerHTML = renderRatingStarsSvg(mid, scoreNum);
-    }
     if (labelEl) {
       labelEl.textContent = (RATING_LABELS[scoreNum] || `${scoreNum.toFixed(1)}★`) + ' ✓ Đã lưu thành công';
       labelEl.classList.remove('text-slate-400');
@@ -1533,7 +1578,7 @@
       MoodGraphState.isColdStart = false;
     }
 
-    // 3. Đồng bộ nhãn dropdown Live Session trên Mode B và phụ đề nút Persona
+    // 5. Đồng bộ nhãn dropdown Live Session trên Mode B và phụ đề nút Persona
     try {
       const optLive = document.getElementById('opt-lab-live');
       const liveCount = Object.keys(MoodGraphState.liveSessionRatings).length;
@@ -1563,10 +1608,25 @@
     const title = movie ? (movie.vietnameseTitle || movie.cleanTitle || movie.title) : `Phim #${mid}`;
     const label = RATING_LABELS[scoreNum] || `${scoreNum} sao`;
 
+    // 6. Cập nhật lịch sử xem và đánh giá (recentRatedMovies) cho người dùng ở mọi mức điểm
+    const user = MoodGraphState.currentUser || (window.MOCK_DATA && window.MOCK_DATA.currentUser);
+    if (user && movie) {
+      if (!Array.isArray(user.recentRatedMovies)) user.recentRatedMovies = [];
+      const existingIdx = user.recentRatedMovies.findIndex(r => r.movieId === mid);
+      if (existingIdx >= 0) user.recentRatedMovies.splice(existingIdx, 1);
+      user.recentRatedMovies.unshift({
+        movieId: mid,
+        title: movie.vietnameseTitle || movie.cleanTitle || movie.title,
+        genres: movie.genres || [],
+        userRating: scoreNum,
+        rating: scoreNum,
+        timestamp: Math.floor(Date.now() / 1000)
+      });
+      user.ratingsCount = (user.ratingsCount || 0) + (existingIdx >= 0 ? 0 : 1);
+    }
+
     // Dynamic Closed-Loop Feedback: Khi người dùng chấm 4 - 5 sao
     if (scoreNum >= 4 && movie && movie.genres && Array.isArray(movie.genres) && movie.genres.length > 0) {
-      // 1. Cập nhật ngay lập tức vector sở thích thể loại của người dùng hiện tại
-      const user = MoodGraphState.currentUser || (window.MOCK_DATA && window.MOCK_DATA.currentUser);
       if (user) {
         if (!user.genreDistribution) user.genreDistribution = {};
         const bonusWeight = scoreNum === 5 ? 4 : 2;
@@ -1579,37 +1639,23 @@
           .sort((a, b) => b[1] - a[1])
           .map(entry => entry[0]);
         user.topFavoriteGenres = sortedGenres.slice(0, 6);
-
-        // Đưa phim vào đầu danh sách lịch sử xem gần nhất
-        if (!Array.isArray(user.recentRatedMovies)) user.recentRatedMovies = [];
-        const existingIdx = user.recentRatedMovies.findIndex(r => r.movieId === mid);
-        if (existingIdx >= 0) user.recentRatedMovies.splice(existingIdx, 1);
-        user.recentRatedMovies.unshift({
-          movieId: mid,
-          title: movie.vietnameseTitle || movie.cleanTitle || movie.title,
-          genres: movie.genres,
-          userRating: scoreNum,
-          rating: scoreNum,
-          timestamp: Math.floor(Date.now() / 1000)
-        });
-        user.ratingsCount = (user.ratingsCount || 0) + (existingIdx >= 0 ? 0 : 1);
       }
 
-      // 2. Kích hoạt tăng cường thể loại trong State
+      // Kích hoạt tăng cường thể loại trong State
       MoodGraphState.boostedGenres = movie.genres.slice();
 
-      // 3. Tính toán lại danh sách phim gợi ý và cập nhật lại giao diện ngay trong tích tắc (< 5ms)
+      // Tính toán lại danh sách phim gợi ý và cập nhật lại giao diện ngay trong tích tắc (< 5ms)
       updateDynamicRecommendations();
 
-      // 4. Thông báo Toast giải thích phản hồi ngược khép kín
+      // Thông báo Toast giải thích phản hồi ngược khép kín
       showToast(
         "Đã ghi nhận đánh giá!",
-        `Hệ thống vừa cập nhật gu phim và ưu tiên các tác phẩm cùng thể loại (${movie.genres.join(", ")}).`,
+        `Đã lưu ${scoreNum}★ cho "${title}". Hệ thống ưu tiên các tác phẩm cùng thể loại (${movie.genres.join(", ")}).`,
         'star'
       );
     } else {
-      // Đánh giá bình thường dưới 4 sao
-      showToast("Đã Ghi Nhận Đánh Giá", `"${title}": ${label}.`, 'star');
+      // Đánh giá bình thường dưới 4 sao (vẫn cập nhật gợi ý động và hiển thị toast rõ ràng)
+      showToast("Đã Ghi Nhận Đánh Giá", `"${title}": ${label} (Đã cập nhật thành công).`, 'star');
       updateDynamicRecommendations();
     }
   }
@@ -2565,6 +2611,12 @@
    * @param {string} userKey - Khóa người dùng ('user1', 'user2', 'user3', 'user42', 'live_session')
    * @param {boolean} [silent] - Cờ tắt thông báo Toast
    */
+  /**
+   * Thay đổi người dùng kiểm chuẩn trong Mode B và đồng bộ ngược về Persona của Mode A.
+   * Đảm bảo nạp đầy đủ tập dữ liệu đánh giá userRatings và hồ sơ currentUser tương ứng.
+   * @param {string} userKey - Khóa người dùng ('user1', 'user2', 'user3', 'user42', 'live_session')
+   * @param {boolean} [silent] - Cờ tắt thông báo Toast
+   */
   function changeLabUser(userKey, silent) {
     MoodGraphState.selectedLabUser = userKey;
 
@@ -2579,7 +2631,7 @@
       selector.value = userKey;
     }
 
-    // 3. Đồng bộ ngược lại Mode A (activePersonaId và header selector)
+    // 3. Đồng bộ ngược lại Mode A (activePersonaId, userRatings và currentUser)
     const mapToApp = {
       'user1': 'user1',
       'user2': 'user2',
@@ -2590,6 +2642,32 @@
     const appPersonaId = mapToApp[userKey] || userKey;
     MoodGraphState.activePersonaId = appPersonaId;
     MoodGraphState.isColdStart = (appPersonaId === 'user_cold');
+
+    // Nạp chính xác tập đánh giá userRatings cho Persona được chọn
+    ensurePresetPersonas();
+    if (window.MOCK_DATA && window.MOCK_DATA.presetPersonas) {
+      const p = window.MOCK_DATA.presetPersonas[appPersonaId];
+      if (p) {
+        MoodGraphState.currentUser = JSON.parse(JSON.stringify(p));
+        if (p.defaultSliders) {
+          MoodGraphState.sliders = Object.assign({}, p.defaultSliders);
+          syncSliderInputs();
+        }
+      }
+    }
+
+    if (appPersonaId === 'live_session') {
+      MoodGraphState.userRatings = Object.assign({}, MoodGraphState.liveSessionRatings || {});
+      MoodGraphState.isColdStart = Object.keys(MoodGraphState.userRatings).length === 0;
+    } else if (appPersonaId === 'user_cold' || appPersonaId === 'user42') {
+      MoodGraphState.userRatings = {};
+      MoodGraphState.isColdStart = true;
+    } else {
+      const p = window.MOCK_DATA && window.MOCK_DATA.presetPersonas && window.MOCK_DATA.presetPersonas[appPersonaId];
+      MoodGraphState.userRatings = Object.assign({}, (p && p.initialRatings) ? p.initialRatings : {});
+      MoodGraphState.isColdStart = false;
+    }
+    saveStorageJson("moodgraph_user_ratings", MoodGraphState.userRatings);
 
     // Cập nhật header selector
     const headerSel = document.getElementById('header-persona-selector');
@@ -2606,6 +2684,26 @@
       }
     }
 
+    // Đồng bộ trạng thái các nút Persona Bar Trang 1
+    const personaMap = {
+      user1: 'btn-persona-user1',
+      user2: 'btn-persona-user2',
+      user3: 'btn-persona-user3',
+      user_cold: 'btn-persona-user-cold',
+      live_session: 'btn-persona-live'
+    };
+    Object.keys(personaMap).forEach(key => {
+      const btn = document.getElementById(personaMap[key]);
+      if (btn) {
+        if (key === appPersonaId || (key === 'user_cold' && appPersonaId === 'user42')) {
+          btn.className = "persona-btn active px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#D97706] text-white border border-[#F59E0B] transition-all shadow-md";
+        } else {
+          const borderColor = key === 'user_cold' ? 'hover:border-[#10B981]' : (key === 'live_session' ? 'hover:border-[#38BDF8]' : 'hover:border-[#F59E0B]');
+          btn.className = `persona-btn px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2.5 bg-[#0B0F14] text-[#94A3B8] hover:text-white border border-[rgba(255,255,255,0.08)] ${borderColor} transition-all`;
+        }
+      }
+    });
+
     // Cập nhật nhãn option live nếu có
     const optLive = document.getElementById('opt-lab-live');
     const liveCount = (MoodGraphState.liveSessionRatings) ? Object.keys(MoodGraphState.liveSessionRatings).length : 0;
@@ -2613,10 +2711,13 @@
       optLive.textContent = `🎬 Tài khoản của bạn (Live Session • ${liveCount} đánh giá)`;
     }
 
+    // Tái kết xuất danh sách gợi ý Trang 1
+    updateDynamicRecommendations();
+
     // 4. Gọi kết xuất Mode B nếu có
     if (window.AcademicLab && typeof window.AcademicLab.renderHeadToHeadComparison === 'function') {
       window.AcademicLab.renderHeadToHeadComparison(userKey);
-    } else {
+    } else if (typeof renderHeadToHeadComparison === 'function') {
       renderHeadToHeadComparison(userKey);
     }
 
@@ -2626,7 +2727,9 @@
     }
 
     if (!silent) {
-      showToast("Đã Chuyển Tập Người Dùng", `Đã nạp đoàn hệ kiểm chuẩn: ${userKey.toUpperCase()}.`, 'info');
+      const p = window.MOCK_DATA && window.MOCK_DATA.presetPersonas && window.MOCK_DATA.presetPersonas[appPersonaId];
+      const pName = p ? p.name : userKey.toUpperCase();
+      showToast("Đã Chuyển Tập Người Dùng", `Đã nạp đoàn hệ kiểm chuẩn: ${pName}.`, 'info');
     }
   }
 
@@ -3130,6 +3233,7 @@
     previewRating,
     resetRatingPreview,
     renderRatingStarsSvg,
+    updateStarVisuals,
 
     // Các móc nối điều khiển Phòng thí nghiệm Học thuật Mode B
     setInterlock,
