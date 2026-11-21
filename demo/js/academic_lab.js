@@ -2799,20 +2799,20 @@
       visualizer3D.updateUserCenterForSelectedUser(userKey);
     }
 
-// Cập nhật đồ thị tri thức tương tác vis-network
+    // Cập nhật đồ thị tri thức tương tác vis-network
     if (window.KnowledgeGraphVisualizer && typeof window.KnowledgeGraphVisualizer.loadSubgraph === 'function') {
       let uid = 1;
       if (userKey === 'user2') uid = 2;
       else if (userKey === 'user3') uid = 3;
       else if (userKey === 'user42') uid = 42;
       window.KnowledgeGraphVisualizer.loadSubgraph(uid, 1);
+    }
 
-      // Đồng bộ sang Mode A Persona nếu khác
+    // Đồng bộ sang Mode A Persona nếu khác
     if (window.MoodGraphState && window.MoodGraphState.activePersonaId !== userKey) {
       if (typeof window.MoodGraphApp.switchPersona === 'function') {
         window.MoodGraphApp.switchPersona(userKey, true);
       }
-
     }
 
     if (!silent && window.MoodGraphApp.showToast) {
