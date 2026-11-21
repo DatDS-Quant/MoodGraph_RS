@@ -50,11 +50,12 @@ from recommender.als.evaluator import validate_k
 
 @dataclass(frozen=True)
 class ALSCandidateConfig:
-    """Cấu hình cho bộ sinh ứng viên ALS (K list, batch size, model version)."""
+    """Cấu hình cho bộ sinh ứng viên ALS (K list, batch size, model version, scoring mode)."""
     k_list: Tuple[int, ...] = (5, 10, 20)
     batch_size: int = 2500
     model_version: str = "m05_spark_als_rank16"
     candidate_source: str = "ALS"
+    scoring_mode: str = "dot_product"  # "dot_product" (chuẩn RMSE gốc) hoặc "cosine" (chuẩn hóa độ dài triệt tiêu Fluke Bias)
 
     def validate(self) -> None:
         """Kiểm tra tính hợp lệ của danh sách K và kích thước batch."""
@@ -62,6 +63,8 @@ class ALSCandidateConfig:
             validate_k(k)
         if self.batch_size <= 0:
             raise ValueError(f"batch_size must be positive integer, got: {self.batch_size}")
+        if self.scoring_mode not in ("dot_product", "cosine"):
+            raise ValueError(f"scoring_mode must be 'dot_product' or 'cosine', got: {self.scoring_mode}")
 
 
 @dataclass
@@ -96,6 +99,13 @@ class ScoreableCatalog:
     def num_movies(self) -> int:
         """Tổng số lượng phim có thể chấm điểm trong danh mục."""
         return len(self.movie_ids)
+
+    @property
+    def factor_norms(self) -> np.ndarray:
+        """Độ dài chuẩn Euclidean L2 của từng vector nhân tố vật phẩm, dùng cho chuẩn hóa Cosine."""
+        if not hasattr(self, "_factor_norms") or self._factor_norms is None:
+            self._factor_norms = np.linalg.norm(self.factors, axis=1)
+        return self._factor_norms
 
     @property
     def rank(self) -> int:
@@ -343,7 +353,12 @@ class ALSCandidateGenerator:
             return []
 
         u_factor = self.user_factors.factors[user_idx]
-        scores = np.dot(self.catalog.factors, u_factor)  # kích thước: (M,)
+        if self.config.scoring_mode == "cosine":
+            u_norm = float(np.linalg.norm(u_factor))
+            denom = self.catalog.factor_norms * (u_norm if u_norm > 1e-9 else 1.0)
+            scores = np.dot(self.catalog.factors, u_factor) / np.clip(denom, 1e-9, None)
+        else:
+            scores = np.dot(self.catalog.factors, u_factor)  # kích thước: (M,)
 
         seen_set = seen_movie_ids or set()
         for mid in seen_set:
@@ -388,7 +403,12 @@ class ALSCandidateGenerator:
         # Trích xuất P_batch kích thước (B, rank)
         P_batch = self.user_factors.factors[valid_row_indices]  # kích thước: (B, rank)
         # Phép nhân ma trận: (B, rank) @ (rank, M) -> (B, M)
-        scores_matrix = np.matmul(P_batch, self.catalog.factors.T)  # kích thước: (B, M)
+        if self.config.scoring_mode == "cosine":
+            P_norm = P_batch / np.clip(np.linalg.norm(P_batch, axis=1, keepdims=True), 1e-9, None)
+            Q_norm = self.catalog.factors / np.clip(self.catalog.factor_norms[:, None], 1e-9, None)
+            scores_matrix = np.matmul(P_norm, Q_norm.T)
+        else:
+            scores_matrix = np.matmul(P_batch, self.catalog.factors.T)  # kích thước: (B, M)
 
         # Che mặt nạ các vật phẩm đã xem của từng người dùng bằng -inf
         for row_idx, uid in enumerate(valid_uids):

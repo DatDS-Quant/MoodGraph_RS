@@ -546,3 +546,38 @@ def test_21_exact_evaluation_wiring_and_positive_hit_rate():
     assert s10.ndcg == pytest.approx((dcg_10 + dcg_20) / 3.0)
 
 
+def test_candidate_generator_cosine_mode():
+    """Kiểm tra chế độ chuẩn hóa Cosine (scoring_mode='cosine') triệt tiêu hiệu ứng thổi phồng norm của phim đuôi dài."""
+    movie_ids = np.array([101, 102], dtype=np.int64)
+    # Item 101: hướng [1, 0], norm lớn = 10.0 (giả lập phim đuôi dài bị thổi phồng norm)
+    # Item 102: hướng [0.8, 0.6], norm nhỏ = 1.0 (phim phổ biến chuẩn)
+    item_factors = np.array([
+        [10.0, 0.0],
+        [0.8, 0.6]
+    ], dtype=np.float32)
+
+    user_ids = np.array([1], dtype=np.int64)
+    # User 1: hướng [0.8, 0.6], norm = 1.0 -> Rất thích item 102 hơn item 101 về mặt hướng ngữ nghĩa
+    user_factors = np.array([
+        [0.8, 0.6]
+    ], dtype=np.float32)
+
+    cat = ScoreableCatalog(movie_ids=movie_ids, factors=item_factors)
+    u_container = UserFactorsContainer(user_ids=user_ids, factors=user_factors)
+
+    # 1. Chế độ dot_product mặc định: Item 101 bị norm 10.0 thổi phồng điểm lên 8.0, chiếm hạng 1 (Fluke Bias)
+    gen_dot = ALSCandidateGenerator(ALSCandidateConfig(k_list=(2,), scoring_mode="dot_product"))
+    gen_dot.catalog = cat
+    gen_dot.user_factors = u_container
+    recs_dot = gen_dot.recommend_user(1, k=2)
+    assert recs_dot[0][0] == 101  # Bị Fluke Bias
+
+    # 2. Chế độ cosine: Triệt tiêu ảnh hưởng norm, Item 102 đạt cosine = 1.0 và chiếm hạng 1 chuẩn xác
+    gen_cos = ALSCandidateGenerator(ALSCandidateConfig(k_list=(2,), scoring_mode="cosine"))
+    gen_cos.catalog = cat
+    gen_cos.user_factors = u_container
+    recs_cos = gen_cos.recommend_user(1, k=2)
+    assert recs_cos[0][0] == 102  # Khắc phục hoàn toàn Fluke Bias!
+    assert recs_cos[0][1] == pytest.approx(1.0, abs=1e-5)
+
+
