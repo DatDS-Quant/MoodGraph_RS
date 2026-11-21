@@ -415,6 +415,17 @@
       });
 
       window.addEventListener('resize', () => this.handleResize());
+
+      if (typeof ResizeObserver !== 'undefined' && this.container) {
+        try {
+          this.resizeObserver = new ResizeObserver(() => {
+            this.handleResize();
+          });
+          this.resizeObserver.observe(this.container);
+        } catch (e) {
+          // Fallback an toàn nếu trình duyệt cũ không hỗ trợ ResizeObserver
+        }
+      }
     }
 
     resetThreeHover() {
@@ -2111,19 +2122,598 @@
   // 8. TÍCH HỢP HỆ THỐNG VÀO WINDOW.MOODGRAPHAPP
   // =========================================================================
 
-  /**
-   * Khởi tạo toàn diện Phòng thí nghiệm Học thuật Mode B và gắn các trình lắng nghe sự kiện.
-   * Khởi chạy đồ họa không gian 3D, bảng đối đầu, ma trận tương quan nhiệt và các biểu đồ chẩn đoán.
-   */
+
+  // =========================================================================
+  // 9. CÁC TÍNH NĂNG MỞ RỘNG TỪ BỐ CỤC WIREFRAME (FILMSTRIP, BAR CHART, KG)
+  // =========================================================================
+
+  const WIREFRAME_ALGORITHMS = [
+    { id: 'popularity',      name: 'Popularity Baseline', shortName: 'Popularity' },
+    { id: 'als',             name: 'Spark ALS',           shortName: 'Spark ALS' },
+    { id: 'kg',              name: 'Knowledge Graph',     shortName: 'Knowledge Graph' },
+    { id: 'hybrid_rrf',      name: 'Hybrid RRF (k=60)',   shortName: 'Hybrid RRF' },
+    { id: 'hybrid_weighted', name: 'Hybrid Weighted',     shortName: 'Hybrid Weighted' }
+  ];
+
+  let currentSelectedAlgorithm = 'kg';
+  let currentTargetMovieId = 101;
+
+  const WIREFRAME_BENCHMARKS = [
+    { id: 'popularity',      name: 'Popularity',      recall: 0.12, ndcg: 0.18, coverage: 0.22 },
+    { id: 'als',             name: 'Spark ALS',       recall: 0.46, ndcg: 0.51, coverage: 0.38 },
+    { id: 'kg',              name: 'Knowledge Graph', recall: 0.43, ndcg: 0.48, coverage: 0.86 },
+    { id: 'hybrid_rrf',      name: 'Hybrid RRF',      recall: 0.54, ndcg: 0.61, coverage: 0.78 },
+    { id: 'hybrid_weighted', name: 'Hybrid Weighted', recall: 0.52, ndcg: 0.58, coverage: 0.74 }
+  ];
+
+  const USER_BENCHMARKS_MAP = {
+    user1: [ // Alex Turner - Gu Nghệ Thuật & Auteur
+      { id: 'popularity',      name: 'Popularity',      recall: 0.12, ndcg: 0.18, coverage: 0.22 },
+      { id: 'als',             name: 'Spark ALS',       recall: 0.46, ndcg: 0.51, coverage: 0.38 },
+      { id: 'kg',              name: 'Knowledge Graph', recall: 0.43, ndcg: 0.48, coverage: 0.86 },
+      { id: 'hybrid_rrf',      name: 'Hybrid RRF',      recall: 0.54, ndcg: 0.61, coverage: 0.78 },
+      { id: 'hybrid_weighted', name: 'Hybrid Weighted', recall: 0.52, ndcg: 0.58, coverage: 0.74 }
+    ],
+    user2: [ // Elena Rostova - Gu Sci-Fi / Logic
+      { id: 'popularity',      name: 'Popularity',      recall: 0.14, ndcg: 0.20, coverage: 0.24 },
+      { id: 'als',             name: 'Spark ALS',       recall: 0.49, ndcg: 0.54, coverage: 0.40 },
+      { id: 'kg',              name: 'Knowledge Graph', recall: 0.45, ndcg: 0.50, coverage: 0.84 },
+      { id: 'hybrid_rrf',      name: 'Hybrid RRF',      recall: 0.57, ndcg: 0.63, coverage: 0.81 },
+      { id: 'hybrid_weighted', name: 'Hybrid Weighted', recall: 0.55, ndcg: 0.61, coverage: 0.78 }
+    ],
+    user3: [ // Marcus Vance - Gu Hành Động / Đại chúng
+      { id: 'popularity',      name: 'Popularity',      recall: 0.26, ndcg: 0.32, coverage: 0.30 },
+      { id: 'als',             name: 'Spark ALS',       recall: 0.47, ndcg: 0.52, coverage: 0.36 },
+      { id: 'kg',              name: 'Knowledge Graph', recall: 0.39, ndcg: 0.44, coverage: 0.82 },
+      { id: 'hybrid_rrf',      name: 'Hybrid RRF',      recall: 0.52, ndcg: 0.59, coverage: 0.75 },
+      { id: 'hybrid_weighted', name: 'Hybrid Weighted', recall: 0.50, ndcg: 0.57, coverage: 0.72 }
+    ],
+    user42: [ // Cold-Start - Thiếu tương tác (ALS suy giảm, KG & Hybrid cứu cánh)
+      { id: 'popularity',      name: 'Popularity',      recall: 0.30, ndcg: 0.38, coverage: 0.25 },
+      { id: 'als',             name: 'Spark ALS',       recall: 0.00, ndcg: 0.00, coverage: 0.02 },
+      { id: 'kg',              name: 'Knowledge Graph', recall: 0.38, ndcg: 0.44, coverage: 0.88 },
+      { id: 'hybrid_rrf',      name: 'Hybrid RRF',      recall: 0.40, ndcg: 0.46, coverage: 0.85 },
+      { id: 'hybrid_weighted', name: 'Hybrid Weighted', recall: 0.39, ndcg: 0.45, coverage: 0.84 }
+    ],
+    live_session: [ // Tài khoản trực tiếp
+      { id: 'popularity',      name: 'Popularity',      recall: 0.15, ndcg: 0.22, coverage: 0.23 },
+      { id: 'als',             name: 'Spark ALS',       recall: 0.42, ndcg: 0.48, coverage: 0.38 },
+      { id: 'kg',              name: 'Knowledge Graph', recall: 0.42, ndcg: 0.47, coverage: 0.85 },
+      { id: 'hybrid_rrf',      name: 'Hybrid RRF',      recall: 0.53, ndcg: 0.60, coverage: 0.79 },
+      { id: 'hybrid_weighted', name: 'Hybrid Weighted', recall: 0.51, ndcg: 0.58, coverage: 0.76 }
+    ]
+  };
+
+  const WIREFRAME_MOVIES_CATALOG = [
+    {
+      movieId: 101,
+      title: 'The Martian',
+      cleanTitle: 'The Martian',
+      score: 0.85,
+      year: 2015,
+      genres: ['Sci-Fi', 'Adventure', 'Drama'],
+      tags: ['Space', 'Survival', 'Mars'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/5BHuvQ6p9kfc091Z8RiFNhCwL4b.jpg'
+    },
+    {
+      movieId: 102,
+      title: 'Avatar',
+      cleanTitle: 'Avatar',
+      score: 0.79,
+      year: 2009,
+      genres: ['Action', 'Adventure', 'Sci-Fi'],
+      tags: ['Alien', 'Future', 'Space'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/kyeqWdyUXW608qlYkRqosgbbJyK.jpg'
+    },
+    {
+      movieId: 79132,
+      title: 'Inception',
+      cleanTitle: 'Inception',
+      score: 0.76,
+      year: 2010,
+      genres: ['Action', 'Sci-Fi', 'Thriller'],
+      tags: ['Mind-bending', 'Dreams'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg'
+    },
+    {
+      movieId: 104,
+      title: 'Gravity',
+      cleanTitle: 'Gravity',
+      score: 0.72,
+      year: 2013,
+      genres: ['Sci-Fi', 'Drama', 'Thriller'],
+      tags: ['Space', 'Survival'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/a2n6bKD7qhCPCAEALgsAhWOAQcc.jpg'
+    },
+    {
+      movieId: 2571,
+      title: 'The Matrix',
+      cleanTitle: 'The Matrix',
+      score: 0.68,
+      year: 1999,
+      genres: ['Action', 'Sci-Fi'],
+      tags: ['Cyberpunk', 'Simulation', 'Virtual Reality'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/dXNAPwY7VrqMAo51EKhhCJfaGb5.jpg'
+    },
+    {
+      movieId: 106,
+      title: 'Gladiator',
+      cleanTitle: 'Gladiator',
+      score: 0.65,
+      year: 2000,
+      genres: ['Action', 'Adventure', 'Drama'],
+      tags: ['Rome', 'Revenge'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg'
+    },
+    {
+      movieId: 107,
+      title: 'Arrival',
+      cleanTitle: 'Arrival',
+      score: 0.65,
+      year: 2016,
+      genres: ['Drama', 'Mystery', 'Sci-Fi'],
+      tags: ['Language', 'Alien Contact'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/x2FJsf1ElAgr63Y3PNPtJrcmpoe.jpg'
+    },
+    {
+      movieId: 108,
+      title: 'Dune',
+      cleanTitle: 'Dune: Part One',
+      score: 0.58,
+      year: 2021,
+      genres: ['Action', 'Adventure', 'Sci-Fi'],
+      tags: ['Desert', 'Space'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg'
+    },
+    {
+      movieId: 109,
+      title: 'Tenet',
+      cleanTitle: 'Tenet',
+      score: 0.55,
+      year: 2020,
+      genres: ['Action', 'Sci-Fi', 'Thriller'],
+      tags: ['Time Inversion', 'Physics'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/k68nPLbIST6NP96JmTxmZijEvCA.jpg'
+    },
+    {
+      movieId: 109487,
+      title: 'Interstellar',
+      cleanTitle: 'Interstellar',
+      score: 0.55,
+      year: 2014,
+      genres: ['Adventure', 'Drama', 'Sci-Fi'],
+      tags: ['Space', 'Black Hole', 'Relativity'],
+      posterUrl: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg'
+    }
+  ];
+
+  function renderAlgorithmPills() {
+    const container = document.getElementById('algorithm-pills-container');
+    if (!container) return;
+
+    let html = '';
+    WIREFRAME_ALGORITHMS.forEach(algo => {
+      const isActive = algo.id === currentSelectedAlgorithm;
+      html += `
+        <button type="button" 
+                onclick="AcademicLab.selectAlgorithm('${algo.id}')"
+                class="px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer border ${
+                  isActive 
+                    ? 'bg-blue-600 text-white font-semibold border-blue-500 shadow-md shadow-blue-500/25' 
+                    : 'bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 hover:text-white border-white/10'
+                }">
+          <span>${algo.name}</span>
+        </button>
+      `;
+    });
+    container.innerHTML = html;
+  }
+
+  function updatePerformanceTableHighlight() {
+    const table = document.getElementById('pyspark-performance-table');
+    if (!table) return;
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(r => {
+      r.classList.remove('bg-blue-500/15', 'border-l-2', 'border-l-blue-500');
+    });
+    const targetRow = document.getElementById(`perf-row-${currentSelectedAlgorithm}`);
+    if (targetRow) {
+      targetRow.classList.add('bg-blue-500/15', 'border-l-2', 'border-l-blue-500');
+    }
+  }
+
+  function selectAlgorithm(algoId) {
+    currentSelectedAlgorithm = algoId;
+    renderAlgorithmPills();
+    renderTop10Filmstrip();
+    renderEvaluationChart();
+    renderKnowledgeGraphDiagram();
+    updatePerformanceTableHighlight();
+
+    const algo = WIREFRAME_ALGORITHMS.find(a => a.id === algoId);
+    const badge = document.getElementById('active-algorithm-badge');
+    if (badge && algo) {
+      badge.textContent = `${algo.name}`;
+    }
+    updateSidebarMeta();
+  }
+
+  function renderTop10Filmstrip() {
+    const grid = document.getElementById('lab-filmstrip-grid');
+    if (!grid) return;
+
+    const recsResult = computeDynamicRecommendationsForLab(AcademicLabState.selectedUser);
+    const top10ByModel = recsResult.top10ByModel || {};
+    const items = top10ByModel[currentSelectedAlgorithm] || [];
+
+    // Trường hợp Cold-Start (ví dụ: user42 khi chọn Spark ALS)
+    if (items.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full py-8 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center space-y-2">
+          <div class="inline-flex items-center gap-2 text-amber-400 font-mono text-xs font-bold uppercase tracking-wider">
+            <span>⚠️</span> Thách Thức Ma Trận Thưa (Cold-Start - 0 Đánh Giá)
+          </div>
+          <p class="text-xs text-slate-300 max-w-lg mx-auto">
+            Mô hình Lọc cộng tác (Spark ALS) chưa có đủ dữ liệu tương tác từ người dùng này để phân rã ma trận ẩn.
+          </p>
+          <p class="text-[11px] text-slate-400">
+            Hãy chọn <strong>Knowledge Graph</strong>, <strong>Hybrid RRF</strong> hoặc <strong>Popularity Baseline</strong> ở các nút bên trên để xem đề xuất chất lượng cao.
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    const movies = items.map((it, idx) => {
+      const catalogMovie = getMovieById(it.movieId);
+      const title = catalogMovie ? (catalogMovie.vietnameseTitle || catalogMovie.cleanTitle || catalogMovie.title) : it.title;
+      const cleanTitle = catalogMovie ? (catalogMovie.cleanTitle || catalogMovie.title) : it.title;
+      const score = it.rawScoreText || (typeof it.score === 'number' ? it.score.toFixed(2) : String(it.score));
+      const posterUrl = catalogMovie && catalogMovie.poster_path
+        ? ('https://image.tmdb.org/t/p/w500' + catalogMovie.poster_path)
+        : (catalogMovie && catalogMovie.posterUrl ? catalogMovie.posterUrl : 'https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg');
+      
+      return {
+        rank: it.rank || (idx + 1),
+        movieId: it.movieId,
+        title: title,
+        cleanTitle: cleanTitle,
+        score: score,
+        posterUrl: posterUrl,
+        primaryGenre: it.primaryGenre || (catalogMovie ? catalogMovie.primaryGenre : 'Điện ảnh'),
+        consensusCount: it.consensusCount || 1,
+        genres: catalogMovie ? (catalogMovie.genres || [catalogMovie.primaryGenre]) : [it.primaryGenre || 'Điện ảnh'],
+        tags: catalogMovie ? (catalogMovie.tags || [catalogMovie.moodFit || 'Cinema']) : ['Điện ảnh']
+      };
+    });
+
+    if (!movies.some(m => m.movieId === currentTargetMovieId)) {
+      currentTargetMovieId = movies[0].movieId;
+    }
+
+    let html = '';
+    movies.forEach((movie, idx) => {
+      const isSelected = movie.movieId === currentTargetMovieId;
+
+      html += `
+        <div onclick="AcademicLab.selectTargetMovie(${movie.movieId})" 
+             class="group relative flex flex-col cursor-pointer transition-all duration-200 select-none ${
+               isSelected ? 'scale-[1.02]' : 'hover:scale-[1.01]'
+             }">
+          <div class="relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-slate-900 border transition-all ${
+            isSelected 
+              ? 'border-amber-400 ring-2 ring-amber-400/80 shadow-lg shadow-amber-500/20' 
+              : 'border-white/10 group-hover:border-white/30'
+          }">
+            <img src="${movie.posterUrl}" 
+                 alt="${movie.title}" 
+                 loading="lazy"
+                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                 onerror="this.onerror=null; this.src='https://image.tmdb.org/t/p/w500/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg';">
+            
+            <div class="absolute top-1 left-1 w-5 h-5 rounded flex items-center justify-center text-[10px] font-mono font-bold ${
+              isSelected ? 'bg-amber-400 text-black' : 'bg-black/60 text-slate-300 backdrop-blur-sm'
+            }">
+              #${movie.rank}
+            </div>
+
+            ${isSelected ? `
+              <div class="absolute top-1 right-1 px-1.5 py-0.5 rounded bg-amber-500 text-black font-mono font-bold text-[9px] uppercase tracking-wider shadow">
+                TARGET
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="text-[11px] font-medium text-slate-200 group-hover:text-amber-300 transition-colors truncate mt-1.5" title="${movie.title}">
+            ${movie.cleanTitle || movie.title}
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] font-mono mt-0.5">
+            <span class="text-slate-400 text-[10px]">Score:</span>
+            <span class="font-bold text-amber-400 font-mono">${movie.score}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    grid.innerHTML = html;
+  }
+
+  function selectTargetMovie(movieId) {
+    currentTargetMovieId = movieId;
+    renderTop10Filmstrip();
+    renderKnowledgeGraphDiagram();
+  }
+
+  function renderEvaluationChart() {
+    const container = document.getElementById('evaluation-chart-container');
+    if (!container) return;
+
+    const benchmarks = USER_BENCHMARKS_MAP[AcademicLabState.selectedUser] || WIREFRAME_BENCHMARKS;
+
+    const svgWidth = 640;
+    const svgHeight = 220;
+    const padLeft = 40;
+    const padRight = 20;
+    const padTop = 20;
+    const padBottom = 35;
+
+    const chartWidth = svgWidth - padLeft - padRight;
+    const chartHeight = svgHeight - padTop - padBottom;
+
+    const numGroups = benchmarks.length;
+    const groupWidth = chartWidth / numGroups;
+    const barWidth = 16;
+    const barGap = 4;
+
+    let gridLines = '';
+    const yTicks = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0];
+    yTicks.forEach(tick => {
+      const y = padTop + chartHeight - (tick * chartHeight);
+      gridLines += `
+        <line x1="${padLeft}" y1="${y}" x2="${svgWidth - padRight}" y2="${y}" stroke="rgba(255,255,255,0.08)" stroke-dasharray="3,3" />
+        <text x="${padLeft - 8}" y="${y + 4}" fill="#64748B" font-size="10" font-family="monospace" text-anchor="end">${tick.toFixed(1)}</text>
+      `;
+    });
+
+    let barsSvg = '';
+    benchmarks.forEach((item, idx) => {
+      const isSelectedAlgo = item.id === currentSelectedAlgorithm;
+      const groupCenterX = padLeft + (idx * groupWidth) + (groupWidth / 2);
+      const startX = groupCenterX - ((3 * barWidth + 2 * barGap) / 2);
+
+      const hRecall = item.recall * chartHeight;
+      const yRecall = padTop + chartHeight - hRecall;
+      const xRecall = startX;
+
+      const hNdcg = item.ndcg * chartHeight;
+      const yNdcg = padTop + chartHeight - hNdcg;
+      const xNdcg = startX + barWidth + barGap;
+
+      const hCoverage = item.coverage * chartHeight;
+      const yCoverage = padTop + chartHeight - hCoverage;
+      const xCoverage = startX + 2 * (barWidth + barGap);
+
+      // Nếu là thuật toán đang chọn, vẽ viền highlight nhẹ
+      const highlightRect = isSelectedAlgo ? `
+        <rect x="${startX - 6}" y="${padTop}" width="${3 * barWidth + 2 * barGap + 12}" height="${chartHeight + 2}" rx="6" fill="rgba(59, 130, 246, 0.08)" stroke="rgba(59, 130, 246, 0.45)" stroke-width="1.5" stroke-dasharray="3,2" />
+      ` : '';
+
+      barsSvg += `
+        <g class="chart-bar-group cursor-pointer" onclick="AcademicLab.selectAlgorithm('${item.id}')">
+          ${highlightRect}
+          <rect x="${xRecall}" y="${yRecall}" width="${barWidth}" height="${hRecall}" rx="3" fill="#3B82F6" class="hover:opacity-80 transition-opacity">
+            <title>${item.name} — Recall@10: ${(item.recall * 100).toFixed(1)}%</title>
+          </rect>
+          <rect x="${xNdcg}" y="${yNdcg}" width="${barWidth}" height="${hNdcg}" rx="3" fill="#F59E0B" class="hover:opacity-80 transition-opacity">
+            <title>${item.name} — NDCG@10: ${(item.ndcg * 100).toFixed(1)}%</title>
+          </rect>
+          <rect x="${xCoverage}" y="${yCoverage}" width="${barWidth}" height="${hCoverage}" rx="3" fill="#10B981" class="hover:opacity-80 transition-opacity">
+            <title>${item.name} — Coverage: ${(item.coverage * 100).toFixed(1)}%</title>
+          </rect>
+          <text x="${groupCenterX}" y="${svgHeight - 12}" fill="${isSelectedAlgo ? '#FDE68A' : '#94A3B8'}" font-size="${isSelectedAlgo ? '11' : '10.5'}" font-family="monospace" text-anchor="middle" font-weight="${isSelectedAlgo ? 'bold' : '500'}">
+            ${item.name}
+          </text>
+        </g>
+      `;
+    });
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full h-full overflow-visible select-none">
+        ${gridLines}
+        ${barsSvg}
+      </svg>
+    `;
+
+    // Cập nhật câu kết luận thực nghiệm tương ứng với đoàn hệ
+    const conclusionEl = document.getElementById('evaluation-conclusion-box');
+    if (conclusionEl) {
+      if (AcademicLabState.selectedUser === 'user42') {
+        conclusionEl.innerHTML = `<span class="text-rose-400 font-semibold">Thách thức Cold-Start (Khán giả 42):</span> Do chưa có lịch sử tương tác, mô hình ma trận Spark ALS bị suy giảm hoàn toàn (NDCG: 0.00). Ngược lại, Knowledge Graph và Hybrid RRF đóng vai trò cứu cánh với độ bao phủ đạt 88%, loại bỏ điểm mù đề xuất.`;
+      } else {
+        const alsItem = benchmarks.find(b => b.id === 'als') || { ndcg: 0.51 };
+        const kgItem = benchmarks.find(b => b.id === 'kg') || { coverage: 0.86 };
+        const rrfItem = benchmarks.find(b => b.id === 'hybrid_rrf') || { ndcg: 0.61, coverage: 0.78 };
+        conclusionEl.innerHTML = `<span class="text-amber-400 font-semibold">Kết luận thực nghiệm 5 mô hình:</span> Spark ALS đạt độ chính xác cao trên tương tác thưa (NDCG@10: ${alsItem.ndcg.toFixed(2)}), trong khi Knowledge Graph vượt trội về độ bao phủ danh mục (Coverage: ${(kgItem.coverage * 100).toFixed(0)}%). Mô hình Hybrid RRF kết hợp sức mạnh cả hai đạt trạng thái cân bằng Pareto tối ưu (NDCG@10: ${rrfItem.ndcg.toFixed(2)}, Coverage: ${(rrfItem.coverage * 100).toFixed(0)}%).`;
+      }
+    }
+  }
+
+  function renderKnowledgeGraphDiagram() {
+    const container = document.getElementById('kg-explanation-diagram');
+    const badge = document.getElementById('kg-target-movie-badge');
+    const textBox = document.getElementById('kg-explanation-text-box');
+    if (!container) return;
+
+    const catalogMovie = getMovieById(currentTargetMovieId);
+    const wireframeFallback = WIREFRAME_MOVIES_CATALOG.find(m => m.movieId === currentTargetMovieId) || WIREFRAME_MOVIES_CATALOG[0];
+    const targetMovie = catalogMovie || wireframeFallback;
+    
+    // Tìm nhãn user đang chọn
+    let userDisplay = 'Khán giả 1 (Alex)';
+    let likedMovie = 'Interstellar (2014)';
+    if (AcademicLabState.selectedUser === 'user2') {
+      userDisplay = 'Khán giả 2 (Elena)';
+      likedMovie = 'The Matrix (1999)';
+    } else if (AcademicLabState.selectedUser === 'user3') {
+      userDisplay = 'Khán giả 3 (Marcus)';
+      likedMovie = 'The Godfather (1972)';
+    } else if (AcademicLabState.selectedUser === 'user42') {
+      userDisplay = 'Khán giả 42 (Cold-Start)';
+      likedMovie = 'Inception (2010)';
+    } else if (AcademicLabState.selectedUser === 'live_session') {
+      userDisplay = 'Tài khoản của bạn';
+      likedMovie = 'The Shawshank Redemption (1994)';
+    }
+
+    const movieTitle = targetMovie.cleanTitle || targetMovie.title || 'Movie';
+    if (badge) {
+      badge.textContent = `Target: ${movieTitle}`;
+    }
+
+    const mainGenre = (targetMovie.genres && targetMovie.genres[0]) || targetMovie.primaryGenre || 'Sci-Fi';
+    const mainTag = (targetMovie.tags && targetMovie.tags[0]) || (targetMovie.moodFit) || 'Space';
+    
+    // Tìm điểm số tương đồng tương ứng
+    let simScore = '0.85';
+    const recsResult = computeDynamicRecommendationsForLab(AcademicLabState.selectedUser);
+    const top10 = (recsResult.top10ByModel && recsResult.top10ByModel[currentSelectedAlgorithm]) || [];
+    const found = top10.find(it => it.movieId === targetMovie.movieId);
+    if (found) {
+      simScore = found.rawScoreText || (typeof found.score === 'number' ? found.score.toFixed(2) : String(found.score));
+    } else if (targetMovie.score) {
+      simScore = typeof targetMovie.score === 'number' ? targetMovie.score.toFixed(2) : String(targetMovie.score);
+    }
+
+    container.innerHTML = `
+      <svg viewBox="0 0 620 220" class="w-full h-full select-none overflow-visible">
+        <defs>
+          <marker id="arrow-purple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#A855F7" />
+          </marker>
+          <marker id="arrow-cyan" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#06B6D4" />
+          </marker>
+          <marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#10B981" />
+          </marker>
+          <marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#F59E0B" />
+          </marker>
+        </defs>
+
+        <!-- Nối User -> Liked Movie -->
+        <line x1="85" y1="110" x2="165" y2="110" stroke="#A855F7" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrow-purple)" />
+        <text x="125" y="102" fill="#C084FC" font-size="10" font-family="monospace" text-anchor="middle" font-weight="600">liked</text>
+
+        <!-- Nối Liked Movie -> Nodes trung gian -->
+        <path d="M 235 90 C 270 90, 275 55, 315 55" fill="none" stroke="#06B6D4" stroke-width="1.8" marker-end="url(#arrow-cyan)" />
+        <text x="275" y="65" fill="#22D3EE" font-size="9.5" font-family="monospace" text-anchor="middle">has genre</text>
+
+        <line x1="235" y1="110" x2="315" y2="110" stroke="#10B981" stroke-width="1.8" marker-end="url(#arrow-emerald)" />
+        <text x="275" y="104" fill="#34D399" font-size="9.5" font-family="monospace" text-anchor="middle">has tag</text>
+
+        <path d="M 235 130 C 270 130, 275 165, 315 165" fill="none" stroke="#F59E0B" stroke-width="1.8" marker-end="url(#arrow-amber)" />
+        <text x="275" y="160" fill="#FBBF24" font-size="9.5" font-family="monospace" text-anchor="middle">similar to</text>
+
+        <!-- Nối Nodes trung gian -> Phim đích -->
+        <path d="M 395 55 C 435 55, 440 90, 475 90" fill="none" stroke="#06B6D4" stroke-width="1.8" marker-end="url(#arrow-cyan)" />
+        <text x="435" y="65" fill="#22D3EE" font-size="9.5" font-family="monospace" text-anchor="middle">has genre</text>
+
+        <line x1="395" y1="110" x2="475" y2="110" stroke="#10B981" stroke-width="1.8" marker-end="url(#arrow-emerald)" />
+        <text x="435" y="104" fill="#34D399" font-size="9.5" font-family="monospace" text-anchor="middle">has tag</text>
+
+        <path d="M 395 165 C 435 165, 440 130, 475 130" fill="none" stroke="#F59E0B" stroke-width="1.8" marker-end="url(#arrow-amber)" />
+        <text x="435" y="160" fill="#FBBF24" font-size="9.5" font-family="monospace" text-anchor="middle">sim: ${simScore}</text>
+
+        <!-- Nodes -->
+        <g transform="translate(25, 80)">
+          <rect width="60" height="60" rx="14" fill="#581C87" stroke="#A855F7" stroke-width="2" />
+          <text x="30" y="28" font-size="16" text-anchor="middle">👤</text>
+          <text x="30" y="47" fill="#F3E8FF" font-size="8.5" font-family="monospace" font-weight="bold" text-anchor="middle">${userDisplay.split(' ')[0]}</text>
+        </g>
+
+        <g transform="translate(170, 75)">
+          <rect width="65" height="70" rx="10" fill="#0B132B" stroke="#38BDF8" stroke-width="1.5" />
+          <text x="32" y="24" font-size="14" text-anchor="middle">🎬</text>
+          <text x="32" y="43" fill="#E0F2FE" font-size="8" font-family="sans-serif" font-weight="bold" text-anchor="middle">${likedMovie.split(' ')[0]}</text>
+          <text x="32" y="58" fill="#38BDF8" font-size="8" font-family="monospace" text-anchor="middle">Favorite</text>
+        </g>
+
+        <g transform="translate(320, 35)">
+          <rect width="75" height="40" rx="8" fill="#083344" stroke="#06B6D4" stroke-width="1.5" />
+          <text x="37" y="24" fill="#CFFAFE" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">${mainGenre}</text>
+        </g>
+
+        <g transform="translate(320, 90)">
+          <rect width="75" height="40" rx="8" fill="#064E3B" stroke="#10B981" stroke-width="1.5" />
+          <text x="37" y="24" fill="#D1FAE5" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">${mainTag}</text>
+        </g>
+
+        <g transform="translate(320, 145)">
+          <rect width="75" height="40" rx="8" fill="#451A03" stroke="#F59E0B" stroke-width="1.5" />
+          <text x="37" y="24" fill="#FEF3C7" font-size="9.5" font-family="monospace" font-weight="bold" text-anchor="middle">Cosine Sim</text>
+        </g>
+
+        <g transform="translate(480, 75)">
+          <rect width="90" height="70" rx="12" fill="#78350F" stroke="#F59E0B" stroke-width="2.5" class="animate-pulse" />
+          <text x="45" y="24" font-size="14" text-anchor="middle">🚀</text>
+          <text x="45" y="43" fill="#FFFBEB" font-size="9" font-family="sans-serif" font-weight="bold" text-anchor="middle">${movieTitle.length > 12 ? movieTitle.substring(0, 11) + '…' : movieTitle}</text>
+          <text x="45" y="58" fill="#FDE68A" font-size="8.5" font-family="monospace" font-weight="bold" text-anchor="middle">Score: ${simScore}</text>
+        </g>
+      </svg>
+    `;
+
+    if (textBox) {
+      textBox.innerHTML = `
+        <span class="text-amber-400 font-semibold">Knowledge Path:</span> ${userDisplay} đã thích 
+        <span class="text-sky-300 font-bold">${likedMovie}</span> (${mainGenre}, ${mainTag}), chia sẻ thuộc tính đạo diễn/thể loại và liên kết ngữ nghĩa chặt chẽ với bộ phim được đề xuất 
+        <span class="text-amber-300 font-bold">${movieTitle}</span> (Độ tương đồng: ${simScore}).
+      `;
+    }
+  }
+
+  function updateSidebarMeta() {
+    const userLabel = document.getElementById('side-meta-user');
+    const algoLabel = document.getElementById('side-meta-algo');
+
+    let uName = 'Khán giả 1';
+    if (AcademicLabState.selectedUser === 'user2') uName = 'Khán giả 2';
+    else if (AcademicLabState.selectedUser === 'user3') uName = 'Khán giả 3';
+    else if (AcademicLabState.selectedUser === 'user42') uName = 'Khán giả 42';
+    else if (AcademicLabState.selectedUser === 'live_session') uName = 'Tài khoản của bạn';
+
+    const algo = WIREFRAME_ALGORITHMS.find(a => a.id === currentSelectedAlgorithm);
+
+    if (userLabel) userLabel.textContent = uName;
+    if (algoLabel && algo) algoLabel.textContent = algo.name;
+  }
+
+
   function initAcademicLab() {
+    // Khởi tạo các khối mở rộng từ wireframe
+    renderAlgorithmPills();
+    renderTop10Filmstrip();
+    renderEvaluationChart();
+    renderKnowledgeGraphDiagram();
+    updatePerformanceTableHighlight();
+    updateSidebarMeta();
+
     // 1. Khởi tạo Không gian 3D
     if (!visualizer3D) {
       visualizer3D = new LatentSpace3DVisualizer();
       visualizer3D.init();
+    } else {
+      visualizer3D.handleResize();
     }
 
     // 2. Render các thành phần học thuật
     renderHeadToHeadComparison();
+    renderTop10Filmstrip();
+    renderEvaluationChart();
+    renderKnowledgeGraphDiagram();
+    updatePerformanceTableHighlight();
+    updateSidebarMeta();
     renderCorrelationHeatmap();
     renderOfflineBenchmarks();
     renderColdStartDiagnostics();
@@ -2162,27 +2752,67 @@
     if (selector && selector.value !== userKey) {
       selector.value = userKey;
     }
+    const selector6 = document.getElementById('block6-user-selector');
+    if (selector6 && selector6.value !== userKey) {
+      selector6.value = userKey;
+    }
+
+    // Đồng bộ lên Header Selector
+    const headerSel = document.getElementById('header-persona-selector');
+    if (headerSel && headerSel.value !== userKey) {
+      headerSel.value = userKey;
+    }
+    const avatarSpan = document.getElementById('header-user-avatar');
+    if (avatarSpan) {
+      let letter = 'A';
+      if (userKey === 'user2') letter = 'S';
+      else if (userKey === 'user3') letter = 'M';
+      else if (userKey === 'user42' || userKey === 'user_cold') letter = '4';
+      else if (userKey === 'live_session') letter = '🎬';
+      avatarSpan.textContent = letter;
+    }
+
     // Cập nhật nhãn option live nếu có
     const optLive = document.getElementById('opt-lab-live');
     const numR = (window.MoodGraphState && window.MoodGraphState.userRatings) ? Object.keys(window.MoodGraphState.userRatings).length : 0;
     if (optLive) {
       optLive.textContent = `🎬 Tài khoản của bạn (Live Session • ${numR} đánh giá)`;
     }
+    const optLive6 = document.getElementById('opt-block6-live');
+    if (optLive6) {
+      optLive6.textContent = `🎬 Tài khoản của bạn (Live Session • ${numR} đánh giá)`;
+    }
+    const optLiveH = document.getElementById('opt-header-live');
+    if (optLiveH) {
+      optLiveH.textContent = `🎬 Tài khoản của bạn (${numR} đánh giá)`;
+    }
 
     renderHeadToHeadComparison();
+    renderTop10Filmstrip();
+    renderEvaluationChart();
+    renderKnowledgeGraphDiagram();
+    updatePerformanceTableHighlight();
+    updateSidebarMeta();
 
     // Cập nhật tọa độ tâm trong 3D Scene
     if (visualizer3D && typeof visualizer3D.updateUserCenterForSelectedUser === 'function') {
       visualizer3D.updateUserCenterForSelectedUser(userKey);
     }
 
-    // Cập nhật đồ thị tri thức tương tác vis-network
+// Cập nhật đồ thị tri thức tương tác vis-network
     if (window.KnowledgeGraphVisualizer && typeof window.KnowledgeGraphVisualizer.loadSubgraph === 'function') {
       let uid = 1;
       if (userKey === 'user2') uid = 2;
       else if (userKey === 'user3') uid = 3;
       else if (userKey === 'user42') uid = 42;
       window.KnowledgeGraphVisualizer.loadSubgraph(uid, 1);
+
+      // Đồng bộ sang Mode A Persona nếu khác
+    if (window.MoodGraphState && window.MoodGraphState.activePersonaId !== userKey) {
+      if (typeof window.MoodGraphApp.switchPersona === 'function') {
+        window.MoodGraphApp.switchPersona(userKey, true);
+      }
+
     }
 
     if (!silent && window.MoodGraphApp.showToast) {
@@ -2338,7 +2968,7 @@
   // Công khai đối tượng AcademicLab phục vụ kiểm thử và giám sát
   window.AcademicLab = {
     state: AcademicLabState,
-    visualizer: visualizer3D,
+    get visualizer() { return visualizer3D; },
     init: initAcademicLab,
     onUserRatingsChanged: onUserRatingsChanged,
     computeDynamicRecommendationsForLab: computeDynamicRecommendationsForLab,
@@ -2348,6 +2978,12 @@
     renderOfflineBenchmarks,
     renderColdStartDiagnostics,
     renderLongTailDiagnostics,
+    selectAlgorithm: selectAlgorithm,
+    selectTargetMovie: selectTargetMovie,
+    renderGroupedBarChart: renderEvaluationChart,
+    renderKnowledgeGraphDiagram: renderKnowledgeGraphDiagram,
+    renderTop10Filmstrip: renderTop10Filmstrip,
+
     getGenreColorInfo,
     calcCosineSimilarity,
     calcEuclideanDistance

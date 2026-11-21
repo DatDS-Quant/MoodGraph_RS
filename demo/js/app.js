@@ -2194,15 +2194,16 @@
    * Chuyển đổi nhanh hồ sơ khán giả mẫu (Persona Quick Switcher) giữa 5 cấu hình: Khán giả 1, Khán giả 2, Khán giả 3, Khán giả Mới (Cold-Start) và Phiên Trực Tiếp.
    * Tự động điều chỉnh 4 thanh trượt gu thẩm mỹ, danh sách phim đã đánh giá và đồng bộ sang Mode B.
    * @param {string} personaId - Khóa persona ('user1', 'user2', 'user3', 'user_cold', 'live_session')
+   * @param {boolean} [silent=false] - Không hiện toast thông báo khi chuyển tự động
    */
-  function switchPersona(personaId) {
+  function switchPersona(personaId, silent) {
     let pid = personaId;
     if (pid === 'user42') pid = 'user_cold';
 
     ensurePresetPersonas();
 
     if (!window.MOCK_DATA || !window.MOCK_DATA.presetPersonas) return;
-    const persona = window.MOCK_DATA.presetPersonas[pid];
+    const persona = window.MOCK_DATA.presetPersonas[pid] || window.MOCK_DATA.presetPersonas[personaId];
     if (!persona) return;
 
     MoodGraphState.activePersonaId = pid;
@@ -2236,7 +2237,12 @@
 
     // Đồng bộ giá trị trên Header Selector
     const headerSel = document.getElementById('header-persona-selector');
-    if (headerSel) headerSel.value = (pid === 'user42') ? 'user_cold' : pid;
+    if (headerSel) {
+      headerSel.value = personaId;
+      if (headerSel.value !== personaId) {
+        headerSel.value = (pid === 'user42') ? 'user_cold' : pid;
+      }
+    }
 
     const avatarSpan = document.getElementById('header-user-avatar');
     if (avatarSpan) avatarSpan.textContent = persona.avatarLetter || persona.name.charAt(0);
@@ -2288,11 +2294,21 @@
     // Tái tính toán và kết xuất đề xuất
     updateDynamicRecommendations();
 
-    showToast(
-      "Đã Chuyển Hồ Sơ Khán Giả",
-      `Đang trải nghiệm theo góc nhìn của ${persona.name} (${persona.roleDescription}).`,
-      'info'
-    );
+    // Đồng bộ sang Mode B (Phòng Thí Nghiệm Học Thuật)
+    if (window.MoodGraphApp && typeof window.MoodGraphApp.changeLabUser === 'function') {
+      const labState = window.AcademicLab && window.AcademicLab.state;
+      if (labState && labState.selectedUser !== personaId) {
+        window.MoodGraphApp.changeLabUser(personaId, true);
+      }
+    }
+
+    if (!silent) {
+      showToast(
+        "Đã Chuyển Hồ Sơ Khán Giả",
+        `Đang trải nghiệm theo góc nhìn của ${persona.name} (${persona.roleDescription}).`,
+        'info'
+      );
+    }
   }
 
   /**
